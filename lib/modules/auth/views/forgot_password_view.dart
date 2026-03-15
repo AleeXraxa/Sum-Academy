@@ -1,0 +1,101 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
+import 'package:sum_academy/app/theme.dart';
+import 'package:sum_academy/modules/auth/controllers/forgot_password_controller.dart';
+import 'package:sum_academy/modules/auth/widgets/auth_action_button.dart';
+import 'package:sum_academy/modules/auth/widgets/auth_card.dart';
+import 'package:sum_academy/modules/auth/widgets/auth_header.dart';
+import 'package:sum_academy/modules/auth/widgets/auth_scaffold.dart';
+import 'package:sum_academy/modules/auth/widgets/auth_text_field.dart';
+
+class ForgotPasswordView extends GetView<ForgotPasswordController> {
+  const ForgotPasswordView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final baseColor = Theme.of(context).colorScheme.onSurface;
+
+    return AuthScaffold(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          IconButton(
+            onPressed: () => Get.back(),
+            icon: const Icon(Icons.arrow_back_rounded),
+          ),
+          SizedBox(height: 8.h),
+          const AuthHeader(
+            title: 'Reset your password',
+            subtitle:
+                'Enter your email and we will send a verification code to continue.',
+          ),
+          SizedBox(height: 20.h),
+          AuthCard(
+            child: Form(
+              key: controller.formKey,
+              child: Column(
+                children: [
+                  AuthTextField(
+                    controller: controller.emailController,
+                    label: 'Email address',
+                    hint: 'you@sumacademy.com',
+                    icon: Icons.alternate_email_rounded,
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => controller.sendResetCode(),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Email is required.';
+                      }
+                      if (!GetUtils.isEmail(value.trim())) {
+                        return 'Enter a valid email address.';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 14.h),
+                  Container(
+                    padding: EdgeInsets.all(12.r),
+                    decoration: BoxDecoration(
+                      color: SumAcademyTheme.infoLight,
+                      borderRadius: BorderRadius.circular(14.r),
+                      border: Border.all(
+                        color: SumAcademyTheme.info.withOpacityFloat(0.2),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.lock_reset_rounded,
+                            color: SumAcademyTheme.info, size: 20.r),
+                        SizedBox(width: 10.w),
+                        Expanded(
+                          child: Text(
+                            'We will deliver a 6-digit code to verify your identity.',
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: baseColor.withOpacity(0.7),
+                                    ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 16.h),
+                  Obx(() {
+                    return AuthActionButton(
+                      label: 'Send Verification Code',
+                      isLoading: controller.isLoading.value,
+                      onPressed: controller.sendResetCode,
+                      icon: Icons.mark_email_read_rounded,
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
