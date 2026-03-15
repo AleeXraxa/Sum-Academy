@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "459097675748",
+    "project_id": "sum-academy-lms",
+    "storage_bucket": "sum-academy-lms.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:459097675748:android:bf34d59acb52e7373719f1",
+        "android_client_info": {
+          "package_name": "com.example.sum_academy"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "459097675748-sl0n7agrpjeccmpms1fg6ondef2dmhtk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.sum_academy",
+            "certificate_hash": "3fcd82f328285c7ad12532d033fbe0fc3ea42dba"
+          }
+        },
+        {
+          "client_id": "459097675748-oddhan69m27drb67kr3pccqjstillasu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCSzBVpLdxkC9CNu8HF15bG-s0LtZj6Gcw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "459097675748-oddhan69m27drb67kr3pccqjstillasu.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
