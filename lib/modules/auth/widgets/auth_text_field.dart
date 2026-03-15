@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:sum_academy/app/theme.dart';
 
 class AuthTextField extends StatelessWidget {
   final TextEditingController controller;
@@ -29,6 +30,10 @@ class AuthTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final borderRadius = BorderRadius.circular(SumAcademyTheme.radiusInput.r);
+
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
@@ -42,6 +47,21 @@ class AuthTextField extends StatelessWidget {
         hintText: hint,
         prefixIcon: Icon(icon, size: 20.sp),
         suffixIcon: suffix,
+        focusedBorder: OutlineInputBorder(
+          borderRadius: borderRadius,
+          borderSide: BorderSide(color: colorScheme.primary, width: 1.6),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: borderRadius,
+          borderSide: BorderSide(color: colorScheme.error, width: 1.2),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: borderRadius,
+          borderSide: BorderSide(color: colorScheme.error, width: 1.6),
+        ),
+        errorStyle: theme.textTheme.bodySmall?.copyWith(
+          color: colorScheme.error,
+        ),
       ),
     );
   }

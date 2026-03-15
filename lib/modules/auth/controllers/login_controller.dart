@@ -10,11 +10,16 @@ class LoginController extends GetxController {
 
   final isPasswordHidden = true.obs;
   final isLoading = false.obs;
+  final rememberMe = false.obs;
 
   AuthService get _authService => Get.find<AuthService>();
 
   void togglePassword() {
     isPasswordHidden.value = !isPasswordHidden.value;
+  }
+
+  void setRememberMe(bool? value) {
+    rememberMe.value = value ?? false;
   }
 
   Future<void> signIn() async {

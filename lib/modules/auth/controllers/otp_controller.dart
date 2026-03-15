@@ -13,6 +13,7 @@ class OtpController extends GetxController {
 
   final isLoading = false.obs;
   final secondsRemaining = 30.obs;
+  final errorMessage = ''.obs;
 
   Timer? _timer;
 
@@ -30,6 +31,10 @@ class OtpController extends GetxController {
   }
 
   void onDigitChanged(int index, String value) {
+    if (errorMessage.value.isNotEmpty) {
+      errorMessage.value = '';
+    }
+
     if (value.isNotEmpty && index < codeLength - 1) {
       focusNodes[index + 1].requestFocus();
     }
@@ -47,10 +52,11 @@ class OtpController extends GetxController {
 
   Future<void> verify() async {
     if (code.length != codeLength) {
-      Get.snackbar('Incomplete code', 'Please enter the 6-digit code.');
+      errorMessage.value = 'Enter the 6-digit code to continue.';
       return;
     }
 
+    errorMessage.value = '';
     isLoading.value = true;
     try {
       await _authService.verifyOtp(code: code);

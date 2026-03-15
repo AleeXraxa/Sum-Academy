@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/modules/auth/controllers/register_controller.dart';
 import 'package:sum_academy/modules/auth/widgets/auth_action_button.dart';
 import 'package:sum_academy/modules/auth/widgets/auth_card.dart';
 import 'package:sum_academy/modules/auth/widgets/auth_footer_link.dart';
 import 'package:sum_academy/modules/auth/widgets/auth_header.dart';
 import 'package:sum_academy/modules/auth/widgets/auth_scaffold.dart';
+import 'package:sum_academy/modules/auth/widgets/auth_social_button.dart';
 import 'package:sum_academy/modules/auth/widgets/auth_text_field.dart';
 
 class RegisterView extends GetView<RegisterController> {
@@ -20,11 +22,18 @@ class RegisterView extends GetView<RegisterController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          IconButton(
-            onPressed: controller.goToLogin,
-            icon: const Icon(Icons.arrow_back_rounded),
+          Row(
+            children: [
+              IconButton(
+                onPressed: controller.goToLogin,
+                icon: const Icon(Icons.arrow_back_rounded),
+              ),
+              SizedBox(width: 6.w),
+              Expanded(child: Center(child: _BrandRow())),
+              SizedBox(width: 48.w),
+            ],
           ),
-          SizedBox(height: 8.h),
+          SizedBox(height: 16.h),
           const AuthHeader(
             title: 'Create your account',
             subtitle: 'Join Sum Academy and launch your learning workspace.',
@@ -94,6 +103,16 @@ class RegisterView extends GetView<RegisterController> {
                       ),
                     );
                   }),
+                  SizedBox(height: 6.h),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Use 6+ characters with a mix of letters and numbers.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: baseColor.withOpacity(0.55),
+                      ),
+                    ),
+                  ),
                   SizedBox(height: 14.h),
                   Obx(() {
                     return AuthTextField(
@@ -130,7 +149,8 @@ class RegisterView extends GetView<RegisterController> {
                       color: baseColor.withOpacity(0.6),
                     ),
                   ),
-                  SizedBox(height: 16.h),
+                  SizedBox(height: 12.h),
+                  Divider(color: SumAcademyTheme.brandBluePale, height: 24.h),
                   Obx(() {
                     return AuthActionButton(
                       label: 'Create Account',
@@ -139,6 +159,13 @@ class RegisterView extends GetView<RegisterController> {
                       icon: Icons.person_add_alt_1_rounded,
                     );
                   }),
+                  SizedBox(height: 12.h),
+                  _OrDivider(baseColor: baseColor),
+                  SizedBox(height: 12.h),
+                  AuthSocialButton(
+                    label: 'Continue with Google',
+                    onPressed: () {},
+                  ),
                 ],
               ),
             ),
@@ -151,6 +178,73 @@ class RegisterView extends GetView<RegisterController> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _BrandRow extends StatelessWidget {
+  const _BrandRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final baseColor = Theme.of(context).colorScheme.onSurface;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 44.r,
+          height: 44.r,
+          decoration: BoxDecoration(
+            color: SumAcademyTheme.white,
+            borderRadius: BorderRadius.circular(14.r),
+            border: Border.all(color: SumAcademyTheme.brandBluePale),
+            boxShadow: [
+              BoxShadow(
+                color: SumAcademyTheme.brandBlue.withOpacityFloat(0.12),
+                blurRadius: 16.r,
+                offset: Offset(0, 8.h),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12.r),
+            child: Image.asset('assets/logo.jpeg', fit: BoxFit.cover),
+          ),
+        ),
+        SizedBox(width: 12.w),
+        Text(
+          'Sum Academy LMS',
+          style: Theme.of(
+            context,
+          ).textTheme.labelLarge?.copyWith(color: baseColor),
+        ),
+      ],
+    );
+  }
+}
+
+class _OrDivider extends StatelessWidget {
+  final Color baseColor;
+
+  const _OrDivider({required this.baseColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(child: Divider(color: SumAcademyTheme.brandBluePale)),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8.w),
+          child: Text(
+            'or',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: baseColor.withOpacity(0.5)),
+          ),
+        ),
+        Expanded(child: Divider(color: SumAcademyTheme.brandBluePale)),
+      ],
     );
   }
 }

@@ -20,11 +20,18 @@ class ForgotPasswordView extends GetView<ForgotPasswordController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          IconButton(
-            onPressed: () => Get.back(),
-            icon: const Icon(Icons.arrow_back_rounded),
+          Row(
+            children: [
+              IconButton(
+                onPressed: () => Get.back(),
+                icon: const Icon(Icons.arrow_back_rounded),
+              ),
+              SizedBox(width: 6.w),
+              Expanded(child: Center(child: _BrandRow())),
+              SizedBox(width: 48.w),
+            ],
           ),
-          SizedBox(height: 8.h),
+          SizedBox(height: 16.h),
           const AuthHeader(
             title: 'Reset your password',
             subtitle:
@@ -81,7 +88,8 @@ class ForgotPasswordView extends GetView<ForgotPasswordController> {
                       ],
                     ),
                   ),
-                  SizedBox(height: 16.h),
+                  SizedBox(height: 12.h),
+                  Divider(color: SumAcademyTheme.brandBluePale, height: 24.h),
                   Obx(() {
                     return AuthActionButton(
                       label: 'Send Verification Code',
@@ -99,3 +107,45 @@ class ForgotPasswordView extends GetView<ForgotPasswordController> {
     );
   }
 }
+class _BrandRow extends StatelessWidget {
+  const _BrandRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final baseColor = Theme.of(context).colorScheme.onSurface;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 44.r,
+          height: 44.r,
+          decoration: BoxDecoration(
+            color: SumAcademyTheme.white,
+            borderRadius: BorderRadius.circular(14.r),
+            border: Border.all(color: SumAcademyTheme.brandBluePale),
+            boxShadow: [
+              BoxShadow(
+                color: SumAcademyTheme.brandBlue.withOpacityFloat(0.12),
+                blurRadius: 16.r,
+                offset: Offset(0, 8.h),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12.r),
+            child: Image.asset('assets/logo.jpeg', fit: BoxFit.cover),
+          ),
+        ),
+        SizedBox(width: 12.w),
+        Text(
+          'Sum Academy LMS',
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: baseColor,
+              ),
+        ),
+      ],
+    );
+  }
+}
+

@@ -8,6 +8,7 @@ import 'package:sum_academy/modules/auth/widgets/auth_card.dart';
 import 'package:sum_academy/modules/auth/widgets/auth_footer_link.dart';
 import 'package:sum_academy/modules/auth/widgets/auth_header.dart';
 import 'package:sum_academy/modules/auth/widgets/auth_scaffold.dart';
+import 'package:sum_academy/modules/auth/widgets/auth_social_button.dart';
 import 'package:sum_academy/modules/auth/widgets/auth_text_field.dart';
 
 class LoginView extends GetView<LoginController> {
@@ -15,12 +16,14 @@ class LoginView extends GetView<LoginController> {
 
   @override
   Widget build(BuildContext context) {
+    final baseColor = Theme.of(context).colorScheme.onSurface;
+
     return AuthScaffold(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _BrandRow(),
-          SizedBox(height: 22.h),
+          const Center(child: _BrandRow()),
+          SizedBox(height: 16.h),
           const AuthHeader(
             title: 'Welcome back',
             subtitle: 'Sign in to manage classes, students, and learning paths.',
@@ -76,13 +79,39 @@ class LoginView extends GetView<LoginController> {
                       ),
                     );
                   }),
+                  SizedBox(height: 6.h),
                   Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: controller.goToForgotPassword,
-                      child: const Text('Forgot password?'),
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Use at least 6 characters.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: baseColor.withOpacity(0.55),
+                          ),
                     ),
                   ),
+                  SizedBox(height: 10.h),
+                  Row(
+                    children: [
+                      Obx(() {
+                        return Checkbox(
+                          value: controller.rememberMe.value,
+                          onChanged: controller.setRememberMe,
+                        );
+                      }),
+                      Text(
+                        'Remember me',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: baseColor.withOpacity(0.65),
+                            ),
+                      ),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: controller.goToForgotPassword,
+                        child: const Text('Forgot password?'),
+                      ),
+                    ],
+                  ),
+                  Divider(color: SumAcademyTheme.brandBluePale, height: 24.h),
                   Obx(() {
                     return AuthActionButton(
                       label: 'Sign In',
@@ -91,6 +120,13 @@ class LoginView extends GetView<LoginController> {
                       icon: Icons.login_rounded,
                     );
                   }),
+                  SizedBox(height: 12.h),
+                  _OrDivider(baseColor: baseColor),
+                  SizedBox(height: 12.h),
+                  AuthSocialButton(
+                    label: 'Continue with Google',
+                    onPressed: () {},
+                  ),
                 ],
               ),
             ),
@@ -115,6 +151,7 @@ class _BrandRow extends StatelessWidget {
     final baseColor = Theme.of(context).colorScheme.onSurface;
 
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           width: 44.r,
@@ -137,23 +174,37 @@ class _BrandRow extends StatelessWidget {
           ),
         ),
         SizedBox(width: 12.w),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Sum Academy LMS',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: baseColor,
-                  ),
-            ),
-            Text(
-              'SaaS Learning Suite',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: baseColor.withOpacity(0.6),
-                  ),
-            ),
-          ],
+        Text(
+          'Sum Academy LMS',
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: baseColor,
+              ),
         ),
+      ],
+    );
+  }
+}
+
+class _OrDivider extends StatelessWidget {
+  final Color baseColor;
+
+  const _OrDivider({required this.baseColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(child: Divider(color: SumAcademyTheme.brandBluePale)),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8.w),
+          child: Text(
+            'or',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: baseColor.withOpacity(0.5),
+                ),
+          ),
+        ),
+        Expanded(child: Divider(color: SumAcademyTheme.brandBluePale)),
       ],
     );
   }
