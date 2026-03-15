@@ -2,11 +2,9 @@ import 'package:get/get.dart';
 import 'package:sum_academy/app/routes/app_routes.dart';
 import 'package:sum_academy/modules/auth/bindings/forgot_password_binding.dart';
 import 'package:sum_academy/modules/auth/bindings/login_binding.dart';
-import 'package:sum_academy/modules/auth/bindings/otp_binding.dart';
 import 'package:sum_academy/modules/auth/bindings/register_binding.dart';
 import 'package:sum_academy/modules/auth/views/forgot_password_view.dart';
 import 'package:sum_academy/modules/auth/views/login_view.dart';
-import 'package:sum_academy/modules/auth/views/otp_verification_view.dart';
 import 'package:sum_academy/modules/auth/views/register_view.dart';
 import 'package:sum_academy/modules/home/bindings/home_binding.dart';
 import 'package:sum_academy/modules/home/views/home_view.dart';
@@ -41,11 +39,6 @@ class AppPages {
       name: AppRoutes.forgotPassword,
       page: () => const ForgotPasswordView(),
       binding: ForgotPasswordBinding(),
-    ),
-    GetPage(
-      name: AppRoutes.otp,
-      page: () => const OtpVerificationView(),
-      binding: OtpBinding(),
     ),
     GetPage(
       name: AppRoutes.home,

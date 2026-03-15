@@ -66,3 +66,4 @@ class AuthTextField extends StatelessWidget {
     );
   }
 }
+

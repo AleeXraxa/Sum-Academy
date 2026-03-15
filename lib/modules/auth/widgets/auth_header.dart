@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:sum_academy/app/theme.dart';
 
 class AuthHeader extends StatelessWidget {
   final String title;
@@ -35,7 +36,7 @@ class AuthHeader extends StatelessWidget {
         Text(
           subtitle,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: baseColor.withOpacity(0.65),
+                color: baseColor.withOpacityFloat(0.65),
               ),
         ),
       ],

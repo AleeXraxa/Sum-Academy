@@ -85,7 +85,7 @@ class LoginView extends GetView<LoginController> {
                     child: Text(
                       'Use at least 6 characters.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: baseColor.withOpacity(0.55),
+                            color: baseColor.withOpacityFloat(0.55),
                           ),
                     ),
                   ),
@@ -101,7 +101,7 @@ class LoginView extends GetView<LoginController> {
                       Text(
                         'Remember me',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: baseColor.withOpacity(0.65),
+                              color: baseColor.withOpacityFloat(0.65),
                             ),
                       ),
                       const Spacer(),
@@ -123,10 +123,14 @@ class LoginView extends GetView<LoginController> {
                   SizedBox(height: 12.h),
                   _OrDivider(baseColor: baseColor),
                   SizedBox(height: 12.h),
-                  AuthSocialButton(
-                    label: 'Continue with Google',
-                    onPressed: () {},
-                  ),
+                  Obx(() {
+                    return AuthSocialButton(
+                      label: 'Continue with Google',
+                      onPressed: controller.isLoading.value
+                          ? null
+                          : controller.signInWithGoogle,
+                    );
+                  }),
                 ],
               ),
             ),
@@ -200,7 +204,7 @@ class _OrDivider extends StatelessWidget {
           child: Text(
             'or',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: baseColor.withOpacity(0.5),
+                  color: baseColor.withOpacityFloat(0.5),
                 ),
           ),
         ),
@@ -209,3 +213,5 @@ class _OrDivider extends StatelessWidget {
     );
   }
 }
+
+

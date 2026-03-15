@@ -7,3 +7,4 @@ class ForgotPasswordBinding extends Bindings {
     Get.lazyPut<ForgotPasswordController>(() => ForgotPasswordController());
   }
 }
+

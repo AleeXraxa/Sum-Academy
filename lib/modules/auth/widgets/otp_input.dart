@@ -50,3 +50,4 @@ class OtpInput extends StatelessWidget {
     );
   }
 }
+

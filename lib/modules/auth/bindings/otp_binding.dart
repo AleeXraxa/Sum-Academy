@@ -7,3 +7,4 @@ class OtpBinding extends Bindings {
     Get.lazyPut<OtpController>(() => OtpController());
   }
 }
+

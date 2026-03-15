@@ -81,7 +81,7 @@ class ForgotPasswordView extends GetView<ForgotPasswordController> {
                             'We will deliver a 6-digit code to verify your identity.',
                             style:
                                 Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: baseColor.withOpacity(0.7),
+                                      color: baseColor.withOpacityFloat(0.7),
                                     ),
                           ),
                         ),
@@ -148,4 +148,5 @@ class _BrandRow extends StatelessWidget {
     );
   }
 }
+
 

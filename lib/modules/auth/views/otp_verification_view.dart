@@ -74,7 +74,7 @@ class OtpVerificationView extends GetView<OtpController> {
                         ? 'Resend available in ${controller.formattedTimer}'
                         : 'Didn\'t receive it?',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: baseColor.withOpacity(0.6),
+                          color: baseColor.withOpacityFloat(0.6),
                         ),
                   );
                 }),
@@ -103,7 +103,7 @@ class OtpVerificationView extends GetView<OtpController> {
           Text(
             'After verification, you will be taken back to sign in.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: baseColor.withOpacity(0.55),
+                  color: baseColor.withOpacityFloat(0.55),
                 ),
           ),
         ],
@@ -152,4 +152,5 @@ class _BrandRow extends StatelessWidget {
     );
   }
 }
+
 

@@ -109,7 +109,7 @@ class RegisterView extends GetView<RegisterController> {
                     child: Text(
                       'Use 6+ characters with a mix of letters and numbers.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: baseColor.withOpacity(0.55),
+                        color: baseColor.withOpacityFloat(0.55),
                       ),
                     ),
                   ),
@@ -146,7 +146,7 @@ class RegisterView extends GetView<RegisterController> {
                   Text(
                     'By creating an account, you agree to the terms and privacy policy.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: baseColor.withOpacity(0.6),
+                      color: baseColor.withOpacityFloat(0.6),
                     ),
                   ),
                   SizedBox(height: 12.h),
@@ -162,10 +162,14 @@ class RegisterView extends GetView<RegisterController> {
                   SizedBox(height: 12.h),
                   _OrDivider(baseColor: baseColor),
                   SizedBox(height: 12.h),
-                  AuthSocialButton(
-                    label: 'Continue with Google',
-                    onPressed: () {},
-                  ),
+                  Obx(() {
+                    return AuthSocialButton(
+                      label: 'Continue with Google',
+                      onPressed: controller.isLoading.value
+                          ? null
+                          : controller.signInWithGoogle,
+                    );
+                  }),
                 ],
               ),
             ),
@@ -240,7 +244,7 @@ class _OrDivider extends StatelessWidget {
             'or',
             style: Theme.of(
               context,
-            ).textTheme.bodySmall?.copyWith(color: baseColor.withOpacity(0.5)),
+            ).textTheme.bodySmall?.copyWith(color: baseColor.withOpacityFloat(0.5)),
           ),
         ),
         Expanded(child: Divider(color: SumAcademyTheme.brandBluePale)),
@@ -248,3 +252,5 @@ class _OrDivider extends StatelessWidget {
     );
   }
 }
+
+

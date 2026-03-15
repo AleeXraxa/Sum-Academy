@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:sum_academy/app/theme.dart';
 
 class AuthFooterLink extends StatelessWidget {
   final String prompt;
@@ -23,8 +24,8 @@ class AuthFooterLink extends StatelessWidget {
         Text(
           prompt,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: baseColor.withOpacity(0.65),
-              ),
+            color: baseColor.withOpacityFloat(0.65),
+          ),
         ),
         TextButton(
           onPressed: onTap,

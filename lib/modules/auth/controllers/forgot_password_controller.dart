@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:sum_academy/app/routes/app_routes.dart';
 import 'package:sum_academy/modules/auth/services/auth_service.dart';
 
 class ForgotPasswordController extends GetxController {
@@ -20,7 +19,10 @@ class ForgotPasswordController extends GetxController {
     isLoading.value = true;
     try {
       await _authService.requestPasswordReset(email: email);
-      Get.toNamed(AppRoutes.otp);
+      Get.snackbar(
+        'Email sent',
+        'Check your inbox for the password reset link.',
+      );
     } finally {
       isLoading.value = false;
     }

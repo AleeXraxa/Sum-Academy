@@ -95,3 +95,4 @@ class OtpController extends GetxController {
     super.onClose();
   }
 }
+

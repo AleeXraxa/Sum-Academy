@@ -1,4 +1,3 @@
-import 'package:flutter/animation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/routes/app_routes.dart';
