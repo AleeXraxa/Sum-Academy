@@ -27,6 +27,7 @@ class DialogTextField extends StatelessWidget {
   final bool obscureText;
   final TextInputAction textInputAction;
   final Widget? suffixIcon;
+  final String? Function(String?)? validator;
 
   const DialogTextField({
     super.key,
@@ -36,6 +37,7 @@ class DialogTextField extends StatelessWidget {
     this.obscureText = false,
     this.textInputAction = TextInputAction.next,
     this.suffixIcon,
+    this.validator,
   });
 
   @override
@@ -47,6 +49,8 @@ class DialogTextField extends StatelessWidget {
       keyboardType: keyboardType,
       obscureText: obscureText,
       textInputAction: textInputAction,
+      validator: validator,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
       decoration: InputDecoration(
         hintText: hintText,
         hintStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -72,6 +76,9 @@ class DialogTextField extends StatelessWidget {
             width: 1.4,
           ),
         ),
+        errorStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: SumAcademyTheme.error,
+        ),
       ),
     );
   }
@@ -82,6 +89,7 @@ class DialogDropdown extends StatelessWidget {
   final String hintText;
   final List<String> items;
   final ValueChanged<String?> onChanged;
+  final bool enabled;
 
   const DialogDropdown({
     super.key,
@@ -89,17 +97,21 @@ class DialogDropdown extends StatelessWidget {
     required this.hintText,
     required this.items,
     required this.onChanged,
+    this.enabled = true,
   });
 
   @override
   Widget build(BuildContext context) {
     final borderRadius = BorderRadius.circular(SumAcademyTheme.radiusInput.r);
 
-    return CustomDropdown<String>(
+    return Opacity(
+      opacity: enabled ? 1 : 0.6,
+      child: CustomDropdown<String>(
       items: items,
       initialItem: value,
       hintText: hintText,
       onChanged: onChanged,
+      enabled: enabled,
       closedHeaderPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
       expandedHeaderPadding:
           EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
@@ -133,6 +145,7 @@ class DialogDropdown extends StatelessWidget {
           size: 22.sp,
           color: SumAcademyTheme.darkBase,
         ),
+      ),
       ),
     );
   }

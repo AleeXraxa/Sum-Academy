@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/core/services/api_exception.dart';
@@ -17,7 +19,14 @@ class AdminController extends GetxController {
   final TextEditingController searchController = TextEditingController();
   final RxInt userFilterIndex = 0.obs;
   final RxBool isUsersLoading = false.obs;
+  final RxBool isUsersLoadingMore = false.obs;
   final RxString searchQuery = ''.obs;
+  Timer? _searchDebounce;
+  final RxBool hasMoreUsers = true.obs;
+  int _currentPage = 1;
+  final int _pageSize = 20;
+  final RxString currentUserUid = ''.obs;
+  bool _initialUsersDelayShown = false;
 
   final RxList<AdminUserFilter> userFilters = <AdminUserFilter>[].obs;
 
@@ -35,21 +44,44 @@ class AdminController extends GetxController {
 
   Future<void> _loadUserName() async {
     userName.value = await _authService.getCurrentUserName();
+    currentUserUid.value = _firebaseAuth.currentUser?.uid ?? '';
   }
 
-  Future<void> fetchUsers() async {
-    isUsersLoading.value = true;
+  Future<void> fetchUsers({bool reset = true}) async {
+    if (reset) {
+      _currentPage = 1;
+      hasMoreUsers.value = true;
+      isUsersLoading.value = true;
+    } else {
+      isUsersLoadingMore.value = true;
+    }
     try {
-      await Future.delayed(const Duration(milliseconds: 1500));
+      if (reset && !_initialUsersDelayShown) {
+        await Future.delayed(const Duration(milliseconds: 1500));
+        _initialUsersDelayShown = true;
+      }
       await _ensureAuthReady();
-      final result = await _userService.fetchUsers();
-      users
-        ..clear()
-        ..addAll(result.map(_toRow));
+      final result = await _userService.fetchUsers(
+        page: _currentPage,
+        limit: _pageSize,
+        search: searchQuery.value,
+        role: _selectedRoleFilter(),
+      );
+      final rows = result.map(_toRow).toList();
+      if (reset) {
+        users
+          ..clear()
+          ..addAll(rows);
+      } else {
+        users.addAll(rows);
+      }
+      if (rows.length < _pageSize) {
+        hasMoreUsers.value = false;
+      }
       _refreshUserFilters();
     } on ApiException catch (e) {
       if (e.statusCode == 401) {
-        final retry = await _retryFetchUsers();
+        final retry = await _retryFetchUsers(reset: reset);
         if (retry) {
           return;
         }
@@ -58,17 +90,32 @@ class AdminController extends GetxController {
     } catch (_) {
       Get.snackbar('Users', 'Failed to load users.');
     } finally {
-      isUsersLoading.value = false;
+      if (reset) {
+        isUsersLoading.value = false;
+      } else {
+        isUsersLoadingMore.value = false;
+      }
     }
   }
 
+  Future<void> loadMoreUsers() async {
+    if (isUsersLoadingMore.value || isUsersLoading.value) return;
+    if (!hasMoreUsers.value) return;
+    _currentPage += 1;
+    await fetchUsers(reset: false);
+  }
+
   Future<void> _ensureAuthReady() async {
-    if (_firebaseAuth.currentUser != null) return;
+    if (_firebaseAuth.currentUser != null) {
+      currentUserUid.value = _firebaseAuth.currentUser?.uid ?? '';
+      return;
+    }
     try {
       await _firebaseAuth
           .authStateChanges()
           .firstWhere((user) => user != null)
           .timeout(const Duration(seconds: 5));
+      currentUserUid.value = _firebaseAuth.currentUser?.uid ?? '';
     } catch (_) {
       if (_firebaseAuth.currentUser == null) {
         throw ApiException('Authentication required.', statusCode: 401);
@@ -76,14 +123,27 @@ class AdminController extends GetxController {
     }
   }
 
-  Future<bool> _retryFetchUsers() async {
+  Future<bool> _retryFetchUsers({required bool reset}) async {
     try {
       await Future.delayed(const Duration(milliseconds: 900));
       await _ensureAuthReady();
-      final result = await _userService.fetchUsers();
-      users
-        ..clear()
-        ..addAll(result.map(_toRow));
+      final result = await _userService.fetchUsers(
+        page: _currentPage,
+        limit: _pageSize,
+        search: searchQuery.value,
+        role: _selectedRoleFilter(),
+      );
+      final rows = result.map(_toRow).toList();
+      if (reset) {
+        users
+          ..clear()
+          ..addAll(rows);
+      } else {
+        users.addAll(rows);
+      }
+      if (rows.length < _pageSize) {
+        hasMoreUsers.value = false;
+      }
       _refreshUserFilters();
       return true;
     } catch (_) {
@@ -123,6 +183,22 @@ class AdminController extends GetxController {
     required String role,
     required bool isActive,
   }) async {
+    if (isCurrentUser(uid)) {
+      AdminUserRow? existing;
+      for (final user in users) {
+        if (user.uid == uid) {
+          existing = user;
+          break;
+        }
+      }
+      if (existing != null &&
+          (existing.role.toLowerCase() != role.toLowerCase() ||
+              existing.isActive != isActive)) {
+        return const AdminActionResult.failure(
+          'You cannot change your own role or status.',
+        );
+      }
+    }
     try {
       final updated = await _userService.updateUser(
         uid: uid,
@@ -163,21 +239,26 @@ class AdminController extends GetxController {
     }
   }
 
-  Future<void> updateUserRole({
+  Future<AdminActionResult> updateUserRole({
     required String uid,
     required String role,
   }) async {
+    if (isCurrentUser(uid)) {
+      return const AdminActionResult.failure(
+        'You cannot change your own role.',
+      );
+    }
     try {
       final updated = await _userService.updateUserRole(uid: uid, role: role);
       final index = users.indexWhere((user) => user.uid == uid);
       if (index != -1) {
         users[index] = _toRow(updated);
       }
-      Get.snackbar('Role updated', 'User role updated.');
+      return const AdminActionResult.success('Role updated successfully.');
     } on ApiException catch (e) {
-      Get.snackbar('Role update failed', e.message);
+      return AdminActionResult.failure(_formatApiError(e));
     } catch (_) {
-      Get.snackbar('Role update failed', 'Please try again.');
+      return const AdminActionResult.failure('Please try again.');
     }
   }
 
@@ -201,6 +282,7 @@ class AdminController extends GetxController {
 
   void setUserFilterIndex(int index) {
     userFilterIndex.value = index;
+    fetchUsers();
   }
 
   void toggleSearch() {
@@ -217,13 +299,18 @@ class AdminController extends GetxController {
 
   @override
   void onClose() {
+    _searchDebounce?.cancel();
     searchController.removeListener(_onSearchChanged);
     searchController.dispose();
     super.onClose();
   }
 
   void _onSearchChanged() {
-    searchQuery.value = searchController.text.trim();
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      searchQuery.value = searchController.text.trim();
+      fetchUsers();
+    });
   }
 
   void _refreshUserFilters() {
@@ -241,27 +328,25 @@ class AdminController extends GetxController {
   }
 
   List<AdminUserRow> get filteredUsers {
-    final query = searchQuery.value.toLowerCase();
-    final selected = userFilterIndex.value;
+    return users.toList();
+  }
 
-    Iterable<AdminUserRow> list = users;
-    if (selected == 1) {
-      list = list.where(_isStudent);
-    } else if (selected == 2) {
-      list = list.where(_isTeacher);
-    } else if (selected == 3) {
-      list = list.where(_isAdmin);
+  String? _selectedRoleFilter() {
+    switch (userFilterIndex.value) {
+      case 1:
+        return 'student';
+      case 2:
+        return 'teacher';
+      case 3:
+        return 'admin';
+      default:
+        return null;
     }
+  }
 
-    if (query.isNotEmpty) {
-      list = list.where(
-        (user) =>
-            user.name.toLowerCase().contains(query) ||
-            user.email.toLowerCase().contains(query),
-      );
-    }
-
-    return list.toList();
+  bool isCurrentUser(String uid) {
+    final current = currentUserUid.value;
+    return current.isNotEmpty && uid == current;
   }
 
   final stats = <AdminStat>[

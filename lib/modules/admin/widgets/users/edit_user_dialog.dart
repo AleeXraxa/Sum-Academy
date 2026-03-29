@@ -52,12 +52,14 @@ class EditUserDialog extends StatefulWidget {
 }
 
 class _EditUserDialogState extends State<EditUserDialog> {
+  final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _emailController;
   late final TextEditingController _phoneController;
   late bool _isActive;
   String? _role;
   bool _isSubmitting = false;
+  late final bool _isSelf;
 
   @override
   void initState() {
@@ -67,6 +69,7 @@ class _EditUserDialogState extends State<EditUserDialog> {
     _phoneController = TextEditingController(text: widget.phone);
     _role = widget.role;
     _isActive = widget.isActive;
+    _isSelf = Get.find<AdminController>().isCurrentUser(widget.uid);
   }
 
   @override
@@ -85,10 +88,12 @@ class _EditUserDialogState extends State<EditUserDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
       child: SingleChildScrollView(
         padding: EdgeInsets.all(20.r),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             Row(
               children: [
                 Expanded(
@@ -114,6 +119,15 @@ class _EditUserDialogState extends State<EditUserDialog> {
               hintText: 'Full Name',
               keyboardType: TextInputType.name,
               textInputAction: TextInputAction.next,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Full name is required';
+                }
+                if (value.trim().length < 3) {
+                  return 'Enter at least 3 characters';
+                }
+                return null;
+              },
             ),
             SizedBox(height: 14.h),
             const DialogLabel(text: 'Email'),
@@ -123,6 +137,17 @@ class _EditUserDialogState extends State<EditUserDialog> {
               hintText: 'you@example.com',
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
+              validator: (value) {
+                final input = value?.trim() ?? '';
+                if (input.isEmpty) {
+                  return 'Email is required';
+                }
+                final regex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
+                if (!regex.hasMatch(input)) {
+                  return 'Enter a valid email';
+                }
+                return null;
+              },
             ),
             SizedBox(height: 14.h),
             const DialogLabel(text: 'Phone'),
@@ -132,6 +157,16 @@ class _EditUserDialogState extends State<EditUserDialog> {
               hintText: '03003425849',
               keyboardType: TextInputType.phone,
               textInputAction: TextInputAction.next,
+              validator: (value) {
+                final input = value?.trim() ?? '';
+                if (input.isEmpty) {
+                  return null;
+                }
+                if (input.length < 7) {
+                  return 'Enter a valid phone number';
+                }
+                return null;
+              },
             ),
             SizedBox(height: 14.h),
             const DialogLabel(text: 'Role'),
@@ -141,10 +176,12 @@ class _EditUserDialogState extends State<EditUserDialog> {
               hintText: 'Select role',
               items: const ['Student', 'Teacher', 'Admin'],
               onChanged: (value) => setState(() => _role = value),
+              enabled: !_isSelf,
             ),
             SizedBox(height: 14.h),
             _StatusTile(
               isActive: _isActive,
+              enabled: !_isSelf,
               onChanged: (value) => setState(() => _isActive = value),
             ),
             SizedBox(height: 20.h),
@@ -190,7 +227,8 @@ class _EditUserDialogState extends State<EditUserDialog> {
                 ),
               ],
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -202,11 +240,20 @@ class _EditUserDialogState extends State<EditUserDialog> {
     final phone = _phoneController.text.trim();
     final role = _role ?? widget.role;
 
-    if (fullName.isEmpty || email.isEmpty) {
+    if (!(_formKey.currentState?.validate() ?? false)) {
       await showErrorDialog(
         Get.context ?? context,
         title: 'Required',
-        message: 'Please fill in all required fields.',
+        message: 'Please fix the highlighted fields.',
+      );
+      return;
+    }
+
+    if (_isSelf && (role != widget.role || _isActive != widget.isActive)) {
+      await showErrorDialog(
+        Get.context ?? context,
+        title: 'Not allowed',
+        message: 'You cannot change your own role or status.',
       );
       return;
     }
@@ -257,53 +304,61 @@ class _EditUserDialogState extends State<EditUserDialog> {
 class _StatusTile extends StatelessWidget {
   final bool isActive;
   final ValueChanged<bool> onChanged;
+  final bool enabled;
 
-  const _StatusTile({required this.isActive, required this.onChanged});
+  const _StatusTile({
+    required this.isActive,
+    required this.onChanged,
+    required this.enabled,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-      decoration: BoxDecoration(
-        color: SumAcademyTheme.white,
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: SumAcademyTheme.brandBluePale),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Account Status',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: SumAcademyTheme.darkBase,
-                    fontWeight: FontWeight.w600,
+    return Opacity(
+      opacity: enabled ? 1 : 0.6,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+        decoration: BoxDecoration(
+          color: SumAcademyTheme.white,
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(color: SumAcademyTheme.brandBluePale),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Account Status',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: SumAcademyTheme.darkBase,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                SizedBox(height: 4.h),
-                Text(
-                  'Toggle whether this user can access the system.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: SumAcademyTheme.darkBase.withOpacityFloat(0.55),
+                  SizedBox(height: 4.h),
+                  Text(
+                    'Toggle whether this user can access the system.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: SumAcademyTheme.darkBase.withOpacityFloat(0.55),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Transform.scale(
-            scale: 0.9,
-            child: Switch(
-              value: isActive,
-              onChanged: onChanged,
-              activeColor: SumAcademyTheme.white,
-              activeTrackColor: SumAcademyTheme.success,
-              inactiveThumbColor: SumAcademyTheme.white,
-              inactiveTrackColor: SumAcademyTheme.brandBluePale,
+            Transform.scale(
+              scale: 0.9,
+              child: Switch(
+                value: isActive,
+                onChanged: enabled ? onChanged : null,
+                activeColor: SumAcademyTheme.white,
+                activeTrackColor: SumAcademyTheme.success,
+                inactiveThumbColor: SumAcademyTheme.white,
+                inactiveTrackColor: SumAcademyTheme.brandBluePale,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

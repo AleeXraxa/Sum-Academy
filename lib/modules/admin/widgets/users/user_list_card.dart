@@ -36,6 +36,8 @@ class UserListCard extends StatelessWidget {
         ? SumAcademyTheme.successLight
         : SumAcademyTheme.errorLight;
     final muted = textColor.withOpacityFloat(0.6);
+    final controller = Get.find<AdminController>();
+    final isSelf = controller.isCurrentUser(user.uid);
 
     return Container(
       padding: EdgeInsets.all(14.r),
@@ -91,9 +93,9 @@ class UserListCard extends StatelessWidget {
                       user.email,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: muted,
-                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: muted),
                     ),
                   ],
                 ),
@@ -131,7 +133,7 @@ class UserListCard extends StatelessWidget {
               ActionIconButton(
                 icon: Icons.delete_outline_rounded,
                 color: SumAcademyTheme.error,
-                onPressed: () => _confirmDelete(context),
+                onPressed: () => _confirmDelete(context, isSelf),
               ),
             ],
           ),
@@ -140,8 +142,16 @@ class UserListCard extends StatelessWidget {
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context) async {
+  Future<void> _confirmDelete(BuildContext context, bool isSelf) async {
     final controller = Get.find<AdminController>();
+    if (isSelf) {
+      await showErrorDialog(
+        context,
+        title: 'Not allowed',
+        message: 'You cannot delete your own account.',
+      );
+      return;
+    }
     final confirmed = await showConfirmationDialog(
       context,
       title: 'Delete user',
@@ -178,6 +188,8 @@ class UserListCard extends StatelessWidget {
       }
     }
   }
+
+  // Role changes are handled from the Edit User dialog.
 }
 
 Color _roleColor(String role) {

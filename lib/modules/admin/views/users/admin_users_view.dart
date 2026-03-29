@@ -7,10 +7,11 @@ import 'package:sum_academy/modules/admin/widgets/header/admin_header_row.dart';
 import 'package:sum_academy/modules/admin/widgets/users/add_user_dialog.dart';
 import 'package:sum_academy/modules/admin/widgets/users/user_filter_chip.dart';
 import 'package:sum_academy/modules/admin/widgets/users/users_list.dart';
+import 'package:sum_academy/modules/admin/widgets/users/users_empty_state.dart';
 import 'package:sum_academy/modules/admin/widgets/users/users_skeleton_list.dart';
 import 'package:sum_academy/modules/auth/widgets/auth_text_field.dart';
 
-class AdminUsersView extends StatelessWidget {
+class AdminUsersView extends StatefulWidget {
   final AdminController controller;
   final Color textColor;
   final Color surface;
@@ -27,17 +28,45 @@ class AdminUsersView extends StatelessWidget {
   });
 
   @override
+  State<AdminUsersView> createState() => _AdminUsersViewState();
+}
+
+class _AdminUsersViewState extends State<AdminUsersView> {
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController()..addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final threshold = 240.0;
+    if (_scrollController.position.extentAfter < threshold) {
+      widget.controller.loadMoreUsers();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ListView(
+      controller: _scrollController,
       padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 28.h),
       children: [
         AdminHeaderRow(
-          textColor: textColor,
-          userName: userName,
+          textColor: widget.textColor,
+          userName: widget.userName,
           isSearchExpanded: false,
-          onSearchTap: controller.toggleSearch,
-          onSearchClose: controller.closeSearch,
-          searchController: controller.searchController,
+          onSearchTap: widget.controller.toggleSearch,
+          onSearchClose: widget.controller.closeSearch,
+          searchController: widget.controller.searchController,
           showSearch: false,
           showProfile: false,
           showNotifications: false,
@@ -49,7 +78,7 @@ class AdminUsersView extends StatelessWidget {
               child: Text(
                 'User Management',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: textColor,
+                  color: widget.textColor,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -75,24 +104,24 @@ class AdminUsersView extends StatelessWidget {
         ),
         SizedBox(height: 12.h),
         Obx(() {
-          final selectedIndex = controller.userFilterIndex.value;
+          final selectedIndex = widget.controller.userFilterIndex.value;
           return Wrap(
             spacing: 10.w,
             runSpacing: 10.h,
             children: [
-              for (var i = 0; i < controller.userFilters.length; i++)
+              for (var i = 0; i < widget.controller.userFilters.length; i++)
                 UserFilterChip(
-                  label: controller.userFilters[i].label,
-                  count: controller.userFilters[i].count,
+                  label: widget.controller.userFilters[i].label,
+                  count: widget.controller.userFilters[i].count,
                   isSelected: selectedIndex == i,
-                  onTap: () => controller.setUserFilterIndex(i),
+                  onTap: () => widget.controller.setUserFilterIndex(i),
                 ),
             ],
           );
         }),
         SizedBox(height: 14.h),
         AuthTextField(
-          controller: controller.searchController,
+          controller: widget.controller.searchController,
           label: 'Search',
           hint: 'Search by email',
           icon: Icons.search_rounded,
@@ -101,29 +130,52 @@ class AdminUsersView extends StatelessWidget {
         ),
         SizedBox(height: 16.h),
         Obx(() {
-          if (controller.isUsersLoading.value) {
+          if (widget.controller.isUsersLoading.value) {
             return const UsersSkeletonList(count: 5);
           }
 
-          final filtered = controller.filteredUsers;
+          final filtered = widget.controller.filteredUsers;
           if (filtered.isEmpty) {
-            return Padding(
-              padding: EdgeInsets.symmetric(vertical: 24.h),
-              child: Text(
-                'No users found.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: textColor.withOpacityFloat(0.6),
+            if (widget.controller.searchQuery.value.isNotEmpty) {
+              return Padding(
+                padding: EdgeInsets.symmetric(vertical: 24.h),
+                child: Text(
+                  'No users match your search.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: widget.textColor.withOpacityFloat(0.6),
+                  ),
                 ),
-              ),
+              );
+            }
+            return UsersEmptyState(
+              onAddUser: () => showAddUserDialog(context),
             );
           }
 
           return UsersList(
             users: filtered,
-            surface: surface,
-            textColor: textColor,
-            isDark: isDark,
+            surface: widget.surface,
+            textColor: widget.textColor,
+            isDark: widget.isDark,
           );
+        }),
+        Obx(() {
+          if (widget.controller.isUsersLoadingMore.value) {
+            return Padding(
+              padding: EdgeInsets.only(top: 16.h),
+              child: Center(
+                child: SizedBox(
+                  width: 24.r,
+                  height: 24.r,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    color: SumAcademyTheme.brandBlue,
+                  ),
+                ),
+              ),
+            );
+          }
+          return const SizedBox.shrink();
         }),
       ],
     );

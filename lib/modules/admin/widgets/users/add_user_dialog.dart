@@ -22,6 +22,7 @@ class AddUserDialog extends StatefulWidget {
 }
 
 class _AddUserDialogState extends State<AddUserDialog> {
+  final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -49,10 +50,12 @@ class _AddUserDialogState extends State<AddUserDialog> {
       ),
       child: SingleChildScrollView(
         padding: EdgeInsets.all(20.r),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             Row(
               children: [
                 Expanded(
@@ -78,6 +81,15 @@ class _AddUserDialogState extends State<AddUserDialog> {
               hintText: 'Full Name',
               keyboardType: TextInputType.name,
               textInputAction: TextInputAction.next,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Full name is required';
+                }
+                if (value.trim().length < 3) {
+                  return 'Enter at least 3 characters';
+                }
+                return null;
+              },
             ),
             SizedBox(height: 14.h),
             const DialogLabel(text: 'Email'),
@@ -87,6 +99,17 @@ class _AddUserDialogState extends State<AddUserDialog> {
               hintText: 'you@example.com',
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
+              validator: (value) {
+                final input = value?.trim() ?? '';
+                if (input.isEmpty) {
+                  return 'Email is required';
+                }
+                final regex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
+                if (!regex.hasMatch(input)) {
+                  return 'Enter a valid email';
+                }
+                return null;
+              },
             ),
             SizedBox(height: 14.h),
             const DialogLabel(text: 'Password'),
@@ -96,6 +119,16 @@ class _AddUserDialogState extends State<AddUserDialog> {
               hintText: 'Enter secure password',
               obscureText: _obscure,
               textInputAction: TextInputAction.next,
+              validator: (value) {
+                final input = value?.trim() ?? '';
+                if (input.isEmpty) {
+                  return 'Password is required';
+                }
+                if (input.length < 6) {
+                  return 'Minimum 6 characters';
+                }
+                return null;
+              },
               suffixIcon: IconButton(
                 onPressed: () => setState(() => _obscure = !_obscure),
                 icon: Icon(
@@ -113,6 +146,16 @@ class _AddUserDialogState extends State<AddUserDialog> {
               hintText: '03003425849',
               keyboardType: TextInputType.phone,
               textInputAction: TextInputAction.next,
+              validator: (value) {
+                final input = value?.trim() ?? '';
+                if (input.isEmpty) {
+                  return null;
+                }
+                if (input.length < 7) {
+                  return 'Enter a valid phone number';
+                }
+                return null;
+              },
             ),
             SizedBox(height: 14.h),
             const DialogLabel(text: 'Role'),
@@ -164,7 +207,8 @@ class _AddUserDialogState extends State<AddUserDialog> {
                 ),
               ],
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -177,11 +221,11 @@ class _AddUserDialogState extends State<AddUserDialog> {
     final phone = _phoneController.text.trim();
     final role = _role ?? 'Student';
 
-    if (fullName.isEmpty || email.isEmpty || password.isEmpty) {
+    if (!(_formKey.currentState?.validate() ?? false)) {
       await showErrorDialog(
         Get.context ?? context,
         title: 'Required',
-        message: 'Please fill in all required fields.',
+        message: 'Please fix the highlighted fields.',
       );
       return;
     }

@@ -75,7 +75,7 @@ class _SkeletonCard extends StatelessWidget {
   }
 }
 
-class _SkeletonBox extends StatelessWidget {
+class _SkeletonBox extends StatefulWidget {
   final double? width;
   final double? height;
   final double? size;
@@ -91,14 +91,46 @@ class _SkeletonBox extends StatelessWidget {
   });
 
   @override
+  State<_SkeletonBox> createState() => _SkeletonBoxState();
+}
+
+class _SkeletonBoxState extends State<_SkeletonBox>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      width: size ?? width,
-      height: size ?? height,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(radius),
-      ),
+    final base = widget.color;
+    final highlight = Color.lerp(base, SumAcademyTheme.white, 0.6) ?? base;
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final color = Color.lerp(base, highlight, _controller.value) ?? base;
+        return Container(
+          width: widget.size ?? widget.width,
+          height: widget.size ?? widget.height,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(widget.radius),
+          ),
+        );
+      },
     );
   }
 }

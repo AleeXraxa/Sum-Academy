@@ -6,8 +6,22 @@ class AdminUserService {
 
   final ApiClient _client;
 
-  Future<List<AdminUser>> fetchUsers() async {
-    final response = await _client.get('/admin/users', auth: true);
+  Future<List<AdminUser>> fetchUsers({
+    int page = 1,
+    int limit = 20,
+    String? search,
+    String? role,
+  }) async {
+    final response = await _client.get(
+      '/admin/users',
+      auth: true,
+      query: {
+        'page': page,
+        'limit': limit,
+        'search': search,
+        'role': role,
+      },
+    );
     final data = response['data'];
     final users = _extractList(data);
     return users.map(AdminUser.fromJson).toList();

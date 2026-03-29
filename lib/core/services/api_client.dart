@@ -11,40 +11,48 @@ class ApiClient {
 
   final http.Client _client;
 
-  Future<Map<String, dynamic>> get(String path, {bool auth = false}) async {
-    return _send('GET', path, auth: auth);
+  Future<Map<String, dynamic>> get(
+    String path, {
+    bool auth = false,
+    Map<String, dynamic>? query,
+  }) async {
+    return _send('GET', path, auth: auth, query: query);
   }
 
   Future<Map<String, dynamic>> post(
     String path, {
     Map<String, dynamic>? body,
     bool auth = false,
+    Map<String, dynamic>? query,
   }) async {
-    return _send('POST', path, body: body, auth: auth);
+    return _send('POST', path, body: body, auth: auth, query: query);
   }
 
   Future<Map<String, dynamic>> put(
     String path, {
     Map<String, dynamic>? body,
     bool auth = false,
+    Map<String, dynamic>? query,
   }) async {
-    return _send('PUT', path, body: body, auth: auth);
+    return _send('PUT', path, body: body, auth: auth, query: query);
   }
 
   Future<Map<String, dynamic>> patch(
     String path, {
     Map<String, dynamic>? body,
     bool auth = false,
+    Map<String, dynamic>? query,
   }) async {
-    return _send('PATCH', path, body: body, auth: auth);
+    return _send('PATCH', path, body: body, auth: auth, query: query);
   }
 
   Future<Map<String, dynamic>> delete(
     String path, {
     Map<String, dynamic>? body,
     bool auth = false,
+    Map<String, dynamic>? query,
   }) async {
-    return _send('DELETE', path, body: body, auth: auth);
+    return _send('DELETE', path, body: body, auth: auth, query: query);
   }
 
   Future<Map<String, dynamic>> _send(
@@ -52,9 +60,10 @@ class ApiClient {
     String path, {
     Map<String, dynamic>? body,
     bool auth = false,
+    Map<String, dynamic>? query,
   }) async {
     final headers = await _headers(auth: auth);
-    final uri = _buildUri(path);
+    final uri = _buildUri(path, query);
     final encodedBody = body == null ? null : jsonEncode(body);
 
     http.Response response;
@@ -90,9 +99,20 @@ class ApiClient {
     return _handleResponse(response);
   }
 
-  Uri _buildUri(String path) {
+  Uri _buildUri(String path, Map<String, dynamic>? query) {
     final normalized = path.startsWith('/') ? path : '/$path';
-    return Uri.parse('$baseUrl$normalized');
+    final uri = Uri.parse('$baseUrl$normalized');
+    if (query == null || query.isEmpty) {
+      return uri;
+    }
+    final params = <String, String>{};
+    query.forEach((key, value) {
+      if (value == null) return;
+      final stringValue = value.toString().trim();
+      if (stringValue.isEmpty) return;
+      params[key] = stringValue;
+    });
+    return uri.replace(queryParameters: params);
   }
 
   Future<Map<String, String>> _headers({required bool auth}) async {
