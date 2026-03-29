@@ -151,15 +151,15 @@ class AdminController extends GetxController {
     }
   }
 
-  Future<void> deleteUser(String uid) async {
+  Future<AdminActionResult> deleteUser(String uid) async {
     try {
       await _userService.deleteUser(uid);
       users.removeWhere((user) => user.uid == uid);
-      Get.snackbar('User removed', 'User deleted successfully.');
+      return const AdminActionResult.success('User deleted successfully.');
     } on ApiException catch (e) {
-      Get.snackbar('Delete failed', e.message);
+      return AdminActionResult.failure(_formatApiError(e));
     } catch (_) {
-      Get.snackbar('Delete failed', 'Please try again.');
+      return const AdminActionResult.failure('Please try again.');
     }
   }
 

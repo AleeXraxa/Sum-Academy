@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
+import 'package:sum_academy/core/widgets/confirmation_dialog.dart';
+import 'package:sum_academy/core/widgets/status_dialogs.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_controller.dart';
 import 'package:sum_academy/modules/admin/widgets/users/action_icon_button.dart';
 import 'package:sum_academy/modules/admin/widgets/users/edit_user_dialog.dart';
@@ -140,26 +142,40 @@ class UserListCard extends StatelessWidget {
 
   Future<void> _confirmDelete(BuildContext context) async {
     final controller = Get.find<AdminController>();
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete user'),
-        content: const Text('Are you sure you want to delete this user?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+    final confirmed = await showConfirmationDialog(
+      context,
+      title: 'Delete user',
+      message: 'Are you sure you want to delete this user?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      confirmColor: SumAcademyTheme.error,
     );
 
     if (confirmed == true) {
-      await controller.deleteUser(user.uid);
+      final overlayContext = Get.context ?? context;
+      showLoadingDialog(overlayContext, message: 'Deleting user...');
+      late final result;
+      try {
+        result = await controller.deleteUser(user.uid);
+      } finally {
+        if (Navigator.of(overlayContext, rootNavigator: true).canPop()) {
+          Navigator.of(overlayContext, rootNavigator: true).pop();
+        }
+      }
+
+      if (result.isSuccess) {
+        await showSuccessDialog(
+          overlayContext,
+          title: 'User Deleted',
+          message: result.message,
+        );
+      } else {
+        await showErrorDialog(
+          overlayContext,
+          title: 'Delete Failed',
+          message: result.message,
+        );
+      }
     }
   }
 }
