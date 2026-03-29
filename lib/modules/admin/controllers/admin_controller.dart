@@ -15,7 +15,7 @@ class AdminController extends GetxController {
     ),
     const AdminStat(
       label: 'Total Revenue',
-      value: '₹ 2.4M',
+      value: 'PKR 2.4M',
       icon: Icons.account_balance_wallet_rounded,
       tone: SumAcademyTheme.successLight,
       iconColor: SumAcademyTheme.success,
@@ -53,6 +53,33 @@ class AdminController extends GetxController {
       icon: Icons.campaign_outlined,
     ),
   ];
+
+  final recentActivities = <AdminActivity>[
+    const AdminActivity(
+      title: 'New student enrolled',
+      subtitle: 'Ayesha Khan joined Biology 101',
+      time: '2m ago',
+      icon: Icons.how_to_reg_rounded,
+      tone: SumAcademyTheme.infoLight,
+      iconColor: SumAcademyTheme.info,
+    ),
+    const AdminActivity(
+      title: 'Payment received',
+      subtitle: 'PKR 12,000 for Class IX',
+      time: '18m ago',
+      icon: Icons.payments_rounded,
+      tone: SumAcademyTheme.successLight,
+      iconColor: SumAcademyTheme.success,
+    ),
+    const AdminActivity(
+      title: 'Course updated',
+      subtitle: 'Added 4 new lectures to Physics',
+      time: '1h ago',
+      icon: Icons.menu_book_rounded,
+      tone: SumAcademyTheme.accentOrangePale,
+      iconColor: SumAcademyTheme.accentOrange,
+    ),
+  ];
 }
 
 class AdminStat {
@@ -80,5 +107,23 @@ class AdminAction {
     required this.title,
     required this.subtitle,
     required this.icon,
+  });
+}
+
+class AdminActivity {
+  final String title;
+  final String subtitle;
+  final String time;
+  final IconData icon;
+  final Color tone;
+  final Color iconColor;
+
+  const AdminActivity({
+    required this.title,
+    required this.subtitle,
+    required this.time,
+    required this.icon,
+    required this.tone,
+    required this.iconColor,
   });
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_controller.dart';
 
@@ -78,7 +79,26 @@ class AdminDashboardView extends GetView<AdminController> {
                   ),
                 ),
               ),
+              SizedBox(height: 20.h),
+              Text(
+                'Recent activity',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: textColor,
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
               SizedBox(height: 12.h),
+              ...controller.recentActivities.map(
+                (activity) => Padding(
+                  padding: EdgeInsets.only(bottom: 12.h),
+                  child: _ActivityCard(
+                    activity: activity,
+                    surface: surface,
+                    textColor: textColor,
+                  ),
+                ),
+              ),
+              SizedBox(height: 8.h),
               Container(
                 padding: EdgeInsets.all(16.r),
                 decoration: BoxDecoration(
@@ -182,10 +202,11 @@ class _HeaderRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Sum Academy',
-                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      color: textColor,
-                      fontSize: 22.sp,
+                'SUM ACADEMY',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: textColor.withOpacityFloat(0.55),
+                      letterSpacing: 3.6,
+                      fontWeight: FontWeight.w600,
                     ),
               ),
               SizedBox(height: 10.h),
@@ -333,10 +354,13 @@ class _StatCard extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               stat.value,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: textColor,
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: GoogleFonts.poppins(
+                textStyle: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: textColor,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 20.sp,
+                    ),
+              ),
             ),
           ),
           SizedBox(height: 6.h),
@@ -414,6 +438,89 @@ class _ActionCard extends StatelessWidget {
           Icon(
             Icons.chevron_right_rounded,
             color: textColor.withOpacityFloat(0.4),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActivityCard extends StatelessWidget {
+  final AdminActivity activity;
+  final Color surface;
+  final Color textColor;
+
+  const _ActivityCard({
+    required this.activity,
+    required this.surface,
+    required this.textColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = textColor.withOpacityFloat(0.6);
+
+    return Container(
+      padding: EdgeInsets.all(16.r),
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
+        border: Border.all(color: SumAcademyTheme.brandBluePale),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40.r,
+            height: 40.r,
+            decoration: BoxDecoration(
+              color: activity.tone,
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: Icon(
+              activity.icon,
+              color: activity.iconColor,
+              size: 20.sp,
+            ),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  activity.title,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: textColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  activity.subtitle,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: muted,
+                      ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: 8.w),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+            decoration: BoxDecoration(
+              color: SumAcademyTheme.surfaceTertiary,
+              borderRadius: BorderRadius.circular(
+                SumAcademyTheme.radiusPill.r,
+              ),
+            ),
+            child: Text(
+              activity.time,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: muted,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
           ),
         ],
       ),
