@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
+import 'package:sum_academy/core/widgets/status_dialogs.dart';
+import 'package:sum_academy/modules/admin/controllers/admin_controller.dart';
 import 'package:sum_academy/modules/admin/widgets/users/user_dialog_fields.dart';
 
 Future<void> showAddUserDialog(BuildContext context) {
@@ -25,6 +28,7 @@ class _AddUserDialogState extends State<AddUserDialog> {
   final _phoneController = TextEditingController();
   String? _role;
   bool _obscure = true;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -142,7 +146,7 @@ class _AddUserDialogState extends State<AddUserDialog> {
                 ),
                 SizedBox(width: 12.w),
                 ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: _isSubmitting ? null : _handleCreate,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: SumAcademyTheme.brandBlue,
                     foregroundColor: SumAcademyTheme.white,
@@ -164,5 +168,62 @@ class _AddUserDialogState extends State<AddUserDialog> {
         ),
       ),
     );
+  }
+
+  Future<void> _handleCreate() async {
+    final fullName = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final phone = _phoneController.text.trim();
+    final role = _role ?? 'Student';
+
+    if (fullName.isEmpty || email.isEmpty || password.isEmpty) {
+      await showErrorDialog(
+        Get.context ?? context,
+        title: 'Required',
+        message: 'Please fill in all required fields.',
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    final controller = Get.find<AdminController>();
+    final overlayContext = Get.context ?? context;
+    showLoadingDialog(overlayContext, message: 'Creating user...');
+    late final result;
+    try {
+      result = await controller.createUser(
+        fullName: fullName,
+        email: email,
+        password: password,
+        phone: phone,
+        role: role,
+      );
+    } finally {
+      if (Navigator.of(overlayContext, rootNavigator: true).canPop()) {
+        Navigator.of(overlayContext, rootNavigator: true).pop();
+      }
+    }
+    if (mounted) {
+      setState(() => _isSubmitting = false);
+    }
+    if (!mounted) {
+      return;
+    }
+
+    if (result.isSuccess) {
+      Navigator.of(context).pop();
+      await showSuccessDialog(
+        overlayContext,
+        title: 'User Created',
+        message: result.message,
+      );
+    } else {
+      await showErrorDialog(
+        overlayContext,
+        title: 'Create Failed',
+        message: result.message,
+      );
+    }
   }
 }

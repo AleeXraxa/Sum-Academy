@@ -1,106 +1,195 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sum_academy/app/theme.dart';
+import 'package:sum_academy/core/services/api_exception.dart';
+import 'package:sum_academy/modules/admin/models/admin_user.dart';
+import 'package:sum_academy/modules/admin/services/admin_user_service.dart';
 import 'package:sum_academy/modules/auth/services/auth_service.dart';
 
 class AdminController extends GetxController {
   final RxString userName = 'User'.obs;
   final AuthService _authService = Get.find<AuthService>();
+  final AdminUserService _userService = Get.find<AdminUserService>();
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   final RxInt navIndex = 0.obs;
   final RxBool isSearchExpanded = false.obs;
   final TextEditingController searchController = TextEditingController();
   final RxInt userFilterIndex = 0.obs;
+  final RxBool isUsersLoading = false.obs;
+  final RxString searchQuery = ''.obs;
 
-  final List<AdminUserFilter> userFilters = const [
-    AdminUserFilter(label: 'All', count: 8),
-    AdminUserFilter(label: 'Students', count: 5),
-    AdminUserFilter(label: 'Teachers', count: 1),
-    AdminUserFilter(label: 'Admins', count: 2),
-  ];
+  final RxList<AdminUserFilter> userFilters = <AdminUserFilter>[].obs;
 
-  final List<AdminUserRow> users = const [
-    AdminUserRow(
-      initials: 'MA',
-      name: 'Muhammad Asim',
-      email: 'sasim4589@gmail.com',
-      role: 'Admin',
-      joinedDate: '29-Mar-2026',
-      isActive: true,
-      avatarColor: SumAcademyTheme.adminPurple,
-    ),
-    AdminUserRow(
-      initials: 'AK',
-      name: 'Ayesha Khan',
-      email: 'ayesha.khan@example.com',
-      role: 'Student',
-      joinedDate: '29-Mar-2026',
-      isActive: true,
-      avatarColor: SumAcademyTheme.studentGreen,
-    ),
-    AdminUserRow(
-      initials: 'AR',
-      name: 'Ali Raza',
-      email: 'ali.raza@example.com',
-      role: 'Student',
-      joinedDate: '29-Mar-2026',
-      isActive: true,
-      avatarColor: SumAcademyTheme.studentGreen,
-    ),
-    AdminUserRow(
-      initials: 'DA',
-      name: 'Dev Alee',
-      email: 'dev-alee@outlook.com',
-      role: 'Admin',
-      joinedDate: '29-Mar-2026',
-      isActive: true,
-      avatarColor: SumAcademyTheme.adminPurple,
-    ),
-    AdminUserRow(
-      initials: 'WA',
-      name: 'Waseem Ali',
-      email: 'alikhansoomro252@gmail.com',
-      role: 'Student',
-      joinedDate: '29-Mar-2026',
-      isActive: true,
-      avatarColor: SumAcademyTheme.studentGreen,
-    ),
-    AdminUserRow(
-      initials: 'SM',
-      name: 'Sir Mansoor Ahmed Mangi',
-      email: 'mansoormangi04@gmail.com',
-      role: 'Teacher',
-      joinedDate: '29-Mar-2026',
-      isActive: true,
-      avatarColor: SumAcademyTheme.teacherBlue,
-    ),
-    AdminUserRow(
-      initials: 'IA',
-      name: 'Ihsan Ali',
-      email: 'ihsanalichandio02@gmail.com',
-      role: 'Student',
-      joinedDate: '29-Mar-2026',
-      isActive: true,
-      avatarColor: SumAcademyTheme.studentGreen,
-    ),
-    AdminUserRow(
-      initials: 'A',
-      name: 'Admin',
-      email: 'admin@gmail.com',
-      role: 'Admin',
-      joinedDate: '17-Mar-2026',
-      isActive: true,
-      avatarColor: SumAcademyTheme.adminPurple,
-    ),
-  ];
+  final RxList<AdminUserRow> users = <AdminUserRow>[].obs;
 
   @override
   void onInit() {
     super.onInit();
     _loadUserName();
+    searchController.addListener(_onSearchChanged);
+    ever<List<AdminUserRow>>(users, (_) => _refreshUserFilters());
+    _refreshUserFilters();
+    fetchUsers();
   }
 
   Future<void> _loadUserName() async {
     userName.value = await _authService.getCurrentUserName();
+  }
+
+  Future<void> fetchUsers() async {
+    isUsersLoading.value = true;
+    try {
+      await Future.delayed(const Duration(milliseconds: 1500));
+      await _ensureAuthReady();
+      final result = await _userService.fetchUsers();
+      users
+        ..clear()
+        ..addAll(result.map(_toRow));
+      _refreshUserFilters();
+    } on ApiException catch (e) {
+      if (e.statusCode == 401) {
+        final retry = await _retryFetchUsers();
+        if (retry) {
+          return;
+        }
+      }
+      Get.snackbar('Users', _formatApiError(e));
+    } catch (_) {
+      Get.snackbar('Users', 'Failed to load users.');
+    } finally {
+      isUsersLoading.value = false;
+    }
+  }
+
+  Future<void> _ensureAuthReady() async {
+    if (_firebaseAuth.currentUser != null) return;
+    try {
+      await _firebaseAuth
+          .authStateChanges()
+          .firstWhere((user) => user != null)
+          .timeout(const Duration(seconds: 5));
+    } catch (_) {
+      if (_firebaseAuth.currentUser == null) {
+        throw ApiException('Authentication required.', statusCode: 401);
+      }
+    }
+  }
+
+  Future<bool> _retryFetchUsers() async {
+    try {
+      await Future.delayed(const Duration(milliseconds: 900));
+      await _ensureAuthReady();
+      final result = await _userService.fetchUsers();
+      users
+        ..clear()
+        ..addAll(result.map(_toRow));
+      _refreshUserFilters();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<AdminActionResult> createUser({
+    required String fullName,
+    required String email,
+    required String password,
+    required String phone,
+    required String role,
+  }) async {
+    try {
+      final created = await _userService.createUser(
+        fullName: fullName,
+        email: email,
+        password: password,
+        phone: phone,
+        role: role,
+      );
+      users.insert(0, _toRow(created));
+      return const AdminActionResult.success('User created successfully.');
+    } on ApiException catch (e) {
+      return AdminActionResult.failure(_formatApiError(e));
+    } catch (_) {
+      return const AdminActionResult.failure('Please try again.');
+    }
+  }
+
+  Future<AdminActionResult> updateUser({
+    required String uid,
+    required String fullName,
+    required String email,
+    required String phone,
+    required String role,
+    required bool isActive,
+  }) async {
+    try {
+      final updated = await _userService.updateUser(
+        uid: uid,
+        fullName: fullName,
+        email: email,
+        phone: phone,
+        role: role,
+        isActive: isActive,
+      );
+      final resolved = updated.copyWith(
+        name: fullName,
+        email: email,
+        phone: phone,
+        role: role,
+        isActive: isActive,
+      );
+      final index = users.indexWhere((user) => user.uid == uid);
+      if (index != -1) {
+        users[index] = _toRow(resolved);
+      }
+      return const AdminActionResult.success('User updated successfully.');
+    } on ApiException catch (e) {
+      return AdminActionResult.failure(_formatApiError(e));
+    } catch (_) {
+      return const AdminActionResult.failure('Please try again.');
+    }
+  }
+
+  Future<void> deleteUser(String uid) async {
+    try {
+      await _userService.deleteUser(uid);
+      users.removeWhere((user) => user.uid == uid);
+      Get.snackbar('User removed', 'User deleted successfully.');
+    } on ApiException catch (e) {
+      Get.snackbar('Delete failed', e.message);
+    } catch (_) {
+      Get.snackbar('Delete failed', 'Please try again.');
+    }
+  }
+
+  Future<void> updateUserRole({
+    required String uid,
+    required String role,
+  }) async {
+    try {
+      final updated = await _userService.updateUserRole(uid: uid, role: role);
+      final index = users.indexWhere((user) => user.uid == uid);
+      if (index != -1) {
+        users[index] = _toRow(updated);
+      }
+      Get.snackbar('Role updated', 'User role updated.');
+    } on ApiException catch (e) {
+      Get.snackbar('Role update failed', e.message);
+    } catch (_) {
+      Get.snackbar('Role update failed', 'Please try again.');
+    }
+  }
+
+  Future<void> resetUserDevice(String uid) async {
+    try {
+      await _userService.resetUserDevice(uid);
+      Get.snackbar('Device reset', 'User device reset successfully.');
+    } on ApiException catch (e) {
+      Get.snackbar('Reset failed', e.message);
+    } catch (_) {
+      Get.snackbar('Reset failed', 'Please try again.');
+    }
   }
 
   void setNavIndex(int index) {
@@ -128,8 +217,51 @@ class AdminController extends GetxController {
 
   @override
   void onClose() {
+    searchController.removeListener(_onSearchChanged);
     searchController.dispose();
     super.onClose();
+  }
+
+  void _onSearchChanged() {
+    searchQuery.value = searchController.text.trim();
+  }
+
+  void _refreshUserFilters() {
+    final all = users.length;
+    final students = users.where(_isStudent).length;
+    final teachers = users.where(_isTeacher).length;
+    final admins = users.where(_isAdmin).length;
+
+    userFilters.assignAll([
+      AdminUserFilter(label: 'All', count: all),
+      AdminUserFilter(label: 'Students', count: students),
+      AdminUserFilter(label: 'Teachers', count: teachers),
+      AdminUserFilter(label: 'Admins', count: admins),
+    ]);
+  }
+
+  List<AdminUserRow> get filteredUsers {
+    final query = searchQuery.value.toLowerCase();
+    final selected = userFilterIndex.value;
+
+    Iterable<AdminUserRow> list = users;
+    if (selected == 1) {
+      list = list.where(_isStudent);
+    } else if (selected == 2) {
+      list = list.where(_isTeacher);
+    } else if (selected == 3) {
+      list = list.where(_isAdmin);
+    }
+
+    if (query.isNotEmpty) {
+      list = list.where(
+        (user) =>
+            user.name.toLowerCase().contains(query) ||
+            user.email.toLowerCase().contains(query),
+      );
+    }
+
+    return list.toList();
   }
 
   final stats = <AdminStat>[
@@ -209,6 +341,32 @@ class AdminController extends GetxController {
   ];
 }
 
+String _formatApiError(ApiException exception) {
+  final base = exception.message;
+  final errors = exception.errors;
+  if (errors == null || errors.isEmpty) {
+    return base;
+  }
+
+  final details = <String>[];
+  errors.forEach((key, value) {
+    if (value == null) return;
+    if (value is List) {
+      for (final item in value) {
+        details.add('$key: $item');
+      }
+    } else {
+      details.add('$key: $value');
+    }
+  });
+
+  if (details.isEmpty) {
+    return base;
+  }
+
+  return '$base\n${details.join('\n')}';
+}
+
 class AdminUserFilter {
   final String label;
   final int count;
@@ -217,23 +375,69 @@ class AdminUserFilter {
 }
 
 class AdminUserRow {
+  final String uid;
   final String initials;
   final String name;
   final String email;
   final String role;
-  final String joinedDate;
+  final String phone;
   final bool isActive;
   final Color avatarColor;
 
   const AdminUserRow({
+    required this.uid,
     required this.initials,
     required this.name,
     required this.email,
     required this.role,
-    required this.joinedDate,
+    required this.phone,
     required this.isActive,
     required this.avatarColor,
   });
+}
+
+AdminUserRow _toRow(AdminUser user) {
+  final initials = _buildInitials(
+    user.name.isNotEmpty ? user.name : user.email,
+  );
+  return AdminUserRow(
+    uid: user.uid,
+    initials: initials,
+    name: user.name.isNotEmpty ? user.name : user.email,
+    email: user.email,
+    role: _formatRole(user.role),
+    phone: user.phone,
+    isActive: user.isActive,
+    avatarColor: _roleColor(user.role),
+  );
+}
+
+String _formatRole(String role) {
+  if (role.isEmpty) return 'Student';
+  return '${role[0].toUpperCase()}${role.substring(1).toLowerCase()}';
+}
+
+String _buildInitials(String value) {
+  final parts = value.trim().split(RegExp(r'\s+'));
+  if (parts.isEmpty) return 'U';
+  if (parts.length == 1) {
+    final word = parts.first;
+    return (word.length >= 2 ? word.substring(0, 2) : word).toUpperCase();
+  }
+  return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+}
+
+Color _roleColor(String role) {
+  switch (role.toLowerCase()) {
+    case 'admin':
+      return SumAcademyTheme.adminPurple;
+    case 'teacher':
+      return SumAcademyTheme.teacherBlue;
+    case 'student':
+      return SumAcademyTheme.studentGreen;
+    default:
+      return SumAcademyTheme.brandBlue;
+  }
 }
 
 class AdminStat {
@@ -281,3 +485,18 @@ class AdminActivity {
     required this.iconColor,
   });
 }
+
+class AdminActionResult {
+  final bool isSuccess;
+  final String message;
+
+  const AdminActionResult._(this.isSuccess, this.message);
+
+  const AdminActionResult.success(this.message) : isSuccess = true;
+
+  const AdminActionResult.failure(this.message) : isSuccess = false;
+}
+
+bool _isStudent(AdminUserRow user) => user.role.toLowerCase() == 'student';
+bool _isTeacher(AdminUserRow user) => user.role.toLowerCase() == 'teacher';
+bool _isAdmin(AdminUserRow user) => user.role.toLowerCase() == 'admin';

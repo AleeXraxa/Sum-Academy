@@ -12,6 +12,8 @@ class AdminHeaderRow extends StatelessWidget {
   final VoidCallback onSearchClose;
   final TextEditingController searchController;
   final bool showSearch;
+  final bool showProfile;
+  final bool showNotifications;
 
   const AdminHeaderRow({
     super.key,
@@ -22,6 +24,8 @@ class AdminHeaderRow extends StatelessWidget {
     required this.onSearchClose,
     required this.searchController,
     this.showSearch = true,
+    this.showProfile = true,
+    this.showNotifications = true,
   });
 
   @override
@@ -37,6 +41,8 @@ class AdminHeaderRow extends StatelessWidget {
         userName: userName,
         initials: initials,
         showSearchIcon: false,
+        showProfile: showProfile,
+        showNotifications: showNotifications,
         onSearchTap: onSearchTap,
       );
     }
@@ -96,6 +102,8 @@ class AdminHeaderRow extends StatelessWidget {
               userName: userName,
               initials: initials,
               showSearchIcon: true,
+              showProfile: showProfile,
+              showNotifications: showNotifications,
               onSearchTap: onSearchTap,
             ),
     );
@@ -109,6 +117,8 @@ Widget _buildHeaderContent({
   required String userName,
   required String initials,
   required bool showSearchIcon,
+  required bool showProfile,
+  required bool showNotifications,
   required VoidCallback onSearchTap,
 }) {
   return Row(
@@ -145,44 +155,46 @@ Widget _buildHeaderContent({
                 ),
               ],
             ),
-            SizedBox(height: 10.h),
-            Row(
-              children: [
-                Container(
-                  width: 44.r,
-                  height: 44.r,
-                  decoration: BoxDecoration(
-                    color: SumAcademyTheme.brandBlue,
-                    borderRadius: BorderRadius.circular(
-                      SumAcademyTheme.radiusAvatar.r,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: SumAcademyTheme.brandBlue.withOpacityFloat(0.2),
-                        blurRadius: 16.r,
-                        offset: Offset(0, 8.h),
+            if (showProfile) ...[
+              SizedBox(height: 10.h),
+              Row(
+                children: [
+                  Container(
+                    width: 44.r,
+                    height: 44.r,
+                    decoration: BoxDecoration(
+                      color: SumAcademyTheme.brandBlue,
+                      borderRadius: BorderRadius.circular(
+                        SumAcademyTheme.radiusAvatar.r,
                       ),
-                    ],
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    initials,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: SumAcademyTheme.white,
-                      fontWeight: FontWeight.w700,
+                      boxShadow: [
+                        BoxShadow(
+                          color: SumAcademyTheme.brandBlue.withOpacityFloat(0.2),
+                          blurRadius: 16.r,
+                          offset: Offset(0, 8.h),
+                        ),
+                      ],
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      initials,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: SumAcademyTheme.white,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                ),
-                SizedBox(width: 12.w),
-                Text(
-                  userName,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: textColor,
-                    fontWeight: FontWeight.w600,
+                  SizedBox(width: 12.w),
+                  Text(
+                    userName,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: textColor,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
@@ -196,10 +208,11 @@ Widget _buildHeaderContent({
             ),
             SizedBox(width: 10.w),
           ],
-          const AdminHeaderIconButton(
-            icon: Icons.notifications_none_rounded,
-            tooltip: 'Notifications',
-          ),
+          if (showNotifications)
+            const AdminHeaderIconButton(
+              icon: Icons.notifications_none_rounded,
+              tooltip: 'Notifications',
+            ),
         ],
       ),
     ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_controller.dart';
 import 'package:sum_academy/modules/admin/widgets/users/action_icon_button.dart';
@@ -110,27 +111,16 @@ class UserListCard extends StatelessWidget {
                 color: statusColor,
                 background: statusTone,
               ),
-              SizedBox(width: 10.w),
-              Transform.scale(
-                scale: 0.85,
-                child: Switch(
-                  value: isActive,
-                  onChanged: (_) {},
-                  activeColor: SumAcademyTheme.white,
-                  activeTrackColor: SumAcademyTheme.success,
-                  inactiveThumbColor: SumAcademyTheme.white,
-                  inactiveTrackColor: SumAcademyTheme.brandBluePale,
-                ),
-              ),
               const Spacer(),
               ActionIconButton(
                 icon: Icons.edit_outlined,
                 color: SumAcademyTheme.brandBlue,
                 onPressed: () => showEditUserDialog(
                   context,
+                  uid: user.uid,
                   name: user.name,
                   email: user.email,
-                  phone: '',
+                  phone: user.phone,
                   role: user.role,
                   isActive: user.isActive,
                 ),
@@ -139,13 +129,38 @@ class UserListCard extends StatelessWidget {
               ActionIconButton(
                 icon: Icons.delete_outline_rounded,
                 color: SumAcademyTheme.error,
-                onPressed: () {},
+                onPressed: () => _confirmDelete(context),
               ),
             ],
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final controller = Get.find<AdminController>();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete user'),
+        content: const Text('Are you sure you want to delete this user?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await controller.deleteUser(user.uid);
+    }
   }
 }
 

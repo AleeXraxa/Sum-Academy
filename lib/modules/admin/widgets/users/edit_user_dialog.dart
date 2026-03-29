@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
+import 'package:sum_academy/core/widgets/status_dialogs.dart';
+import 'package:sum_academy/modules/admin/controllers/admin_controller.dart';
 import 'package:sum_academy/modules/admin/widgets/users/user_dialog_fields.dart';
 
 Future<void> showEditUserDialog(
   BuildContext context, {
+  required String uid,
   required String name,
   required String email,
   String phone = '',
@@ -15,6 +19,7 @@ Future<void> showEditUserDialog(
     context: context,
     barrierColor: Colors.black.withOpacity(0.45),
     builder: (context) => EditUserDialog(
+      uid: uid,
       name: name,
       email: email,
       phone: phone,
@@ -25,6 +30,7 @@ Future<void> showEditUserDialog(
 }
 
 class EditUserDialog extends StatefulWidget {
+  final String uid;
   final String name;
   final String email;
   final String phone;
@@ -33,6 +39,7 @@ class EditUserDialog extends StatefulWidget {
 
   const EditUserDialog({
     super.key,
+    required this.uid,
     required this.name,
     required this.email,
     required this.phone,
@@ -50,6 +57,7 @@ class _EditUserDialogState extends State<EditUserDialog> {
   late final TextEditingController _phoneController;
   late bool _isActive;
   String? _role;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -164,7 +172,7 @@ class _EditUserDialogState extends State<EditUserDialog> {
                 ),
                 SizedBox(width: 12.w),
                 ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: _isSubmitting ? null : _handleUpdate,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: SumAcademyTheme.brandBlue,
                     foregroundColor: SumAcademyTheme.white,
@@ -186,6 +194,63 @@ class _EditUserDialogState extends State<EditUserDialog> {
         ),
       ),
     );
+  }
+
+  Future<void> _handleUpdate() async {
+    final fullName = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final phone = _phoneController.text.trim();
+    final role = _role ?? widget.role;
+
+    if (fullName.isEmpty || email.isEmpty) {
+      await showErrorDialog(
+        Get.context ?? context,
+        title: 'Required',
+        message: 'Please fill in all required fields.',
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    final controller = Get.find<AdminController>();
+    final overlayContext = Get.context ?? context;
+    showLoadingDialog(overlayContext, message: 'Updating user...');
+    late final result;
+    try {
+      result = await controller.updateUser(
+        uid: widget.uid,
+        fullName: fullName,
+        email: email,
+        phone: phone,
+        role: role,
+        isActive: _isActive,
+      );
+    } finally {
+      if (Navigator.of(overlayContext, rootNavigator: true).canPop()) {
+        Navigator.of(overlayContext, rootNavigator: true).pop();
+      }
+    }
+    if (mounted) {
+      setState(() => _isSubmitting = false);
+    }
+    if (!mounted) {
+      return;
+    }
+
+    if (result.isSuccess) {
+      Navigator.of(context).pop();
+      await showSuccessDialog(
+        overlayContext,
+        title: 'User Updated',
+        message: result.message,
+      );
+    } else {
+      await showErrorDialog(
+        overlayContext,
+        title: 'Update Failed',
+        message: result.message,
+      );
+    }
   }
 }
 

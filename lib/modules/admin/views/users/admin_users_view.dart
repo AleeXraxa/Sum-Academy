@@ -7,6 +7,7 @@ import 'package:sum_academy/modules/admin/widgets/header/admin_header_row.dart';
 import 'package:sum_academy/modules/admin/widgets/users/add_user_dialog.dart';
 import 'package:sum_academy/modules/admin/widgets/users/user_filter_chip.dart';
 import 'package:sum_academy/modules/admin/widgets/users/users_list.dart';
+import 'package:sum_academy/modules/admin/widgets/users/users_skeleton_list.dart';
 import 'package:sum_academy/modules/auth/widgets/auth_text_field.dart';
 
 class AdminUsersView extends StatelessWidget {
@@ -38,6 +39,8 @@ class AdminUsersView extends StatelessWidget {
           onSearchClose: controller.closeSearch,
           searchController: controller.searchController,
           showSearch: false,
+          showProfile: false,
+          showNotifications: false,
         ),
         SizedBox(height: 18.h),
         Row(
@@ -97,12 +100,31 @@ class AdminUsersView extends StatelessWidget {
           onFieldSubmitted: (_) {},
         ),
         SizedBox(height: 16.h),
-        UsersList(
-          users: controller.users,
-          surface: surface,
-          textColor: textColor,
-          isDark: isDark,
-        ),
+        Obx(() {
+          if (controller.isUsersLoading.value) {
+            return const UsersSkeletonList(count: 5);
+          }
+
+          final filtered = controller.filteredUsers;
+          if (filtered.isEmpty) {
+            return Padding(
+              padding: EdgeInsets.symmetric(vertical: 24.h),
+              child: Text(
+                'No users found.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: textColor.withOpacityFloat(0.6),
+                ),
+              ),
+            );
+          }
+
+          return UsersList(
+            users: filtered,
+            surface: surface,
+            textColor: textColor,
+            isDark: isDark,
+          );
+        }),
       ],
     );
   }
