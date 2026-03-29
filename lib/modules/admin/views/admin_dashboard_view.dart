@@ -2,37 +2,77 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_controller.dart';
+import 'package:sum_academy/modules/admin/widgets/admin_sidebar.dart';
+import 'package:sum_academy/modules/auth/bindings/login_binding.dart';
+import 'package:sum_academy/modules/auth/services/auth_service.dart';
+import 'package:sum_academy/modules/auth/views/login_view.dart';
 
 class AdminDashboardView extends GetView<AdminController> {
   const AdminDashboardView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white;
-    final textColor = isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
+    return Obx(() {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      final surface =
+          isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white;
+      final textColor =
+          isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
+      final authService = Get.find<AuthService>();
+      final name = controller.userName.value;
 
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: isDark
-                ? const [SumAcademyTheme.darkBase, SumAcademyTheme.darkSurface]
-                : const [
-                    SumAcademyTheme.surfaceSecondary,
-                    SumAcademyTheme.surfaceTertiary,
-                  ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
+      return Scaffold(
+        drawer: AdminSidebar(
+          role: 'admin',
+          userName: name,
+          activeItem: 'Dashboard',
+          onItemSelected: (label) async {
+            if (label != 'Logout') {
+              return;
+            }
+            await authService.logout();
+            Get.offAll(
+              () => const LoginView(),
+              binding: LoginBinding(),
+            );
+          },
         ),
-        child: SafeArea(
-          child: ListView(
-            padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 28.h),
-            children: [
-              _HeaderRow(textColor: textColor, userName: controller.userName),
+        bottomNavigationBar: CurvedNavigationBar(
+          index: controller.navIndex.value,
+          height: 60.h,
+          backgroundColor: Colors.transparent,
+          color: SumAcademyTheme.brandBlue,
+          buttonBackgroundColor: SumAcademyTheme.darkBase,
+          animationDuration: const Duration(milliseconds: 280),
+          items: [
+            Icon(Icons.dashboard_rounded, color: SumAcademyTheme.white, size: 22.sp),
+            Icon(Icons.group_rounded, color: SumAcademyTheme.white, size: 22.sp),
+            Icon(Icons.payments_rounded, color: SumAcademyTheme.white, size: 22.sp),
+            Icon(Icons.settings_rounded, color: SumAcademyTheme.white, size: 22.sp),
+          ],
+          onTap: controller.setNavIndex,
+        ),
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isDark
+                  ? const [SumAcademyTheme.darkBase, SumAcademyTheme.darkSurface]
+                  : const [
+                      SumAcademyTheme.surfaceSecondary,
+                      SumAcademyTheme.surfaceTertiary,
+                    ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+          child: SafeArea(
+            child: ListView(
+              padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 28.h),
+              children: [
+              _HeaderRow(textColor: textColor, userName: name),
               SizedBox(height: 18.h),
               Text(
                 'Overview',
@@ -173,11 +213,12 @@ class AdminDashboardView extends GetView<AdminController> {
                   ],
                 ),
               ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
-    );
+      );
+    });
   }
 }
 
@@ -201,13 +242,31 @@ class _HeaderRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'SUM ACADEMY',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: textColor.withOpacityFloat(0.55),
-                      letterSpacing: 3.6,
-                      fontWeight: FontWeight.w600,
-                    ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Builder(
+                    builder: (context) {
+                      return IconButton(
+                        onPressed: () => Scaffold.of(context).openDrawer(),
+                        icon: Icon(
+                          Icons.menu_rounded,
+                          color: textColor.withOpacityFloat(0.7),
+                          size: 20.sp,
+                        ),
+                      );
+                    },
+                  ),
+                  SizedBox(width: 6.w),
+                  Text(
+                    'SUM ACADEMY',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: textColor.withOpacityFloat(0.55),
+                          letterSpacing: 3.6,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ],
               ),
               SizedBox(height: 10.h),
               Row(

@@ -1,9 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
+import 'package:sum_academy/modules/auth/services/auth_service.dart';
 
 class AdminController extends GetxController {
-  final String userName = 'Admin';
+  final RxString userName = 'User'.obs;
+  final AuthService _authService = Get.find<AuthService>();
+  final RxInt navIndex = 0.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    userName.value = await _authService.getCurrentUserName();
+  }
+
+  void setNavIndex(int index) {
+    navIndex.value = index;
+  }
 
   final stats = <AdminStat>[
     const AdminStat(

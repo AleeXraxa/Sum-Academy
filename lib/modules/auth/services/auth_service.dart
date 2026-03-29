@@ -133,6 +133,42 @@ class AuthService {
 
   User? get currentUser => _auth.currentUser;
 
+  Future<String> getCurrentUserName() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      return 'User';
+    }
+
+    try {
+      final studentSnap =
+          await _firestore.collection('students').doc(user.uid).get();
+      final name = studentSnap.data()?['fullName']?.toString().trim() ?? '';
+      if (name.isNotEmpty) {
+        return name;
+      }
+    } catch (_) {}
+
+    try {
+      final userSnap = await _firestore.collection('users').doc(user.uid).get();
+      final name = userSnap.data()?['fullName']?.toString().trim() ?? '';
+      if (name.isNotEmpty) {
+        return name;
+      }
+    } catch (_) {}
+
+    final displayName = (user.displayName ?? '').trim();
+    if (displayName.isNotEmpty) {
+      return displayName;
+    }
+
+    final email = (user.email ?? '').trim();
+    if (email.isNotEmpty) {
+      return email.split('@').first;
+    }
+
+    return 'User';
+  }
+
   Future<void> _upsertUserDocuments({
     required User user,
     required bool isNewUser,
