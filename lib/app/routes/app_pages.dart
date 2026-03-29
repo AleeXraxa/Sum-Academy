@@ -1,5 +1,7 @@
 import 'package:get/get.dart';
 import 'package:sum_academy/app/routes/app_routes.dart';
+import 'package:sum_academy/modules/admin/bindings/admin_binding.dart';
+import 'package:sum_academy/modules/admin/views/admin_dashboard_view.dart';
 import 'package:sum_academy/modules/auth/bindings/forgot_password_binding.dart';
 import 'package:sum_academy/modules/auth/bindings/login_binding.dart';
 import 'package:sum_academy/modules/auth/bindings/register_binding.dart';
@@ -44,6 +46,16 @@ class AppPages {
       name: AppRoutes.home,
       page: () => const HomeView(),
       binding: HomeBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.student,
+      page: () => const HomeView(),
+      binding: HomeBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.admin,
+      page: () => const AdminDashboardView(),
+      binding: AdminBinding(),
     ),
   ];
 }

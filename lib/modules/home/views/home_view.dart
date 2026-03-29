@@ -184,7 +184,7 @@ class _HeaderRow extends StatelessWidget {
           child: Text(
             'SA',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.white,
+                  color: SumAcademyTheme.white,
                   fontWeight: FontWeight.w700,
                 ),
           ),
@@ -213,7 +213,7 @@ class _SearchBar extends StatelessWidget {
               color: SumAcademyTheme.brandBlue,
               borderRadius: BorderRadius.circular(SumAcademyTheme.radiusButton.r),
             ),
-            child: Icon(Icons.tune, color: Colors.white, size: 20.sp),
+            child: Icon(Icons.tune, color: SumAcademyTheme.white, size: 20.sp),
           ),
         ),
       ),
@@ -322,7 +322,7 @@ class _BottomCard extends StatelessWidget {
                 Text(
                   'Ready for the next track?',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Colors.white,
+                        color: SumAcademyTheme.white,
                         fontWeight: FontWeight.w700,
                       ),
                 ),
@@ -330,7 +330,7 @@ class _BottomCard extends StatelessWidget {
                 Text(
                   'Explore the full Sum Academy catalog and build your path.',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.white.withOpacityFloat(0.8),
+                        color: SumAcademyTheme.white.withOpacityFloat(0.8),
                       ),
                 ),
               ],

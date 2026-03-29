@@ -21,8 +21,9 @@ class CourseCard extends StatelessWidget {
     final textColor = isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
     final chipColor = isDark
         ? SumAcademyTheme.darkElevated.withOpacityFloat(0.7)
-        : Colors.white.withOpacityFloat(0.55);
-    final pillColor = isDark ? SumAcademyTheme.darkElevated : Colors.white;
+        : SumAcademyTheme.white.withOpacityFloat(0.55);
+    final pillColor =
+        isDark ? SumAcademyTheme.darkElevated : SumAcademyTheme.white;
 
     return Container(
       width: 240.w,
@@ -98,8 +99,10 @@ class CourseCard extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: course.progress,
                 minHeight: 6.h,
-                backgroundColor: Colors.white.withOpacityFloat(isDark ? 0.2 : 0.4),
-                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                backgroundColor:
+                    SumAcademyTheme.white.withOpacityFloat(isDark ? 0.2 : 0.4),
+                valueColor:
+                    const AlwaysStoppedAnimation<Color>(SumAcademyTheme.white),
               ),
             ),
             SizedBox(height: 10.h),

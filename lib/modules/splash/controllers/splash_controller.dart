@@ -1,6 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/animation.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/routes/app_routes.dart';
+import 'package:sum_academy/modules/admin/bindings/admin_binding.dart';
+import 'package:sum_academy/modules/admin/views/admin_dashboard_view.dart';
+import 'package:sum_academy/modules/auth/services/auth_service.dart';
+import 'package:sum_academy/modules/home/bindings/home_binding.dart';
+import 'package:sum_academy/modules/home/views/home_view.dart';
 
 class SplashController extends GetxController
     with GetSingleTickerProviderStateMixin {
@@ -11,6 +18,9 @@ class SplashController extends GetxController
   late final Animation<Offset> nameSlide;
   late final Animation<double> nameFade;
   late final Animation<double> loaderFade;
+  Timer? _redirectTimer;
+
+  AuthService get _authService => Get.find<AuthService>();
 
   @override
   void onInit() {
@@ -67,15 +77,43 @@ class SplashController extends GetxController
 
     animationController.forward();
 
-    Future.delayed(const Duration(milliseconds: 5000), () {
-      if (Get.currentRoute == AppRoutes.splash) {
-        Get.offAllNamed(AppRoutes.onboarding);
-      }
+    _redirectTimer = Timer(const Duration(milliseconds: 5000), () {
+      _handleRedirect();
     });
+  }
+
+  Future<void> _handleRedirect() async {
+    if (isClosed || Get.currentRoute != AppRoutes.splash) {
+      return;
+    }
+
+    final user = _authService.currentUser;
+    if (user == null) {
+      Get.offAllNamed(AppRoutes.onboarding);
+      return;
+    }
+
+    final role = await _authService.getCurrentUserRole();
+    if (isClosed) {
+      return;
+    }
+
+    if (role == 'admin') {
+      Get.offAll(
+        () => const AdminDashboardView(),
+        binding: AdminBinding(),
+      );
+    } else {
+      Get.offAll(
+        () => const HomeView(),
+        binding: HomeBinding(),
+      );
+    }
   }
 
   @override
   void onClose() {
+    _redirectTimer?.cancel();
     animationController.dispose();
     super.onClose();
   }

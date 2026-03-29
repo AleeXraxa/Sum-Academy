@@ -17,8 +17,10 @@ class CategoryChip extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final selectedColor =
         isDark ? SumAcademyTheme.brandBlueLight : SumAcademyTheme.brandBlue;
-    final selectedText = isDark ? SumAcademyTheme.darkBase : Colors.white;
-    final unselectedBg = isDark ? SumAcademyTheme.darkSurface : Colors.white;
+    final selectedText =
+        isDark ? SumAcademyTheme.darkBase : SumAcademyTheme.white;
+    final unselectedBg =
+        isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white;
     final borderColor =
         isDark ? SumAcademyTheme.darkBorder : SumAcademyTheme.brandBluePale;
     final textColor = isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;

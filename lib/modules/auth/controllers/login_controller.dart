@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sum_academy/app/routes/app_routes.dart';
+import 'package:sum_academy/modules/admin/bindings/admin_binding.dart';
+import 'package:sum_academy/modules/admin/views/admin_dashboard_view.dart';
 import 'package:sum_academy/modules/auth/services/auth_service.dart';
+import 'package:sum_academy/modules/home/bindings/home_binding.dart';
+import 'package:sum_academy/modules/home/views/home_view.dart';
 
 class LoginController extends GetxController {
   final formKey = GlobalKey<FormState>();
@@ -35,7 +39,7 @@ class LoginController extends GetxController {
     try {
       await _authService.signIn(email: email, password: password);
       Get.snackbar('Login success', 'Welcome back!');
-      // Get.offAllNamed(AppRoutes.home);
+      await _routeByRole();
     } on FirebaseAuthException catch (e) {
       final message = _friendlyAuthMessage(e);
       Get.snackbar('Login failed', message);
@@ -59,7 +63,7 @@ class LoginController extends GetxController {
         return;
       }
       Get.snackbar('Login success', 'Welcome back!');
-      // Get.offAllNamed(AppRoutes.home);
+      await _routeByRole();
     } on FirebaseAuthException catch (e) {
       final message = _friendlyAuthMessage(e);
       Get.snackbar('Login failed', message);
@@ -97,6 +101,21 @@ class LoginController extends GetxController {
 
   void goToForgotPassword() {
     Get.toNamed(AppRoutes.forgotPassword);
+  }
+
+  Future<void> _routeByRole() async {
+    final role = await _authService.getCurrentUserRole();
+    if (role == 'admin') {
+      Get.offAll(
+        () => const AdminDashboardView(),
+        binding: AdminBinding(),
+      );
+    } else {
+      Get.offAll(
+        () => const HomeView(),
+        binding: HomeBinding(),
+      );
+    }
   }
 
   @override

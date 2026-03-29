@@ -85,8 +85,10 @@ class AuthService {
     });
 
     batch.set(studentsRef, {
-      'fullName': name,
+      'fullName': name.trim(),
       'uid': uid,
+      'email': email.trim(),
+      'createdAt': FieldValue.serverTimestamp(),
       'address': '',
       'caste': '',
       'district': '',
@@ -109,6 +111,27 @@ class AuthService {
   Future<void> verifyOtp({required String code}) async {
     await Future<void>.delayed(const Duration(milliseconds: 700));
   }
+
+  Future<void> logout() async {
+    await _googleSignIn.signOut();
+    await _auth.signOut();
+  }
+
+  Future<String> getCurrentUserRole() async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      return 'student';
+    }
+
+    final snapshot = await _firestore.collection('users').doc(uid).get();
+    final role = snapshot.data()?['role'];
+    if (role is String && role.trim().isNotEmpty) {
+      return role.trim().toLowerCase();
+    }
+    return 'student';
+  }
+
+  User? get currentUser => _auth.currentUser;
 
   Future<void> _upsertUserDocuments({
     required User user,
@@ -152,8 +175,10 @@ class AuthService {
     if (shouldCreateStudents) {
       final displayName = (user.displayName ?? '').trim();
       batch.set(studentsRef, {
-        'fullName': displayName.isNotEmpty ? displayName : 'Student',
+        'fullName': displayName,
         'uid': user.uid,
+        'email': (user.email ?? '').trim(),
+        'createdAt': FieldValue.serverTimestamp(),
         'address': '',
         'caste': '',
         'district': '',
