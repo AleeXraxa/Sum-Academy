@@ -7,6 +7,91 @@ class AdminController extends GetxController {
   final RxString userName = 'User'.obs;
   final AuthService _authService = Get.find<AuthService>();
   final RxInt navIndex = 0.obs;
+  final RxBool isSearchExpanded = false.obs;
+  final TextEditingController searchController = TextEditingController();
+  final RxInt userFilterIndex = 0.obs;
+
+  final List<AdminUserFilter> userFilters = const [
+    AdminUserFilter(label: 'All', count: 8),
+    AdminUserFilter(label: 'Students', count: 5),
+    AdminUserFilter(label: 'Teachers', count: 1),
+    AdminUserFilter(label: 'Admins', count: 2),
+  ];
+
+  final List<AdminUserRow> users = const [
+    AdminUserRow(
+      initials: 'MA',
+      name: 'Muhammad Asim',
+      email: 'sasim4589@gmail.com',
+      role: 'Admin',
+      joinedDate: '29-Mar-2026',
+      isActive: true,
+      avatarColor: SumAcademyTheme.adminPurple,
+    ),
+    AdminUserRow(
+      initials: 'AK',
+      name: 'Ayesha Khan',
+      email: 'ayesha.khan@example.com',
+      role: 'Student',
+      joinedDate: '29-Mar-2026',
+      isActive: true,
+      avatarColor: SumAcademyTheme.studentGreen,
+    ),
+    AdminUserRow(
+      initials: 'AR',
+      name: 'Ali Raza',
+      email: 'ali.raza@example.com',
+      role: 'Student',
+      joinedDate: '29-Mar-2026',
+      isActive: true,
+      avatarColor: SumAcademyTheme.studentGreen,
+    ),
+    AdminUserRow(
+      initials: 'DA',
+      name: 'Dev Alee',
+      email: 'dev-alee@outlook.com',
+      role: 'Admin',
+      joinedDate: '29-Mar-2026',
+      isActive: true,
+      avatarColor: SumAcademyTheme.adminPurple,
+    ),
+    AdminUserRow(
+      initials: 'WA',
+      name: 'Waseem Ali',
+      email: 'alikhansoomro252@gmail.com',
+      role: 'Student',
+      joinedDate: '29-Mar-2026',
+      isActive: true,
+      avatarColor: SumAcademyTheme.studentGreen,
+    ),
+    AdminUserRow(
+      initials: 'SM',
+      name: 'Sir Mansoor Ahmed Mangi',
+      email: 'mansoormangi04@gmail.com',
+      role: 'Teacher',
+      joinedDate: '29-Mar-2026',
+      isActive: true,
+      avatarColor: SumAcademyTheme.teacherBlue,
+    ),
+    AdminUserRow(
+      initials: 'IA',
+      name: 'Ihsan Ali',
+      email: 'ihsanalichandio02@gmail.com',
+      role: 'Student',
+      joinedDate: '29-Mar-2026',
+      isActive: true,
+      avatarColor: SumAcademyTheme.studentGreen,
+    ),
+    AdminUserRow(
+      initials: 'A',
+      name: 'Admin',
+      email: 'admin@gmail.com',
+      role: 'Admin',
+      joinedDate: '17-Mar-2026',
+      isActive: true,
+      avatarColor: SumAcademyTheme.adminPurple,
+    ),
+  ];
 
   @override
   void onInit() {
@@ -20,6 +105,31 @@ class AdminController extends GetxController {
 
   void setNavIndex(int index) {
     navIndex.value = index;
+    if (isSearchExpanded.value) {
+      closeSearch();
+    }
+  }
+
+  void setUserFilterIndex(int index) {
+    userFilterIndex.value = index;
+  }
+
+  void toggleSearch() {
+    isSearchExpanded.value = !isSearchExpanded.value;
+    if (!isSearchExpanded.value) {
+      searchController.clear();
+    }
+  }
+
+  void closeSearch() {
+    isSearchExpanded.value = false;
+    searchController.clear();
+  }
+
+  @override
+  void onClose() {
+    searchController.dispose();
+    super.onClose();
   }
 
   final stats = <AdminStat>[
@@ -97,6 +207,33 @@ class AdminController extends GetxController {
       iconColor: SumAcademyTheme.accentOrange,
     ),
   ];
+}
+
+class AdminUserFilter {
+  final String label;
+  final int count;
+
+  const AdminUserFilter({required this.label, required this.count});
+}
+
+class AdminUserRow {
+  final String initials;
+  final String name;
+  final String email;
+  final String role;
+  final String joinedDate;
+  final bool isActive;
+  final Color avatarColor;
+
+  const AdminUserRow({
+    required this.initials,
+    required this.name,
+    required this.email,
+    required this.role,
+    required this.joinedDate,
+    required this.isActive,
+    required this.avatarColor,
+  });
 }
 
 class AdminStat {

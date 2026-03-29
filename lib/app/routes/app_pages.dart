@@ -1,7 +1,7 @@
 import 'package:get/get.dart';
 import 'package:sum_academy/app/routes/app_routes.dart';
 import 'package:sum_academy/modules/admin/bindings/admin_binding.dart';
-import 'package:sum_academy/modules/admin/views/admin_dashboard_view.dart';
+import 'package:sum_academy/modules/admin/views/admin_shell_view.dart';
 import 'package:sum_academy/modules/auth/bindings/forgot_password_binding.dart';
 import 'package:sum_academy/modules/auth/bindings/login_binding.dart';
 import 'package:sum_academy/modules/auth/bindings/register_binding.dart';
@@ -54,7 +54,7 @@ class AppPages {
     ),
     GetPage(
       name: AppRoutes.admin,
-      page: () => const AdminDashboardView(),
+      page: () => const AdminShellView(),
       binding: AdminBinding(),
     ),
   ];

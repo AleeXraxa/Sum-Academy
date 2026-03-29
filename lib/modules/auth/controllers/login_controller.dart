@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sum_academy/app/routes/app_routes.dart';
 import 'package:sum_academy/modules/admin/bindings/admin_binding.dart';
-import 'package:sum_academy/modules/admin/views/admin_dashboard_view.dart';
+import 'package:sum_academy/modules/admin/views/admin_shell_view.dart';
 import 'package:sum_academy/modules/auth/services/auth_service.dart';
 import 'package:sum_academy/modules/home/bindings/home_binding.dart';
 import 'package:sum_academy/modules/home/views/home_view.dart';
@@ -107,7 +107,7 @@ class LoginController extends GetxController {
     final role = await _authService.getCurrentUserRole();
     if (role == 'admin') {
       Get.offAll(
-        () => const AdminDashboardView(),
+        () => const AdminShellView(),
         binding: AdminBinding(),
       );
     } else {
