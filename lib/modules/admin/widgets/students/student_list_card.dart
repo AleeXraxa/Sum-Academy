@@ -5,22 +5,21 @@ import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/core/utils/network_error.dart';
 import 'package:sum_academy/core/widgets/confirmation_dialog.dart';
 import 'package:sum_academy/core/widgets/status_dialogs.dart';
-import 'package:sum_academy/modules/admin/controllers/admin_controller.dart';
+import 'package:sum_academy/modules/admin/controllers/admin_student_controller.dart';
+import 'package:sum_academy/modules/admin/widgets/students/student_profile_dialog.dart';
+import 'package:sum_academy/modules/admin/widgets/students/edit_student_dialog.dart';
 import 'package:sum_academy/modules/admin/widgets/users/action_icon_button.dart';
-import 'package:sum_academy/modules/admin/widgets/users/edit_user_dialog.dart';
-import 'package:sum_academy/modules/admin/widgets/users/user_profile_dialog.dart';
-import 'package:sum_academy/modules/admin/widgets/users/role_pill.dart';
 import 'package:sum_academy/modules/admin/widgets/users/status_pill.dart';
 
-class UserListCard extends StatelessWidget {
-  final AdminUserRow user;
+class StudentListCard extends StatelessWidget {
+  final AdminStudentRow student;
   final Color surface;
   final Color borderColor;
   final Color textColor;
 
-  const UserListCard({
+  const StudentListCard({
     super.key,
-    required this.user,
+    required this.student,
     required this.surface,
     required this.borderColor,
     required this.textColor,
@@ -28,26 +27,22 @@ class UserListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final roleColor = _roleColor(user.role);
-    final roleTone = roleColor.withOpacityFloat(0.14);
-    final isActive = user.isActive;
-    final statusColor = isActive
-        ? SumAcademyTheme.success
-        : SumAcademyTheme.error;
-    final statusTone = isActive
-        ? SumAcademyTheme.successLight
-        : SumAcademyTheme.errorLight;
+    final isActive = student.isActive;
+    final statusColor =
+        isActive ? SumAcademyTheme.success : SumAcademyTheme.error;
+    final statusTone =
+        isActive ? SumAcademyTheme.successLight : SumAcademyTheme.errorLight;
     final muted = textColor.withOpacityFloat(0.6);
-    final controller = Get.find<AdminController>();
-    final isSelf = controller.isCurrentUser(user.uid);
+    final controller = Get.find<AdminStudentController>();
+    final isSelf = controller.isCurrentUser(student.uid);
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(18.r),
-        onTap: () => showUserProfileDialog(
+        onTap: () => showStudentProfileDialog(
           context,
-          user: user,
+          student: student,
         ),
         child: Container(
           padding: EdgeInsets.all(14.r),
@@ -72,14 +67,14 @@ class UserListCard extends StatelessWidget {
                     width: 50.r,
                     height: 50.r,
                     decoration: BoxDecoration(
-                      color: user.avatarColor.withOpacityFloat(0.16),
+                      color: student.avatarColor.withOpacityFloat(0.16),
                       shape: BoxShape.circle,
                     ),
                     alignment: Alignment.center,
                     child: Text(
-                      user.initials,
+                      student.initials,
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: user.avatarColor,
+                            color: student.avatarColor,
                             fontWeight: FontWeight.w700,
                           ),
                     ),
@@ -90,7 +85,7 @@ class UserListCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          user.name,
+                          student.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context)
@@ -103,7 +98,7 @@ class UserListCard extends StatelessWidget {
                         ),
                         SizedBox(height: 4.h),
                         Text(
-                          user.email,
+                          student.email,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context)
@@ -113,11 +108,6 @@ class UserListCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                  ),
-                  RolePill(
-                    label: user.role,
-                    color: roleColor,
-                    background: roleTone,
                   ),
                 ],
               ),
@@ -133,21 +123,14 @@ class UserListCard extends StatelessWidget {
                   ActionIconButton(
                     icon: Icons.edit_outlined,
                     color: SumAcademyTheme.brandBlue,
-                    onPressed: () => showEditUserDialog(
+                    onPressed: () => showEditStudentDialog(
                       context,
-                      uid: user.uid,
-                      name: user.name,
-                      email: user.email,
-                      phone: user.phone,
-                      role: user.role,
-                      isActive: user.isActive,
+                      uid: student.uid,
+                      name: student.name,
+                      email: student.email,
+                      phone: student.phone,
+                      isActive: student.isActive,
                     ),
-                  ),
-                  SizedBox(width: 8.w),
-                  ActionIconButton(
-                    icon: Icons.phonelink_erase_outlined,
-                    color: SumAcademyTheme.accentOrange,
-                    onPressed: () => _resetDevice(context, isSelf),
                   ),
                   SizedBox(width: 8.w),
                   ActionIconButton(
@@ -165,7 +148,7 @@ class UserListCard extends StatelessWidget {
   }
 
   Future<void> _confirmDelete(BuildContext context, bool isSelf) async {
-    final controller = Get.find<AdminController>();
+    final controller = Get.find<AdminStudentController>();
     if (isSelf) {
       await showErrorDialog(
         context,
@@ -176,8 +159,8 @@ class UserListCard extends StatelessWidget {
     }
     final confirmed = await showConfirmationDialog(
       context,
-      title: 'Delete user',
-      message: 'Are you sure you want to delete this user?',
+      title: 'Delete student',
+      message: 'Are you sure you want to delete this student?',
       confirmText: 'Delete',
       cancelText: 'Cancel',
       confirmColor: SumAcademyTheme.error,
@@ -185,10 +168,10 @@ class UserListCard extends StatelessWidget {
 
     if (confirmed == true) {
       final overlayContext = Get.context ?? context;
-      showLoadingDialog(overlayContext, message: 'Deleting user...');
+      showLoadingDialog(overlayContext, message: 'Deleting student...');
       late final result;
       try {
-        result = await controller.deleteUser(user.uid);
+        result = await controller.deleteStudent(student.uid);
       } finally {
         if (Navigator.of(overlayContext, rootNavigator: true).canPop()) {
           Navigator.of(overlayContext, rootNavigator: true).pop();
@@ -198,7 +181,7 @@ class UserListCard extends StatelessWidget {
       if (result.isSuccess) {
         await showSuccessDialog(
           overlayContext,
-          title: 'User Deleted',
+          title: 'Student Deleted',
           message: result.message,
         );
       } else {
@@ -216,46 +199,5 @@ class UserListCard extends StatelessWidget {
         );
       }
     }
-  }
-
-  Future<void> _resetDevice(BuildContext context, bool isSelf) async {
-    final controller = Get.find<AdminController>();
-    if (isSelf) {
-      await showErrorDialog(
-        context,
-        title: 'Not allowed',
-        message: 'You cannot reset your own device.',
-      );
-      return;
-    }
-    final overlayContext = Get.context ?? context;
-    showLoadingDialog(overlayContext, message: 'Resetting device...');
-    try {
-      await controller.resetUserDevice(user.uid);
-      await showSuccessDialog(
-        overlayContext,
-        title: 'Device Reset',
-        message: 'Device has been reset successfully.',
-      );
-    } finally {
-      if (Navigator.of(overlayContext, rootNavigator: true).canPop()) {
-        Navigator.of(overlayContext, rootNavigator: true).pop();
-      }
-    }
-  }
-
-  // Role changes are handled from the Edit User dialog.
-}
-
-Color _roleColor(String role) {
-  switch (role.toLowerCase()) {
-    case 'admin':
-      return SumAcademyTheme.adminPurple;
-    case 'teacher':
-      return SumAcademyTheme.teacherBlue;
-    case 'student':
-      return SumAcademyTheme.studentGreen;
-    default:
-      return SumAcademyTheme.brandBlue;
   }
 }

@@ -385,7 +385,6 @@ class AdminController extends GetxController {
   Future<void> resetUserDevice(String uid) async {
     try {
       await _userService.resetUserDevice(uid);
-      Get.snackbar('Device reset', 'User device reset successfully.');
     } on ApiException catch (e) {
       Get.snackbar('Reset failed', e.message);
     } catch (_) {

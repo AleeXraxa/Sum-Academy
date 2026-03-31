@@ -76,12 +76,18 @@ class ApiClient {
           response = await _client.get(uri, headers: headers);
           break;
         case 'POST':
-          response =
-              await _client.post(uri, headers: headers, body: encodedBody);
+          response = await _client.post(
+            uri,
+            headers: headers,
+            body: encodedBody,
+          );
           break;
         case 'PUT':
-          response =
-              await _client.put(uri, headers: headers, body: encodedBody);
+          response = await _client.put(
+            uri,
+            headers: headers,
+            body: encodedBody,
+          );
           break;
         case 'PATCH':
           response = await _client.patch(

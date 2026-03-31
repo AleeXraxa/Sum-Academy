@@ -4,10 +4,12 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_controller.dart';
+import 'package:sum_academy/modules/admin/controllers/admin_student_controller.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_teacher_controller.dart';
 import 'package:sum_academy/modules/admin/utils/admin_navigation.dart';
 import 'package:sum_academy/modules/admin/views/common/admin_placeholder_view.dart';
 import 'package:sum_academy/modules/admin/views/dashboard/admin_dashboard_view.dart';
+import 'package:sum_academy/modules/admin/views/students/admin_students_view.dart';
 import 'package:sum_academy/modules/admin/views/teachers/admin_teachers_view.dart';
 import 'package:sum_academy/modules/admin/views/users/admin_users_view.dart';
 import 'package:sum_academy/modules/admin/widgets/admin_sidebar.dart';
@@ -174,6 +176,14 @@ class _ManagementShell extends StatelessWidget {
       case 'Teachers':
         return AdminTeachersView(
           controller: Get.find<AdminTeacherController>(),
+          textColor: textColor,
+          surface: surface,
+          isDark: isDark,
+          userName: userName,
+        );
+      case 'Students':
+        return AdminStudentsView(
+          controller: Get.find<AdminStudentController>(),
           textColor: textColor,
           surface: surface,
           isDark: isDark,
