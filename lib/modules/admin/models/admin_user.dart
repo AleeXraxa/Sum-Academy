@@ -5,6 +5,8 @@ class AdminUser {
   final String role;
   final String phone;
   final bool isActive;
+  final String subject;
+  final String bio;
 
   const AdminUser({
     required this.uid,
@@ -13,6 +15,8 @@ class AdminUser {
     required this.role,
     required this.phone,
     required this.isActive,
+    required this.subject,
+    required this.bio,
   });
 
   factory AdminUser.fromJson(Map<String, dynamic> json) {
@@ -29,6 +33,9 @@ class AdminUser {
         (json['phone'] ?? json['phoneNumber'] ?? json['mobile'] ?? '')
             .toString();
     final isActive = _readBool(json['isActive'] ?? json['active'] ?? true);
+    final subject = (json['subject'] ?? '').toString();
+    final bio = (json['bio'] ?? json['about'] ?? json['description'] ?? '')
+        .toString();
 
     return AdminUser(
       uid: uid,
@@ -37,6 +44,8 @@ class AdminUser {
       role: role,
       phone: phone,
       isActive: isActive,
+      subject: subject,
+      bio: bio,
     );
   }
 
@@ -57,6 +66,8 @@ class AdminUser {
     String? role,
     String? phone,
     bool? isActive,
+    String? subject,
+    String? bio,
   }) {
     return AdminUser(
       uid: uid ?? this.uid,
@@ -65,6 +76,8 @@ class AdminUser {
       role: role ?? this.role,
       phone: phone ?? this.phone,
       isActive: isActive ?? this.isActive,
+      subject: subject ?? this.subject,
+      bio: bio ?? this.bio,
     );
   }
 }

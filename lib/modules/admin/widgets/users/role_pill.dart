@@ -28,6 +28,8 @@ class RolePill extends StatelessWidget {
           color: color,
           fontWeight: FontWeight.w600,
         ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }

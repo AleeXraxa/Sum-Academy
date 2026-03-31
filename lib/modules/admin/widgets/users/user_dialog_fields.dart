@@ -28,6 +28,12 @@ class DialogTextField extends StatelessWidget {
   final TextInputAction textInputAction;
   final Widget? suffixIcon;
   final String? Function(String?)? validator;
+  final int? maxLines;
+  final int? minLines;
+  final int? maxLength;
+  final ValueChanged<String>? onChanged;
+  final bool enabled;
+  final bool showCounter;
 
   const DialogTextField({
     super.key,
@@ -38,6 +44,12 @@ class DialogTextField extends StatelessWidget {
     this.textInputAction = TextInputAction.next,
     this.suffixIcon,
     this.validator,
+    this.maxLines,
+    this.minLines,
+    this.maxLength,
+    this.onChanged,
+    this.enabled = true,
+    this.showCounter = true,
   });
 
   @override
@@ -50,6 +62,11 @@ class DialogTextField extends StatelessWidget {
       obscureText: obscureText,
       textInputAction: textInputAction,
       validator: validator,
+      maxLines: maxLines ?? 1,
+      minLines: minLines,
+      maxLength: maxLength,
+      onChanged: onChanged,
+      enabled: enabled,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       decoration: InputDecoration(
         hintText: hintText,
@@ -57,6 +74,7 @@ class DialogTextField extends StatelessWidget {
           color: SumAcademyTheme.darkBase.withOpacityFloat(0.45),
           fontSize: 12.sp,
         ),
+        counterText: showCounter ? null : '',
         filled: true,
         fillColor: SumAcademyTheme.white,
         contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),

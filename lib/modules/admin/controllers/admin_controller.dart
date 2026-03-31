@@ -7,7 +7,6 @@ import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/core/services/api_exception.dart';
 import 'package:sum_academy/core/widgets/status_dialogs.dart';
 import 'package:sum_academy/modules/admin/models/admin_activity_payload.dart';
-import 'package:sum_academy/modules/admin/models/admin_stats.dart';
 import 'package:sum_academy/modules/admin/models/admin_user.dart';
 import 'package:sum_academy/modules/admin/services/admin_activity_service.dart';
 import 'package:sum_academy/modules/admin/services/admin_stats_service.dart';
@@ -23,6 +22,7 @@ class AdminController extends GetxController {
   final AdminStatsService _statsService = Get.find<AdminStatsService>();
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   final RxInt navIndex = 0.obs;
+  final RxString managementLabel = 'Users'.obs;
   final RxBool isSearchExpanded = false.obs;
   final TextEditingController searchController = TextEditingController();
   final RxInt userFilterIndex = 0.obs;
@@ -395,8 +395,17 @@ class AdminController extends GetxController {
 
   void setNavIndex(int index) {
     navIndex.value = index;
+    if (index == 1 && !_isManagementLabel(managementLabel.value)) {
+      managementLabel.value = 'Users';
+    }
     if (isSearchExpanded.value) {
       closeSearch();
+    }
+  }
+
+  void setManagementLabel(String label) {
+    if (_isManagementLabel(label)) {
+      managementLabel.value = label;
     }
   }
 
@@ -531,16 +540,21 @@ class AdminController extends GetxController {
     );
     final timeLabel =
         payload.timeLabel ?? _formatRelativeTime(payload.createdAt);
+    final rawTitle = payload.title.isNotEmpty ? payload.title : payload.type;
+    final title = _prettifyLabel(rawTitle);
     final subtitle = payload.subtitle.isNotEmpty
         ? payload.subtitle
-        : (payload.type.isNotEmpty ? payload.type : 'Activity update');
+        : _friendlyActivitySubtitle(title, payload.type);
+    final resolvedUser = _resolveUserName(payload);
     return AdminActivity(
-      title: payload.title,
+      title: title.isNotEmpty ? title : 'Activity update',
       subtitle: subtitle,
       time: timeLabel,
       icon: mapping.icon,
       tone: mapping.tone,
       iconColor: mapping.iconColor,
+      userName: resolvedUser,
+      ipAddress: payload.ipAddress.isNotEmpty ? payload.ipAddress : null,
     );
   }
 
@@ -726,6 +740,8 @@ class AdminActivity {
   final IconData icon;
   final Color tone;
   final Color iconColor;
+  final String? userName;
+  final String? ipAddress;
 
   const AdminActivity({
     required this.title,
@@ -734,6 +750,8 @@ class AdminActivity {
     required this.icon,
     required this.tone,
     required this.iconColor,
+    this.userName,
+    this.ipAddress,
   });
 }
 
@@ -825,4 +843,61 @@ String _formatDate(DateTime date) {
   ];
   final month = months[date.month - 1];
   return '$month ${date.day}, ${date.year}';
+}
+
+String _prettifyLabel(String value) {
+  if (value.trim().isEmpty) return '';
+  var text = value.trim();
+  text = text.replaceAll(RegExp(r'[_-]+'), ' ');
+  text = text.replaceAll(RegExp(r'([a-z])([A-Z])'), r'$1 $2');
+  text = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+  final words = text.split(' ');
+  final capitalized = words
+      .where((word) => word.isNotEmpty)
+      .map((word) => word[0].toUpperCase() + word.substring(1))
+      .join(' ');
+  return capitalized.isNotEmpty ? capitalized : text;
+}
+
+String _friendlyActivitySubtitle(String title, String type) {
+  final merged = '$title $type'.toLowerCase();
+  if (merged.contains('login') && merged.contains('success')) {
+    return 'User signed in successfully.';
+  }
+  if (merged.contains('logout')) {
+    return 'User signed out.';
+  }
+  if (merged.contains('register') || merged.contains('signup')) {
+    return 'A new account was created.';
+  }
+  if (merged.contains('password')) {
+    return 'Password update completed.';
+  }
+  if (merged.contains('payment') || merged.contains('transaction')) {
+    return 'Payment activity recorded.';
+  }
+  if (merged.contains('enroll')) {
+    return 'Enrollment update recorded.';
+  }
+  if (merged.contains('course') || merged.contains('class')) {
+    return 'Course activity updated.';
+  }
+  return 'Activity update';
+}
+
+String? _resolveUserName(AdminActivityPayload payload) {
+  final direct = payload.userName.trim();
+  if (direct.isNotEmpty) {
+    return _prettifyLabel(direct);
+  }
+  final email = payload.email.trim();
+  if (email.isNotEmpty) {
+    return email.split('@').first;
+  }
+  return null;
+}
+
+bool _isManagementLabel(String label) {
+  const labels = ['Users', 'Teachers', 'Students', 'Courses', 'Classes'];
+  return labels.contains(label);
 }

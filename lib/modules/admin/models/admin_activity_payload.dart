@@ -4,6 +4,9 @@ class AdminActivityPayload {
   final String type;
   final DateTime? createdAt;
   final String? timeLabel;
+  final String userName;
+  final String email;
+  final String ipAddress;
 
   const AdminActivityPayload({
     required this.title,
@@ -11,6 +14,9 @@ class AdminActivityPayload {
     required this.type,
     required this.createdAt,
     required this.timeLabel,
+    required this.userName,
+    required this.email,
+    required this.ipAddress,
   });
 
   factory AdminActivityPayload.fromJson(Map<String, dynamic> json) {
@@ -42,6 +48,22 @@ class AdminActivityPayload {
       data,
       const ['timeLabel', 'time_text', 'timeText'],
     );
+    final userName = _readString(
+      data,
+      const ['userName', 'username', 'name', 'user', 'fullName'],
+    );
+    final email = _readString(data, const ['email', 'userEmail']);
+    final ipAddress = _readString(
+      data,
+      const [
+        'ipAddress',
+        'ip',
+        'ip_address',
+        'lastKnownIp',
+        'lastKnownMobileIp',
+        'lastKnownWebIp',
+      ],
+    );
 
     return AdminActivityPayload(
       title: title.isNotEmpty ? title : 'Activity update',
@@ -49,6 +71,9 @@ class AdminActivityPayload {
       type: type,
       createdAt: createdAt,
       timeLabel: timeLabel.isNotEmpty ? timeLabel : null,
+      userName: userName,
+      email: email,
+      ipAddress: ipAddress,
     );
   }
 }

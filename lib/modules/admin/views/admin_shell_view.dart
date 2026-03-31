@@ -4,9 +4,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_controller.dart';
+import 'package:sum_academy/modules/admin/controllers/admin_teacher_controller.dart';
 import 'package:sum_academy/modules/admin/utils/admin_navigation.dart';
 import 'package:sum_academy/modules/admin/views/common/admin_placeholder_view.dart';
 import 'package:sum_academy/modules/admin/views/dashboard/admin_dashboard_view.dart';
+import 'package:sum_academy/modules/admin/views/teachers/admin_teachers_view.dart';
 import 'package:sum_academy/modules/admin/views/users/admin_users_view.dart';
 import 'package:sum_academy/modules/admin/widgets/admin_sidebar.dart';
 import 'package:sum_academy/modules/auth/bindings/login_binding.dart';
@@ -29,8 +31,9 @@ class AdminShellView extends GetView<AdminController> {
       final authService = Get.find<AuthService>();
       final name = controller.userName.value;
       final isSearchExpanded = controller.isSearchExpanded.value;
-
-      final activeLabel = activeLabelForIndex(controller.navIndex.value);
+      final activeLabel = controller.navIndex.value == 1
+          ? controller.managementLabel.value
+          : activeLabelForIndex(controller.navIndex.value);
 
       return Scaffold(
         drawer: AdminSidebar(
@@ -46,6 +49,9 @@ class AdminShellView extends GetView<AdminController> {
 
             final targetIndex = navIndexForLabel(label);
             if (targetIndex != null) {
+              if (targetIndex == 1) {
+                controller.setManagementLabel(label);
+              }
               Get.back();
               controller.setNavIndex(targetIndex);
             }
@@ -110,7 +116,7 @@ class AdminShellView extends GetView<AdminController> {
                   userName: name,
                   isSearchExpanded: isSearchExpanded,
                 ),
-                AdminUsersView(
+                _ManagementShell(
                   controller: controller,
                   textColor: textColor,
                   surface: surface,
@@ -143,5 +149,68 @@ class AdminShellView extends GetView<AdminController> {
         ),
       );
     });
+  }
+}
+
+class _ManagementShell extends StatelessWidget {
+  final AdminController controller;
+  final Color textColor;
+  final Color surface;
+  final bool isDark;
+  final String userName;
+
+  const _ManagementShell({
+    required this.controller,
+    required this.textColor,
+    required this.surface,
+    required this.isDark,
+    required this.userName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final label = controller.managementLabel.value;
+    switch (label) {
+      case 'Teachers':
+        return AdminTeachersView(
+          controller: Get.find<AdminTeacherController>(),
+          textColor: textColor,
+          surface: surface,
+          isDark: isDark,
+          userName: userName,
+        );
+      case 'Users':
+        return AdminUsersView(
+          controller: controller,
+          textColor: textColor,
+          surface: surface,
+          isDark: isDark,
+          userName: userName,
+        );
+      default:
+        return AdminPlaceholderView(
+          controller: controller,
+          textColor: textColor,
+          surface: surface,
+          isDark: isDark,
+          userName: userName,
+          title: label,
+          icon: _managementIcon(label),
+          isSearchExpanded: controller.isSearchExpanded.value,
+        );
+    }
+  }
+}
+
+IconData _managementIcon(String label) {
+  switch (label) {
+    case 'Students':
+      return Icons.school_outlined;
+    case 'Courses':
+      return Icons.menu_book_outlined;
+    case 'Classes':
+      return Icons.class_outlined;
+    default:
+      return Icons.group_outlined;
   }
 }

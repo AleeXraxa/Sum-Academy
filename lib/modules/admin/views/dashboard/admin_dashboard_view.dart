@@ -6,6 +6,7 @@ import 'package:sum_academy/modules/admin/controllers/admin_controller.dart';
 import 'package:sum_academy/modules/admin/views/dashboard/admin_recent_activity_view.dart';
 import 'package:sum_academy/modules/admin/widgets/dashboard/admin_action_card.dart';
 import 'package:sum_academy/modules/admin/widgets/dashboard/admin_activity_card.dart';
+import 'package:sum_academy/modules/admin/widgets/dashboard/activity_detail_sheet.dart';
 import 'package:sum_academy/modules/admin/widgets/dashboard/admin_dashboard_skeleton.dart';
 import 'package:sum_academy/modules/admin/widgets/dashboard/admin_stat_card.dart';
 import 'package:sum_academy/modules/admin/widgets/header/admin_header_row.dart';
@@ -147,15 +148,17 @@ class AdminDashboardView extends StatelessWidget {
                   return Column(
                     children: preview
                         .map(
-                          (activity) => Padding(
-                            padding: EdgeInsets.only(bottom: 12.h),
-                            child: AdminActivityCard(
-                              activity: activity,
-                              surface: surface,
-                              textColor: textColor,
-                            ),
-                          ),
-                        )
+                    (activity) => Padding(
+                      padding: EdgeInsets.only(bottom: 12.h),
+                      child: AdminActivityCard(
+                        activity: activity,
+                        surface: surface,
+                        textColor: textColor,
+                        onTap: () =>
+                            showActivityDetailSheet(context, activity),
+                      ),
+                    ),
+                  )
                         .toList(),
                   );
                 }),

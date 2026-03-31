@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_controller.dart';
 import 'package:sum_academy/modules/admin/widgets/dashboard/admin_activity_card.dart';
+import 'package:sum_academy/modules/admin/widgets/dashboard/activity_detail_sheet.dart';
 
 class AdminRecentActivityView extends GetView<AdminController> {
   const AdminRecentActivityView({super.key});
@@ -247,6 +248,8 @@ class AdminRecentActivityView extends GetView<AdminController> {
                               activity: activity,
                               surface: surface,
                               textColor: textColor,
+                              onTap: () =>
+                                  showActivityDetailSheet(context, activity),
                             ),
                           ),
                         )
