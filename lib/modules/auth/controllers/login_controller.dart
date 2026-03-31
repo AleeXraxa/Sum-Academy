@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sum_academy/app/routes/app_routes.dart';
+import 'package:sum_academy/core/widgets/status_dialogs.dart';
 import 'package:sum_academy/modules/admin/bindings/admin_binding.dart';
 import 'package:sum_academy/modules/admin/views/admin_shell_view.dart';
 import 'package:sum_academy/modules/auth/services/auth_service.dart';
@@ -41,6 +42,10 @@ class LoginController extends GetxController {
       Get.snackbar('Login success', 'Welcome back!');
       await _routeByRole();
     } on FirebaseAuthException catch (e) {
+      if (e.code == 'network-request-failed') {
+        await _showNoInternetDialog();
+        return;
+      }
       final message = _friendlyAuthMessage(e);
       Get.snackbar('Login failed', message);
     } catch (_) {
@@ -65,6 +70,10 @@ class LoginController extends GetxController {
       Get.snackbar('Login success', 'Welcome back!');
       await _routeByRole();
     } on FirebaseAuthException catch (e) {
+      if (e.code == 'network-request-failed') {
+        await _showNoInternetDialog();
+        return;
+      }
       final message = _friendlyAuthMessage(e);
       Get.snackbar('Login failed', message);
     } catch (_) {
@@ -101,6 +110,18 @@ class LoginController extends GetxController {
 
   void goToForgotPassword() {
     Get.toNamed(AppRoutes.forgotPassword);
+  }
+
+  Future<void> _showNoInternetDialog() async {
+    final context = Get.context;
+    if (context == null) {
+      Get.snackbar(
+        'No internet',
+        'Please check your connection and try again.',
+      );
+      return;
+    }
+    await showNoInternetDialog(context);
   }
 
   Future<void> _routeByRole() async {

@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
@@ -68,32 +70,46 @@ class ApiClient {
 
     http.Response response;
 
-    switch (method) {
-      case 'GET':
-        response = await _client.get(uri, headers: headers);
-        break;
-      case 'POST':
-        response = await _client.post(uri, headers: headers, body: encodedBody);
-        break;
-      case 'PUT':
-        response = await _client.put(uri, headers: headers, body: encodedBody);
-        break;
-      case 'PATCH':
-        response = await _client.patch(
-          uri,
-          headers: headers,
-          body: encodedBody,
-        );
-        break;
-      case 'DELETE':
-        response = await _client.delete(
-          uri,
-          headers: headers,
-          body: encodedBody,
-        );
-        break;
-      default:
-        throw ApiException('Unsupported HTTP method: $method');
+    try {
+      switch (method) {
+        case 'GET':
+          response = await _client.get(uri, headers: headers);
+          break;
+        case 'POST':
+          response =
+              await _client.post(uri, headers: headers, body: encodedBody);
+          break;
+        case 'PUT':
+          response =
+              await _client.put(uri, headers: headers, body: encodedBody);
+          break;
+        case 'PATCH':
+          response = await _client.patch(
+            uri,
+            headers: headers,
+            body: encodedBody,
+          );
+          break;
+        case 'DELETE':
+          response = await _client.delete(
+            uri,
+            headers: headers,
+            body: encodedBody,
+          );
+          break;
+        default:
+          throw ApiException('Unsupported HTTP method: $method');
+      }
+    } on SocketException {
+      throw ApiException(
+        'No internet connection. Please check your connection and try again.',
+        statusCode: 0,
+      );
+    } on TimeoutException {
+      throw ApiException(
+        'Network timeout. Please check your connection and try again.',
+        statusCode: 0,
+      );
     }
 
     return _handleResponse(response);

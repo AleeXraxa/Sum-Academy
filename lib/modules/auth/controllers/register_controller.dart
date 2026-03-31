@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:sum_academy/core/widgets/status_dialogs.dart';
 import 'package:sum_academy/modules/admin/bindings/admin_binding.dart';
 import 'package:sum_academy/modules/admin/views/admin_shell_view.dart';
 import 'package:sum_academy/modules/auth/services/auth_service.dart';
@@ -43,6 +44,10 @@ class RegisterController extends GetxController {
       Get.snackbar('Register success', 'Welcome to Sum Academy!');
       await _routeByRole();
     } on FirebaseAuthException catch (e) {
+      if (e.code == 'network-request-failed') {
+        await _showNoInternetDialog();
+        return;
+      }
       Get.snackbar('Register failed', e.message ?? 'Please try again.');
     } catch (_) {
       Get.snackbar('Register failed', 'Please try again.');
@@ -66,6 +71,10 @@ class RegisterController extends GetxController {
       Get.snackbar('Signed in', 'Welcome to Sum Academy!');
       await _routeByRole();
     } on FirebaseAuthException catch (e) {
+      if (e.code == 'network-request-failed') {
+        await _showNoInternetDialog();
+        return;
+      }
       Get.snackbar('Sign-in failed', e.message ?? 'Please try again.');
     } catch (_) {
       Get.snackbar('Sign-in failed', 'Please try again.');
@@ -76,6 +85,18 @@ class RegisterController extends GetxController {
 
   void goToLogin() {
     Get.back();
+  }
+
+  Future<void> _showNoInternetDialog() async {
+    final context = Get.context;
+    if (context == null) {
+      Get.snackbar(
+        'No internet',
+        'Please check your connection and try again.',
+      );
+      return;
+    }
+    await showNoInternetDialog(context);
   }
 
   Future<void> _routeByRole() async {

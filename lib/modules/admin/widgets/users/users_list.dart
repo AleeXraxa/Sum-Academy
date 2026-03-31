@@ -24,18 +24,19 @@ class UsersList extends StatelessWidget {
         ? SumAcademyTheme.darkBorder
         : SumAcademyTheme.brandBluePale;
 
-    return Column(
-      children: List.generate(users.length, (index) {
-        return Padding(
-          padding: EdgeInsets.only(bottom: 12.h),
-          child: UserListCard(
-            user: users[index],
-            surface: surface,
-            borderColor: borderColor,
-            textColor: textColor,
-          ),
+    return ListView.separated(
+      itemCount: users.length,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      separatorBuilder: (_, __) => SizedBox(height: 12.h),
+      itemBuilder: (context, index) {
+        return UserListCard(
+          user: users[index],
+          surface: surface,
+          borderColor: borderColor,
+          textColor: textColor,
         );
-      }),
+      },
     );
   }
 }

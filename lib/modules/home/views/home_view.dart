@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
+import 'package:sum_academy/modules/auth/bindings/login_binding.dart';
+import 'package:sum_academy/modules/auth/services/auth_service.dart';
+import 'package:sum_academy/modules/auth/views/login_view.dart';
 import 'package:sum_academy/modules/home/controllers/home_controller.dart';
 import 'package:sum_academy/modules/home/dialogs/filter_dialog.dart';
 import 'package:sum_academy/modules/home/widgets/category_chip.dart';
@@ -18,6 +21,7 @@ class HomeView extends GetView<HomeController> {
     return Obx(() {
       final dashboard = controller.dashboard.value;
       final isDark = Theme.of(context).brightness == Brightness.dark;
+      final authService = Get.find<AuthService>();
       final stats = [
         _StatEntry(
           label: 'Enrolled',
@@ -55,7 +59,13 @@ class HomeView extends GetView<HomeController> {
               padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 24.h),
               physics: const BouncingScrollPhysics(),
               children: [
-                _HeaderRow(learnerName: dashboard.learnerName),
+                _HeaderRow(
+                  learnerName: dashboard.learnerName,
+                  onLogout: () async {
+                    await authService.logout();
+                    Get.offAll(() => const LoginView(), binding: LoginBinding());
+                  },
+                ),
                 SizedBox(height: 16.h),
                 _SearchBar(onFilterTap: HomeFilterDialog.show),
                 SizedBox(height: 20.h),
@@ -128,14 +138,23 @@ class HomeView extends GetView<HomeController> {
 
 class _HeaderRow extends StatelessWidget {
   final String learnerName;
+  final VoidCallback onLogout;
 
-  const _HeaderRow({required this.learnerName});
+  const _HeaderRow({
+    required this.learnerName,
+    required this.onLogout,
+  });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final badgeColor =
         isDark ? SumAcademyTheme.brandBlueDark : SumAcademyTheme.brandBlue;
+    final actionBorder =
+        isDark ? SumAcademyTheme.darkBorder : SumAcademyTheme.brandBluePale;
+    final actionFill = isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white;
+    final actionIcon =
+        isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,28 +185,64 @@ class _HeaderRow extends StatelessWidget {
             ],
           ),
         ),
-        Container(
-          width: 52.r,
-          height: 52.r,
-          decoration: BoxDecoration(
-            color: badgeColor,
-            borderRadius: BorderRadius.circular(SumAcademyTheme.radiusAvatar.r),
-            boxShadow: [
-              BoxShadow(
-                color: badgeColor.withOpacityFloat(isDark ? 0.28 : 0.2),
-                blurRadius: 18.r,
-                offset: Offset(0, 8.h),
-              ),
-            ],
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            'SA',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: SumAcademyTheme.white,
-                  fontWeight: FontWeight.w700,
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            InkWell(
+              onTap: onLogout,
+              borderRadius:
+                  BorderRadius.circular(SumAcademyTheme.radiusButton.r),
+              child: Container(
+                width: 44.r,
+                height: 44.r,
+                decoration: BoxDecoration(
+                  color: actionFill,
+                  borderRadius:
+                      BorderRadius.circular(SumAcademyTheme.radiusButton.r),
+                  border: Border.all(color: actionBorder),
+                  boxShadow: [
+                    if (!isDark)
+                      BoxShadow(
+                        color: SumAcademyTheme.darkBase.withOpacityFloat(0.06),
+                        blurRadius: 10.r,
+                        offset: Offset(0, 6.h),
+                      ),
+                  ],
                 ),
-          ),
+                alignment: Alignment.center,
+                child: Icon(
+                  Icons.logout_rounded,
+                  size: 20.sp,
+                  color: actionIcon,
+                ),
+              ),
+            ),
+            SizedBox(width: 12.w),
+            Container(
+              width: 52.r,
+              height: 52.r,
+              decoration: BoxDecoration(
+                color: badgeColor,
+                borderRadius:
+                    BorderRadius.circular(SumAcademyTheme.radiusAvatar.r),
+                boxShadow: [
+                  BoxShadow(
+                    color: badgeColor.withOpacityFloat(isDark ? 0.28 : 0.2),
+                    blurRadius: 18.r,
+                    offset: Offset(0, 8.h),
+                  ),
+                ],
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                'SA',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: SumAcademyTheme.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+            ),
+          ],
         ),
       ],
     );

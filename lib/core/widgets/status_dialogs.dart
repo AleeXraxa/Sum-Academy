@@ -105,6 +105,20 @@ Future<void> showErrorDialog(
   );
 }
 
+Future<void> showNoInternetDialog(
+  BuildContext context, {
+  String message =
+      'No internet connection. Please check your connection and try again.',
+}) {
+  return _showStatusDialog(
+    context,
+    title: 'No Internet',
+    message: message,
+    icon: Icons.wifi_off_rounded,
+    iconColor: SumAcademyTheme.accentOrange,
+  );
+}
+
 Future<void> _showStatusDialog(
   BuildContext context, {
   required String title,

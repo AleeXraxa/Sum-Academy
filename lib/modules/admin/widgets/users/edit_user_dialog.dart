@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
+import 'package:sum_academy/core/utils/network_error.dart';
 import 'package:sum_academy/core/widgets/status_dialogs.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_controller.dart';
 import 'package:sum_academy/modules/admin/widgets/users/user_dialog_fields.dart';
@@ -292,6 +293,13 @@ class _EditUserDialogState extends State<EditUserDialog> {
         message: result.message,
       );
     } else {
+      if (isNetworkErrorMessage(result.message)) {
+        await showNoInternetDialog(
+          overlayContext,
+          message: result.message,
+        );
+        return;
+      }
       await showErrorDialog(
         overlayContext,
         title: 'Update Failed',

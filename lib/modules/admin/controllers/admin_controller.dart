@@ -5,7 +5,12 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/core/services/api_exception.dart';
+import 'package:sum_academy/core/widgets/status_dialogs.dart';
+import 'package:sum_academy/modules/admin/models/admin_activity_payload.dart';
+import 'package:sum_academy/modules/admin/models/admin_stats.dart';
 import 'package:sum_academy/modules/admin/models/admin_user.dart';
+import 'package:sum_academy/modules/admin/services/admin_activity_service.dart';
+import 'package:sum_academy/modules/admin/services/admin_stats_service.dart';
 import 'package:sum_academy/modules/admin/services/admin_user_service.dart';
 import 'package:sum_academy/modules/auth/services/auth_service.dart';
 
@@ -13,6 +18,9 @@ class AdminController extends GetxController {
   final RxString userName = 'User'.obs;
   final AuthService _authService = Get.find<AuthService>();
   final AdminUserService _userService = Get.find<AdminUserService>();
+  final AdminActivityService _activityService =
+      Get.find<AdminActivityService>();
+  final AdminStatsService _statsService = Get.find<AdminStatsService>();
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   final RxInt navIndex = 0.obs;
   final RxBool isSearchExpanded = false.obs;
@@ -27,19 +35,28 @@ class AdminController extends GetxController {
   final int _pageSize = 20;
   final RxString currentUserUid = ''.obs;
   bool _initialUsersDelayShown = false;
+  int _usersRequestId = 0;
+  final RxBool isStatsLoading = false.obs;
+  final RxBool isActivitiesLoading = false.obs;
 
   final RxList<AdminUserFilter> userFilters = <AdminUserFilter>[].obs;
 
   final RxList<AdminUserRow> users = <AdminUserRow>[].obs;
 
+  final RxList<AdminStat> stats = <AdminStat>[].obs;
+  final RxList<AdminActivity> recentActivities = <AdminActivity>[].obs;
+
   @override
   void onInit() {
     super.onInit();
     _loadUserName();
+    _seedStats();
     searchController.addListener(_onSearchChanged);
     ever<List<AdminUserRow>>(users, (_) => _refreshUserFilters());
     _refreshUserFilters();
     fetchUsers();
+    fetchDashboardStats();
+    fetchRecentActivities();
   }
 
   Future<void> _loadUserName() async {
@@ -47,11 +64,84 @@ class AdminController extends GetxController {
     currentUserUid.value = _firebaseAuth.currentUser?.uid ?? '';
   }
 
+  void _seedStats() {
+    stats.assignAll(
+      _buildStatsList(
+        totalStudents: '-',
+        totalRevenue: 'PKR -',
+        activeCourses: '-',
+        enrollmentsToday: '-',
+      ),
+    );
+  }
+
+  Future<void> fetchDashboardStats() async {
+    isStatsLoading.value = true;
+    try {
+      await _ensureAuthReady();
+      final payload = await _statsService.fetchStats();
+      stats.assignAll(
+        _buildStatsList(
+          totalStudents: payload.totalStudents.toString(),
+          totalRevenue: _formatCurrency(payload.totalRevenue),
+          activeCourses: payload.activeCourses.toString(),
+          enrollmentsToday: payload.enrollmentsToday.toString(),
+        ),
+      );
+    } on ApiException catch (e) {
+      if (e.statusCode == 0) {
+        final context = Get.context;
+        if (context != null) {
+          await showNoInternetDialog(context);
+        } else {
+          Get.snackbar('No internet', e.message);
+        }
+        return;
+      }
+      Get.snackbar('Stats', _formatApiError(e));
+    } catch (_) {
+      Get.snackbar('Stats', 'Failed to load stats.');
+    } finally {
+      isStatsLoading.value = false;
+    }
+  }
+
+  Future<void> fetchRecentActivities() async {
+    isActivitiesLoading.value = true;
+    try {
+      await _ensureAuthReady();
+      final payloads = await _activityService.fetchRecentActivity();
+      recentActivities.assignAll(payloads.map(_mapActivity));
+    } on ApiException catch (e) {
+      if (e.statusCode == 0) {
+        final context = Get.context;
+        if (context != null) {
+          await showNoInternetDialog(context);
+        } else {
+          Get.snackbar('No internet', e.message);
+        }
+        return;
+      }
+      Get.snackbar('Recent activity', _formatApiError(e));
+    } catch (_) {
+      Get.snackbar('Recent activity', 'Failed to load activity.');
+    } finally {
+      isActivitiesLoading.value = false;
+    }
+  }
+
+  Future<void> refreshDashboard() async {
+    await fetchDashboardStats();
+    await fetchRecentActivities();
+  }
+
   Future<void> fetchUsers({bool reset = true}) async {
+    final requestId = ++_usersRequestId;
     if (reset) {
       _currentPage = 1;
       hasMoreUsers.value = true;
       isUsersLoading.value = true;
+      isUsersLoadingMore.value = false;
     } else {
       isUsersLoadingMore.value = true;
     }
@@ -67,6 +157,9 @@ class AdminController extends GetxController {
         search: searchQuery.value,
         role: _selectedRoleFilter(),
       );
+      if (requestId != _usersRequestId) {
+        return;
+      }
       final rows = result.map(_toRow).toList();
       if (reset) {
         users
@@ -80,16 +173,37 @@ class AdminController extends GetxController {
       }
       _refreshUserFilters();
     } on ApiException catch (e) {
+      if (requestId != _usersRequestId) {
+        return;
+      }
+      if (e.statusCode == 0) {
+        final context = Get.context;
+        if (context != null) {
+          await showNoInternetDialog(context);
+        } else {
+          Get.snackbar('No internet', e.message);
+        }
+        return;
+      }
       if (e.statusCode == 401) {
-        final retry = await _retryFetchUsers(reset: reset);
+        final retry = await _retryFetchUsers(
+          requestId: requestId,
+          reset: reset,
+        );
         if (retry) {
           return;
         }
       }
       Get.snackbar('Users', _formatApiError(e));
     } catch (_) {
+      if (requestId != _usersRequestId) {
+        return;
+      }
       Get.snackbar('Users', 'Failed to load users.');
     } finally {
+      if (requestId != _usersRequestId) {
+        return;
+      }
       if (reset) {
         isUsersLoading.value = false;
       } else {
@@ -123,7 +237,10 @@ class AdminController extends GetxController {
     }
   }
 
-  Future<bool> _retryFetchUsers({required bool reset}) async {
+  Future<bool> _retryFetchUsers({
+    required int requestId,
+    required bool reset,
+  }) async {
     try {
       await Future.delayed(const Duration(milliseconds: 900));
       await _ensureAuthReady();
@@ -133,6 +250,9 @@ class AdminController extends GetxController {
         search: searchQuery.value,
         role: _selectedRoleFilter(),
       );
+      if (requestId != _usersRequestId) {
+        return false;
+      }
       final rows = result.map(_toRow).toList();
       if (reset) {
         users
@@ -349,36 +469,43 @@ class AdminController extends GetxController {
     return current.isNotEmpty && uid == current;
   }
 
-  final stats = <AdminStat>[
-    const AdminStat(
-      label: 'Total Students',
-      value: '1,248',
-      icon: Icons.school_rounded,
-      tone: SumAcademyTheme.brandBluePale,
-      iconColor: SumAcademyTheme.brandBlue,
-    ),
-    const AdminStat(
-      label: 'Total Revenue',
-      value: 'PKR 2.4M',
-      icon: Icons.account_balance_wallet_rounded,
-      tone: SumAcademyTheme.successLight,
-      iconColor: SumAcademyTheme.success,
-    ),
-    const AdminStat(
-      label: 'Active Courses',
-      value: '36',
-      icon: Icons.menu_book_rounded,
-      tone: SumAcademyTheme.accentOrangePale,
-      iconColor: SumAcademyTheme.accentOrange,
-    ),
-    const AdminStat(
-      label: 'Enrollments today',
-      value: '74',
-      icon: Icons.how_to_reg_rounded,
-      tone: SumAcademyTheme.infoLight,
-      iconColor: SumAcademyTheme.info,
-    ),
-  ];
+  List<AdminStat> _buildStatsList({
+    required String totalStudents,
+    required String totalRevenue,
+    required String activeCourses,
+    required String enrollmentsToday,
+  }) {
+    return [
+      AdminStat(
+        label: 'Total Students',
+        value: totalStudents,
+        icon: Icons.school_rounded,
+        tone: SumAcademyTheme.brandBluePale,
+        iconColor: SumAcademyTheme.brandBlue,
+      ),
+      AdminStat(
+        label: 'Total Revenue',
+        value: totalRevenue,
+        icon: Icons.account_balance_wallet_rounded,
+        tone: SumAcademyTheme.successLight,
+        iconColor: SumAcademyTheme.success,
+      ),
+      AdminStat(
+        label: 'Active Courses',
+        value: activeCourses,
+        icon: Icons.menu_book_rounded,
+        tone: SumAcademyTheme.accentOrangePale,
+        iconColor: SumAcademyTheme.accentOrange,
+      ),
+      AdminStat(
+        label: 'Enrollments today',
+        value: enrollmentsToday,
+        icon: Icons.how_to_reg_rounded,
+        tone: SumAcademyTheme.infoLight,
+        iconColor: SumAcademyTheme.info,
+      ),
+    ];
+  }
 
   final quickActions = <AdminAction>[
     const AdminAction(
@@ -398,32 +525,71 @@ class AdminController extends GetxController {
     ),
   ];
 
-  final recentActivities = <AdminActivity>[
-    const AdminActivity(
-      title: 'New student enrolled',
-      subtitle: 'Ayesha Khan joined Biology 101',
-      time: '2m ago',
-      icon: Icons.how_to_reg_rounded,
-      tone: SumAcademyTheme.infoLight,
-      iconColor: SumAcademyTheme.info,
-    ),
-    const AdminActivity(
-      title: 'Payment received',
-      subtitle: 'PKR 12,000 for Class IX',
-      time: '18m ago',
-      icon: Icons.payments_rounded,
-      tone: SumAcademyTheme.successLight,
-      iconColor: SumAcademyTheme.success,
-    ),
-    const AdminActivity(
-      title: 'Course updated',
-      subtitle: 'Added 4 new lectures to Physics',
-      time: '1h ago',
-      icon: Icons.menu_book_rounded,
-      tone: SumAcademyTheme.accentOrangePale,
-      iconColor: SumAcademyTheme.accentOrange,
-    ),
-  ];
+  AdminActivity _mapActivity(AdminActivityPayload payload) {
+    final mapping = _activityStyle(
+      '${payload.type} ${payload.title} ${payload.subtitle}',
+    );
+    final timeLabel =
+        payload.timeLabel ?? _formatRelativeTime(payload.createdAt);
+    final subtitle = payload.subtitle.isNotEmpty
+        ? payload.subtitle
+        : (payload.type.isNotEmpty ? payload.type : 'Activity update');
+    return AdminActivity(
+      title: payload.title,
+      subtitle: subtitle,
+      time: timeLabel,
+      icon: mapping.icon,
+      tone: mapping.tone,
+      iconColor: mapping.iconColor,
+    );
+  }
+
+  _ActivityStyle _activityStyle(String source) {
+    final normalized = source.toLowerCase();
+    if (normalized.contains('payment') ||
+        normalized.contains('transaction') ||
+        normalized.contains('fee') ||
+        normalized.contains('revenue')) {
+      return const _ActivityStyle(
+        icon: Icons.payments_rounded,
+        tone: SumAcademyTheme.successLight,
+        iconColor: SumAcademyTheme.success,
+      );
+    }
+    if (normalized.contains('enroll') ||
+        normalized.contains('student') ||
+        normalized.contains('admission')) {
+      return const _ActivityStyle(
+        icon: Icons.how_to_reg_rounded,
+        tone: SumAcademyTheme.infoLight,
+        iconColor: SumAcademyTheme.info,
+      );
+    }
+    if (normalized.contains('course') ||
+        normalized.contains('lecture') ||
+        normalized.contains('class') ||
+        normalized.contains('chapter')) {
+      return const _ActivityStyle(
+        icon: Icons.menu_book_rounded,
+        tone: SumAcademyTheme.accentOrangePale,
+        iconColor: SumAcademyTheme.accentOrange,
+      );
+    }
+    if (normalized.contains('announcement') ||
+        normalized.contains('notice') ||
+        normalized.contains('alert')) {
+      return const _ActivityStyle(
+        icon: Icons.campaign_rounded,
+        tone: SumAcademyTheme.brandBluePale,
+        iconColor: SumAcademyTheme.brandBlue,
+      );
+    }
+    return const _ActivityStyle(
+      icon: Icons.bolt_rounded,
+      tone: SumAcademyTheme.surfaceTertiary,
+      iconColor: SumAcademyTheme.darkBase,
+    );
+  }
 }
 
 String _formatApiError(ApiException exception) {
@@ -582,6 +748,81 @@ class AdminActionResult {
   const AdminActionResult.failure(this.message) : isSuccess = false;
 }
 
+class _ActivityStyle {
+  final IconData icon;
+  final Color tone;
+  final Color iconColor;
+
+  const _ActivityStyle({
+    required this.icon,
+    required this.tone,
+    required this.iconColor,
+  });
+}
+
 bool _isStudent(AdminUserRow user) => user.role.toLowerCase() == 'student';
 bool _isTeacher(AdminUserRow user) => user.role.toLowerCase() == 'teacher';
 bool _isAdmin(AdminUserRow user) => user.role.toLowerCase() == 'admin';
+
+String _formatCurrency(num value) {
+  final formatted = _formatCompactNumber(value);
+  return 'PKR $formatted';
+}
+
+String _formatCompactNumber(num value) {
+  final absValue = value.abs();
+  if (absValue >= 1000000000) {
+    return '${(value / 1000000000).toStringAsFixed(1)}B';
+  }
+  if (absValue >= 1000000) {
+    return '${(value / 1000000).toStringAsFixed(1)}M';
+  }
+  if (absValue >= 1000) {
+    return '${(value / 1000).toStringAsFixed(1)}K';
+  }
+  return value.toStringAsFixed(0);
+}
+
+String _formatRelativeTime(DateTime? date) {
+  if (date == null) return 'Just now';
+  final now = DateTime.now();
+  var diff = now.difference(date);
+  if (diff.isNegative) {
+    diff = Duration.zero;
+  }
+  if (diff.inSeconds < 60) {
+    return '${diff.inSeconds}s ago';
+  }
+  if (diff.inMinutes < 60) {
+    return '${diff.inMinutes}m ago';
+  }
+  if (diff.inHours < 24) {
+    return '${diff.inHours}h ago';
+  }
+  if (diff.inDays < 7) {
+    return '${diff.inDays}d ago';
+  }
+  if (diff.inDays < 30) {
+    return '${(diff.inDays / 7).floor()}w ago';
+  }
+  return _formatDate(date);
+}
+
+String _formatDate(DateTime date) {
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  final month = months[date.month - 1];
+  return '$month ${date.day}, ${date.year}';
+}

@@ -2,7 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sum_academy/app/routes/app_routes.dart';
+import 'package:sum_academy/core/services/api_exception.dart';
+import 'package:sum_academy/core/widgets/status_dialogs.dart';
 import 'package:sum_academy/modules/auth/services/auth_service.dart';
 
 class OtpController extends GetxController {
@@ -61,6 +64,20 @@ class OtpController extends GetxController {
     try {
       await _authService.verifyOtp(code: code);
       Get.offAllNamed(AppRoutes.login);
+    } on ApiException catch (e) {
+      if (e.statusCode == 0) {
+        await _showNoInternetDialog();
+        return;
+      }
+      errorMessage.value = e.message;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'network-request-failed') {
+        await _showNoInternetDialog();
+        return;
+      }
+      errorMessage.value = e.message ?? 'Unable to verify the code.';
+    } catch (_) {
+      errorMessage.value = 'Unable to verify the code.';
     } finally {
       isLoading.value = false;
     }
@@ -81,6 +98,18 @@ class OtpController extends GetxController {
       }
       secondsRemaining.value = secondsRemaining.value - 1;
     });
+  }
+
+  Future<void> _showNoInternetDialog() async {
+    final context = Get.context;
+    if (context == null) {
+      Get.snackbar(
+        'No internet',
+        'Please check your connection and try again.',
+      );
+      return;
+    }
+    await showNoInternetDialog(context);
   }
 
   @override
