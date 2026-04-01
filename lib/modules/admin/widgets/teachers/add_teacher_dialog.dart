@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
+import 'package:sum_academy/core/utils/network_error.dart';
 import 'package:sum_academy/core/widgets/status_dialogs.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_teacher_controller.dart';
 import 'package:sum_academy/modules/admin/widgets/users/user_dialog_fields.dart';
@@ -356,10 +357,7 @@ class _AddTeacherDialogState extends State<AddTeacherDialog> {
       );
     } else {
       if (result.isNetworkError) {
-        await showNoInternetDialog(
-          overlayContext,
-          message: result.message,
-        );
+        await showNoInternetDialogOnce(message: result.message);
         return;
       }
       await showErrorDialog(

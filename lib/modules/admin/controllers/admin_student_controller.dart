@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/core/services/api_exception.dart';
-import 'package:sum_academy/core/widgets/status_dialogs.dart';
+import 'package:sum_academy/core/utils/network_error.dart';
 import 'package:sum_academy/modules/admin/models/admin_user.dart';
 import 'package:sum_academy/modules/admin/services/admin_student_service.dart';
 import 'package:sum_academy/modules/auth/services/auth_service.dart';
@@ -20,6 +20,7 @@ class AdminStudentController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxBool isLoadingMore = false.obs;
   final RxBool hasMore = true.obs;
+  final RxBool isInitialized = false.obs;
   final RxInt filterIndex = 0.obs;
   final RxString searchQuery = ''.obs;
   final TextEditingController searchController = TextEditingController();
@@ -28,7 +29,6 @@ class AdminStudentController extends GetxController {
   Timer? _searchDebounce;
   int _currentPage = 1;
   final int _pageSize = 20;
-  bool _initialStudentsDelayShown = false;
 
   @override
   void onInit() {
@@ -56,10 +56,6 @@ class AdminStudentController extends GetxController {
     }
 
     try {
-      if (reset && !_initialStudentsDelayShown) {
-        await Future.delayed(const Duration(milliseconds: 1500));
-        _initialStudentsDelayShown = true;
-      }
       await _ensureAuthReady();
       final result = await _service.fetchStudents(
         page: _currentPage,
@@ -79,21 +75,23 @@ class AdminStudentController extends GetxController {
       }
       _refreshFilters();
     } on ApiException catch (e) {
-      if (e.statusCode == 0) {
-        final context = Get.context;
-        if (context != null) {
-          await showNoInternetDialog(context);
-        } else {
-          Get.snackbar('No internet', e.message);
-        }
-        return;
-      }
-      Get.snackbar('Students', _formatApiError(e));
+      final handled = await handleNetworkError(e);
+      if (handled) return;
+      await showAppErrorDialog(
+        title: 'Students',
+        message: _formatApiError(e),
+      );
     } catch (_) {
-      Get.snackbar('Students', 'Failed to load students.');
+      await showAppErrorDialog(
+        title: 'Students',
+        message: 'Failed to load students.',
+      );
     } finally {
       if (reset) {
         isLoading.value = false;
+        if (!isInitialized.value) {
+          isInitialized.value = true;
+        }
       } else {
         isLoadingMore.value = false;
       }

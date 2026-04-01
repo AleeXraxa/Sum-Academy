@@ -13,6 +13,7 @@ class AdminCourse {
   final int subjectCount;
   final int teacherCount;
   final int enrolledCount;
+  final bool isArchived;
 
   const AdminCourse({
     required this.id,
@@ -29,41 +30,62 @@ class AdminCourse {
     required this.subjectCount,
     required this.teacherCount,
     required this.enrolledCount,
+    required this.isArchived,
   });
 
   factory AdminCourse.fromJson(Map<String, dynamic> json) {
     final id = _readString(json, ['id', '_id', 'courseId']);
     final title = _readString(json, ['title', 'name']);
-    final shortDescription = _readString(
-      json,
-      ['shortDescription', 'shortDesc', 'summary'],
-    );
+    final shortDescription = _readString(json, [
+      'shortDescription',
+      'shortDesc',
+      'summary',
+    ]);
     final description = _readString(json, ['description', 'fullDescription']);
     final category = _readString(json, ['category', 'categoryName']);
     final level = _readString(json, ['level', 'difficulty']);
     final price = _readDouble(json, ['price', 'amount', 'fee']);
-    final discount = _readDouble(
-      json,
-      ['discount', 'discountPercent', 'discountPercentage'],
-    );
+    final discount = _readDouble(json, [
+      'discount',
+      'discountPercent',
+      'discountPercentage',
+    ]);
     final status = _readString(json, ['status'], fallback: 'Draft');
-    final certificateEnabled = _readBool(
-      json,
-      ['certificateEnabled', 'certificateOnCompletion', 'certificate'],
-    );
-    final thumbnailUrl = _readString(json, ['thumbnail', 'thumbnailUrl', 'image']);
-    var subjectCount = _readInt(
-      json,
-      ['subjectsCount', 'subjectCount', 'totalSubjects'],
-    );
-    var teacherCount = _readInt(
-      json,
-      ['teachersCount', 'teacherCount', 'totalTeachers'],
-    );
-    var enrolledCount = _readInt(
-      json,
-      ['enrolledCount', 'enrollments', 'totalEnrollments', 'studentsCount'],
-    );
+    final certificateEnabled = _readBool(json, [
+      'certificateEnabled',
+      'certificateOnCompletion',
+      'certificate',
+    ]);
+    final thumbnailUrl = _readString(json, [
+      'thumbnail',
+      'thumbnailUrl',
+      'image',
+    ]);
+    final isArchived = _readBool(json, ['archived', 'isArchived']);
+    var subjectCount = _readInt(json, [
+      'subjectsCount',
+      'subjectCount',
+      'totalSubjects',
+    ]);
+    var teacherCount = _readInt(json, [
+      'teachersCount',
+      'teacherCount',
+      'totalTeachers',
+    ]);
+    var enrolledCount = _readInt(json, [
+      'enrolledCount',
+      'enrollmentCount',
+      'enrollmentsCount',
+      'enrollments',
+      'totalEnrollments',
+      'studentsCount',
+      'studentCount',
+      'totalStudents',
+      'totalLearners',
+      'enrolledStudents',
+      'enrolledUsers',
+      'enrolled',
+    ]);
     subjectCount = _resolveSubjectCount(json, subjectCount);
     teacherCount = _resolveTeacherCount(json, teacherCount);
     enrolledCount = _resolveEnrollmentCount(json, enrolledCount);
@@ -83,6 +105,7 @@ class AdminCourse {
       subjectCount: subjectCount,
       teacherCount: teacherCount,
       enrolledCount: enrolledCount,
+      isArchived: isArchived,
     );
   }
 
@@ -101,6 +124,7 @@ class AdminCourse {
     int? subjectCount,
     int? teacherCount,
     int? enrolledCount,
+    bool? isArchived,
   }) {
     return AdminCourse(
       id: id ?? this.id,
@@ -117,6 +141,7 @@ class AdminCourse {
       subjectCount: subjectCount ?? this.subjectCount,
       teacherCount: teacherCount ?? this.teacherCount,
       enrolledCount: enrolledCount ?? this.enrolledCount,
+      isArchived: isArchived ?? this.isArchived,
     );
   }
 }
@@ -209,7 +234,8 @@ int _resolveTeacherCount(Map<String, dynamic> json, int fallback) {
     final ids = <String>{};
     for (final item in subjects) {
       if (item is Map) {
-        final teacherId = item['teacherId'] ??
+        final teacherId =
+            item['teacherId'] ??
             item['teacher_id'] ??
             item['teacher'] ??
             item['teacherUid'];
@@ -218,7 +244,8 @@ int _resolveTeacherCount(Map<String, dynamic> json, int fallback) {
         }
         final teacher = item['teacher'];
         if (teacher is Map) {
-          final nestedId = teacher['id'] ??
+          final nestedId =
+              teacher['id'] ??
               teacher['_id'] ??
               teacher['uid'] ??
               teacher['userId'];
@@ -240,9 +267,56 @@ int _resolveEnrollmentCount(Map<String, dynamic> json, int fallback) {
     json['students'],
     json['enrollments'],
     json['studentList'],
+    json['learners'],
+    json['enrolledStudents'],
+    json['enrolledUsers'],
   ];
   for (final candidate in candidates) {
     final count = _countList(candidate);
+    if (count > 0) return count;
+  }
+  final stats = json['stats'];
+  if (stats is Map<String, dynamic>) {
+    final count = _readInt(stats, [
+      'enrolledCount',
+      'enrollmentCount',
+      'enrollmentsCount',
+      'totalEnrollments',
+      'studentsCount',
+      'studentCount',
+      'totalStudents',
+      'totalLearners',
+      'enrolledStudents',
+      'enrolledUsers',
+    ]);
+    if (count > 0) return count;
+  }
+  final summary = json['summary'];
+  if (summary is Map<String, dynamic>) {
+    final count = _readInt(summary, [
+      'enrolledCount',
+      'enrollmentCount',
+      'enrollmentsCount',
+      'totalEnrollments',
+      'studentsCount',
+      'studentCount',
+      'totalStudents',
+      'totalLearners',
+    ]);
+    if (count > 0) return count;
+  }
+  final analytics = json['analytics'];
+  if (analytics is Map<String, dynamic>) {
+    final count = _readInt(analytics, [
+      'enrolledCount',
+      'enrollmentCount',
+      'enrollmentsCount',
+      'totalEnrollments',
+      'studentsCount',
+      'studentCount',
+      'totalStudents',
+      'totalLearners',
+    ]);
     if (count > 0) return count;
   }
   return fallback;

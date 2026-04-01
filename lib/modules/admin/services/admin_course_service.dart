@@ -1,6 +1,7 @@
 import 'package:sum_academy/core/services/api_client.dart';
-import 'package:sum_academy/modules/admin/models/admin_course.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_course_controller.dart';
+import 'package:sum_academy/modules/admin/models/admin_course.dart';
+import 'package:sum_academy/modules/admin/models/course_subject.dart';
 
 class AdminCourseService {
   AdminCourseService({ApiClient? client}) : _client = client ?? ApiClient();
@@ -48,25 +49,35 @@ class AdminCourseService {
           },
         )
         .toList();
+    final coursePayload = <String, dynamic>{
+      'title': title,
+      'shortDescription': shortDescription,
+      'description': description,
+      'category': category,
+      'level': level,
+      'price': price,
+      'discount': discount,
+      'status': status,
+      'certificateOnCompletion': certificateEnabled,
+      if (thumbnailUrl != null && thumbnailUrl.isNotEmpty)
+        'thumbnail': thumbnailUrl,
+    };
+    if (subjectPayload.isNotEmpty) {
+      coursePayload['subjects'] = subjectPayload;
+      coursePayload['subjectList'] = subjectPayload;
+      coursePayload['courseSubjects'] = subjectPayload;
+      coursePayload['subjectsData'] = subjectPayload;
+      coursePayload['subjectNames'] = subjectPayload
+          .map((item) => item['name'])
+          .toList();
+    }
     final response = await _client.post(
       '/admin/courses',
       auth: true,
       body: {
-        'title': title,
-        'shortDescription': shortDescription,
-        'description': description,
-        'category': category,
-        'level': level,
-        'price': price,
-        'discount': discount,
-        'status': status,
-        'certificateOnCompletion': certificateEnabled,
-        if (thumbnailUrl != null && thumbnailUrl.isNotEmpty)
-          'thumbnail': thumbnailUrl,
-        if (subjectPayload.isNotEmpty) 'subjects': subjectPayload,
-        if (subjectPayload.isNotEmpty) 'subjectList': subjectPayload,
-        if (subjectPayload.isNotEmpty) 'courseSubjects': subjectPayload,
-        if (subjectPayload.isNotEmpty) 'subjectsData': subjectPayload,
+        ...coursePayload,
+        if (subjectPayload.isNotEmpty) 'course': coursePayload,
+        if (subjectPayload.isNotEmpty) 'data': coursePayload,
       },
     );
     return AdminCourse.fromJson(_extractItem(response['data']));
@@ -105,6 +116,36 @@ class AdminCourseService {
     return AdminCourse.fromJson(_extractItem(response['data']));
   }
 
+  Future<AdminCourse> archiveCourse({
+    required String courseId,
+  }) async {
+    final response = await _client.patch(
+      '/admin/courses/$courseId',
+      auth: true,
+      body: {
+        'status': 'archived',
+        'archived': true,
+        'isArchived': true,
+      },
+    );
+    return AdminCourse.fromJson(_extractItem(response['data']));
+  }
+
+  Future<AdminCourse> publishCourse({
+    required String courseId,
+  }) async {
+    final response = await _client.patch(
+      '/admin/courses/$courseId',
+      auth: true,
+      body: {
+        'status': 'published',
+        'archived': false,
+        'isArchived': false,
+      },
+    );
+    return AdminCourse.fromJson(_extractItem(response['data']));
+  }
+
   Future<void> deleteCourse(String courseId) async {
     await _client.delete('/admin/courses/$courseId', auth: true);
   }
@@ -120,6 +161,26 @@ class AdminCourseService {
       auth: true,
       body: {'name': name, 'teacherId': teacherId, 'order': order},
     );
+  }
+
+  Future<void> deleteSubject({
+    required String courseId,
+    required String subjectId,
+  }) async {
+    await _client.delete(
+      '/admin/courses/$courseId/subjects/$subjectId',
+      auth: true,
+    );
+  }
+
+  Future<List<CourseSubject>> fetchCourseSubjects(String courseId) async {
+    final response = await _client.get(
+      '/admin/courses/$courseId/content',
+      auth: true,
+    );
+    final data = response['data'];
+    final subjects = _extractSubjects(data);
+    return subjects.map(CourseSubject.fromJson).toList();
   }
 
   Map<String, dynamic> _extractItem(dynamic data) {
@@ -153,6 +214,44 @@ class AdminCourseService {
             .map((item) => Map<String, dynamic>.from(item))
             .toList();
       }
+    }
+    return [];
+  }
+
+  List<Map<String, dynamic>> _extractSubjects(dynamic data) {
+    if (data is List) {
+      return data
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList();
+    }
+    if (data is Map<String, dynamic>) {
+      final direct = _extractSubjectsFromMap(data);
+      if (direct.isNotEmpty) return direct;
+      for (final key in ['course', 'data', 'payload', 'result', 'content']) {
+        final nested = data[key];
+        if (nested is Map<String, dynamic>) {
+          final nestedList = _extractSubjectsFromMap(nested);
+          if (nestedList.isNotEmpty) return nestedList;
+        }
+      }
+    }
+    return [];
+  }
+
+  List<Map<String, dynamic>> _extractSubjectsFromMap(
+    Map<String, dynamic> data,
+  ) {
+    final list = data['subjects'] ??
+        data['subjectList'] ??
+        data['courseSubjects'] ??
+        data['subjectsData'] ??
+        data['subjectsList'];
+    if (list is List) {
+      return list
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList();
     }
     return [];
   }

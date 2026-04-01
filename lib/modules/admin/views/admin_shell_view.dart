@@ -3,12 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
+import 'package:sum_academy/core/widgets/app_bootstrap_loader.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_controller.dart';
+import 'package:sum_academy/modules/admin/controllers/admin_class_controller.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_course_controller.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_student_controller.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_teacher_controller.dart';
 import 'package:sum_academy/modules/admin/utils/admin_navigation.dart';
 import 'package:sum_academy/modules/admin/views/common/admin_placeholder_view.dart';
+import 'package:sum_academy/modules/admin/views/classes/admin_classes_view.dart';
 import 'package:sum_academy/modules/admin/views/courses/admin_courses_view.dart';
 import 'package:sum_academy/modules/admin/views/dashboard/admin_dashboard_view.dart';
 import 'package:sum_academy/modules/admin/views/students/admin_students_view.dart';
@@ -25,6 +28,10 @@ class AdminShellView extends GetView<AdminController> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
+      final teacherController = Get.find<AdminTeacherController>();
+      final studentController = Get.find<AdminStudentController>();
+      final courseController = Get.find<AdminCourseController>();
+      final classController = Get.find<AdminClassController>();
       final isDark = Theme.of(context).brightness == Brightness.dark;
       final surface = isDark
           ? SumAcademyTheme.darkSurface
@@ -38,6 +45,13 @@ class AdminShellView extends GetView<AdminController> {
       final activeLabel = controller.navIndex.value == 1
           ? controller.managementLabel.value
           : activeLabelForIndex(controller.navIndex.value);
+      final isBootLoading = !controller.isUsersInitialized.value ||
+          !controller.isStatsInitialized.value ||
+          !controller.isActivitiesInitialized.value ||
+          !teacherController.isInitialized.value ||
+          !studentController.isInitialized.value ||
+          !courseController.isInitialized.value ||
+          !classController.isInitialized.value;
 
       return Scaffold(
         drawer: AdminSidebar(
@@ -109,44 +123,60 @@ class AdminShellView extends GetView<AdminController> {
             ),
           ),
           child: SafeArea(
-            child: IndexedStack(
-              index: controller.navIndex.value,
+            child: Stack(
               children: [
-                AdminDashboardView(
-                  controller: controller,
-                  textColor: textColor,
-                  surface: surface,
-                  isDark: isDark,
-                  userName: name,
-                  isSearchExpanded: isSearchExpanded,
+                IndexedStack(
+                  index: controller.navIndex.value,
+                  children: [
+                    AdminDashboardView(
+                      controller: controller,
+                      textColor: textColor,
+                      surface: surface,
+                      isDark: isDark,
+                      userName: name,
+                      isSearchExpanded: isSearchExpanded,
+                    ),
+                    _ManagementShell(
+                      controller: controller,
+                      textColor: textColor,
+                      surface: surface,
+                      isDark: isDark,
+                      userName: name,
+                    ),
+                    AdminPlaceholderView(
+                      controller: controller,
+                      textColor: textColor,
+                      surface: surface,
+                      isDark: isDark,
+                      userName: name,
+                      title: 'Payments',
+                      icon: Icons.payments_rounded,
+                      isSearchExpanded: isSearchExpanded,
+                    ),
+                    AdminPlaceholderView(
+                      controller: controller,
+                      textColor: textColor,
+                      surface: surface,
+                      isDark: isDark,
+                      userName: name,
+                      title: 'Settings',
+                      icon: Icons.settings_rounded,
+                      isSearchExpanded: isSearchExpanded,
+                    ),
+                  ],
                 ),
-                _ManagementShell(
-                  controller: controller,
-                  textColor: textColor,
-                  surface: surface,
-                  isDark: isDark,
-                  userName: name,
-                ),
-                AdminPlaceholderView(
-                  controller: controller,
-                  textColor: textColor,
-                  surface: surface,
-                  isDark: isDark,
-                  userName: name,
-                  title: 'Payments',
-                  icon: Icons.payments_rounded,
-                  isSearchExpanded: isSearchExpanded,
-                ),
-                AdminPlaceholderView(
-                  controller: controller,
-                  textColor: textColor,
-                  surface: surface,
-                  isDark: isDark,
-                  userName: name,
-                  title: 'Settings',
-                  icon: Icons.settings_rounded,
-                  isSearchExpanded: isSearchExpanded,
-                ),
+                if (isBootLoading)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: Container(
+                        color: SumAcademyTheme.white.withOpacityFloat(0.9),
+                        alignment: Alignment.center,
+                        child: const AppBootstrapLoader(
+                          message: 'Preparing your admin workspace...',
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -194,6 +224,14 @@ class _ManagementShell extends StatelessWidget {
       case 'Courses':
         return AdminCoursesView(
           controller: Get.find<AdminCourseController>(),
+          textColor: textColor,
+          surface: surface,
+          isDark: isDark,
+          userName: userName,
+        );
+      case 'Classes':
+        return AdminClassesView(
+          controller: Get.find<AdminClassController>(),
           textColor: textColor,
           surface: surface,
           isDark: isDark,

@@ -1,9 +1,11 @@
 import 'package:get/get.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_controller.dart';
+import 'package:sum_academy/modules/admin/controllers/admin_class_controller.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_course_controller.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_student_controller.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_teacher_controller.dart';
 import 'package:sum_academy/modules/admin/services/admin_activity_service.dart';
+import 'package:sum_academy/modules/admin/services/admin_class_service.dart';
 import 'package:sum_academy/modules/admin/services/admin_course_service.dart';
 import 'package:sum_academy/modules/admin/services/admin_stats_service.dart';
 import 'package:sum_academy/modules/admin/services/admin_student_service.dart';
@@ -18,6 +20,7 @@ class AdminBinding extends Bindings {
     Get.lazyPut<AdminTeacherService>(() => AdminTeacherService(), fenix: true);
     Get.lazyPut<AdminStudentService>(() => AdminStudentService(), fenix: true);
     Get.lazyPut<AdminCourseService>(() => AdminCourseService(), fenix: true);
+    Get.lazyPut<AdminClassService>(() => AdminClassService(), fenix: true);
     Get.lazyPut<StudentProfileService>(() => StudentProfileService(), fenix: true);
     Get.lazyPut<AdminActivityService>(() => AdminActivityService(), fenix: true);
     Get.lazyPut<AdminStatsService>(() => AdminStatsService(), fenix: true);
@@ -25,5 +28,6 @@ class AdminBinding extends Bindings {
     Get.lazyPut<AdminTeacherController>(() => AdminTeacherController());
     Get.lazyPut<AdminStudentController>(() => AdminStudentController());
     Get.lazyPut<AdminCourseController>(() => AdminCourseController());
+    Get.lazyPut<AdminClassController>(() => AdminClassController());
   }
 }

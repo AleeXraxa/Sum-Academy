@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:sum_academy/core/widgets/status_dialogs.dart';
+import 'package:sum_academy/core/utils/network_error.dart';
 import 'package:sum_academy/modules/auth/services/auth_service.dart';
 
 class ForgotPasswordController extends GetxController {
@@ -21,33 +21,31 @@ class ForgotPasswordController extends GetxController {
     isLoading.value = true;
     try {
       await _authService.requestPasswordReset(email: email);
-      Get.snackbar(
-        'Email sent',
-        'Check your inbox for the password reset link.',
+      await showAppSuccessDialog(
+        title: 'Email sent',
+        message: 'Check your inbox for the password reset link.',
       );
     } on FirebaseAuthException catch (e) {
       if (e.code == 'network-request-failed') {
         await _showNoInternetDialog();
         return;
       }
-      Get.snackbar('Reset failed', e.message ?? 'Please try again.');
+      await showAppErrorDialog(
+        title: 'Reset failed',
+        message: e.message ?? 'Please try again.',
+      );
     } catch (_) {
-      Get.snackbar('Reset failed', 'Please try again.');
+      await showAppErrorDialog(
+        title: 'Reset failed',
+        message: 'Please try again.',
+      );
     } finally {
       isLoading.value = false;
     }
   }
 
   Future<void> _showNoInternetDialog() async {
-    final context = Get.context;
-    if (context == null) {
-      Get.snackbar(
-        'No internet',
-        'Please check your connection and try again.',
-      );
-      return;
-    }
-    await showNoInternetDialog(context);
+    await showNoInternetDialogOnce();
   }
 
   @override

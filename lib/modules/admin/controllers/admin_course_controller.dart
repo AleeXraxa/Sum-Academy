@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/core/services/api_exception.dart';
-import 'package:sum_academy/core/widgets/status_dialogs.dart';
+import 'package:sum_academy/core/utils/network_error.dart';
 import 'package:sum_academy/modules/admin/models/admin_course.dart';
 import 'package:sum_academy/modules/admin/services/admin_course_service.dart';
 
@@ -14,13 +14,13 @@ class AdminCourseController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxBool isLoadingMore = false.obs;
   final RxBool hasMore = true.obs;
+  final RxBool isInitialized = false.obs;
   final RxString searchQuery = ''.obs;
   final TextEditingController searchController = TextEditingController();
   Timer? _searchDebounce;
 
   int _currentPage = 1;
   final int _pageSize = 20;
-  bool _initialDelayShown = false;
 
   @override
   void onInit() {
@@ -40,10 +40,6 @@ class AdminCourseController extends GetxController {
     }
 
     try {
-      if (reset && !_initialDelayShown) {
-        await Future.delayed(const Duration(milliseconds: 1200));
-        _initialDelayShown = true;
-      }
       final result = await _service.fetchCourses(
         page: _currentPage,
         limit: _pageSize,
@@ -60,21 +56,23 @@ class AdminCourseController extends GetxController {
         hasMore.value = false;
       }
     } on ApiException catch (e) {
-      if (e.statusCode == 0) {
-        final context = Get.context;
-        if (context != null) {
-          await showNoInternetDialog(context);
-        } else {
-          Get.snackbar('No internet', e.message);
-        }
-        return;
-      }
-      Get.snackbar('Courses', _formatApiError(e));
+      final handled = await handleNetworkError(e);
+      if (handled) return;
+      await showAppErrorDialog(
+        title: 'Courses',
+        message: _formatApiError(e),
+      );
     } catch (_) {
-      Get.snackbar('Courses', 'Failed to load courses.');
+      await showAppErrorDialog(
+        title: 'Courses',
+        message: 'Failed to load courses.',
+      );
     } finally {
       if (reset) {
         isLoading.value = false;
+        if (!isInitialized.value) {
+          isInitialized.value = true;
+        }
       } else {
         isLoadingMore.value = false;
       }
@@ -174,6 +172,44 @@ class AdminCourseController extends GetxController {
       await _service.deleteCourse(courseId);
       courses.removeWhere((course) => course.id == courseId);
       return const CourseActionResult.success('Course deleted successfully.');
+    } on ApiException catch (e) {
+      if (e.statusCode == 0) {
+        return CourseActionResult.networkFailure(e.message);
+      }
+      return CourseActionResult.failure(_formatApiError(e));
+    } catch (_) {
+      return const CourseActionResult.failure('Please try again.');
+    }
+  }
+
+  Future<CourseActionResult> archiveCourse(String courseId) async {
+    try {
+      final updated = await _service.archiveCourse(courseId: courseId);
+      final index = courses.indexWhere((course) => course.id == courseId);
+      if (index != -1) {
+        courses[index] =
+            updated.copyWith(status: 'archived', isArchived: true);
+      }
+      return const CourseActionResult.success('Course archived successfully.');
+    } on ApiException catch (e) {
+      if (e.statusCode == 0) {
+        return CourseActionResult.networkFailure(e.message);
+      }
+      return CourseActionResult.failure(_formatApiError(e));
+    } catch (_) {
+      return const CourseActionResult.failure('Please try again.');
+    }
+  }
+
+  Future<CourseActionResult> publishCourse(String courseId) async {
+    try {
+      final updated = await _service.publishCourse(courseId: courseId);
+      final index = courses.indexWhere((course) => course.id == courseId);
+      if (index != -1) {
+        courses[index] =
+            updated.copyWith(status: 'published', isArchived: false);
+      }
+      return const CourseActionResult.success('Course published successfully.');
     } on ApiException catch (e) {
       if (e.statusCode == 0) {
         return CourseActionResult.networkFailure(e.message);

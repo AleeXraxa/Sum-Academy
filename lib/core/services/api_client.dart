@@ -10,6 +10,7 @@ class ApiClient {
   ApiClient({http.Client? client}) : _client = client ?? http.Client();
 
   static const String baseUrl = 'https://sumacademy.net/api';
+  static const Duration _timeout = Duration(seconds: 20);
 
   final http.Client _client;
 
@@ -74,35 +75,27 @@ class ApiClient {
     try {
       switch (method) {
         case 'GET':
-          response = await _client.get(uri, headers: headers);
+          response = await _client.get(uri, headers: headers).timeout(_timeout);
           break;
         case 'POST':
-          response = await _client.post(
-            uri,
-            headers: headers,
-            body: encodedBody,
-          );
+          response = await _client
+              .post(uri, headers: headers, body: encodedBody)
+              .timeout(_timeout);
           break;
         case 'PUT':
-          response = await _client.put(
-            uri,
-            headers: headers,
-            body: encodedBody,
-          );
+          response = await _client
+              .put(uri, headers: headers, body: encodedBody)
+              .timeout(_timeout);
           break;
         case 'PATCH':
-          response = await _client.patch(
-            uri,
-            headers: headers,
-            body: encodedBody,
-          );
+          response = await _client
+              .patch(uri, headers: headers, body: encodedBody)
+              .timeout(_timeout);
           break;
         case 'DELETE':
-          response = await _client.delete(
-            uri,
-            headers: headers,
-            body: encodedBody,
-          );
+          response = await _client
+              .delete(uri, headers: headers, body: encodedBody)
+              .timeout(_timeout);
           break;
         default:
           throw ApiException('Unsupported HTTP method: $method');

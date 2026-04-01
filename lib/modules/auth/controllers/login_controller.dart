@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sum_academy/app/routes/app_routes.dart';
-import 'package:sum_academy/core/widgets/status_dialogs.dart';
+import 'package:sum_academy/core/utils/network_error.dart';
 import 'package:sum_academy/modules/admin/bindings/admin_binding.dart';
 import 'package:sum_academy/modules/admin/views/admin_shell_view.dart';
 import 'package:sum_academy/modules/auth/services/auth_service.dart';
@@ -39,7 +39,6 @@ class LoginController extends GetxController {
     isLoading.value = true;
     try {
       await _authService.signIn(email: email, password: password);
-      Get.snackbar('Login success', 'Welcome back!');
       await _routeByRole();
     } on FirebaseAuthException catch (e) {
       if (e.code == 'network-request-failed') {
@@ -47,9 +46,12 @@ class LoginController extends GetxController {
         return;
       }
       final message = _friendlyAuthMessage(e);
-      Get.snackbar('Login failed', message);
+      await showAppErrorDialog(title: 'Login failed', message: message);
     } catch (_) {
-      Get.snackbar('Login failed', 'Please try again.');
+      await showAppErrorDialog(
+        title: 'Login failed',
+        message: 'Please try again.',
+      );
     } finally {
       isLoading.value = false;
     }
@@ -64,10 +66,8 @@ class LoginController extends GetxController {
     try {
       final signedIn = await _authService.signInWithGoogle();
       if (!signedIn) {
-        Get.snackbar('Google sign-in', 'Sign-in cancelled.');
         return;
       }
-      Get.snackbar('Login success', 'Welcome back!');
       await _routeByRole();
     } on FirebaseAuthException catch (e) {
       if (e.code == 'network-request-failed') {
@@ -75,9 +75,12 @@ class LoginController extends GetxController {
         return;
       }
       final message = _friendlyAuthMessage(e);
-      Get.snackbar('Login failed', message);
+      await showAppErrorDialog(title: 'Login failed', message: message);
     } catch (_) {
-      Get.snackbar('Login failed', 'Please try again.');
+      await showAppErrorDialog(
+        title: 'Login failed',
+        message: 'Please try again.',
+      );
     } finally {
       isLoading.value = false;
     }
@@ -113,15 +116,7 @@ class LoginController extends GetxController {
   }
 
   Future<void> _showNoInternetDialog() async {
-    final context = Get.context;
-    if (context == null) {
-      Get.snackbar(
-        'No internet',
-        'Please check your connection and try again.',
-      );
-      return;
-    }
-    await showNoInternetDialog(context);
+    await showNoInternetDialogOnce();
   }
 
   Future<void> _routeByRole() async {

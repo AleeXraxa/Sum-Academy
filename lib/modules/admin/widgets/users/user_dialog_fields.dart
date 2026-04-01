@@ -131,12 +131,14 @@ class DialogDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final borderRadius = BorderRadius.circular(SumAcademyTheme.radiusInput.r);
+    final safeValue =
+        value != null && items.contains(value) ? value : null;
 
     return Opacity(
       opacity: enabled ? 1 : 0.6,
       child: CustomDropdown<String>(
       items: items,
-      initialItem: value,
+      initialItem: safeValue,
       hintText: hintText,
       onChanged: onChanged,
       enabled: enabled,

@@ -5,7 +5,7 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/core/services/api_exception.dart';
-import 'package:sum_academy/core/widgets/status_dialogs.dart';
+import 'package:sum_academy/core/utils/network_error.dart';
 import 'package:sum_academy/modules/admin/models/admin_activity_payload.dart';
 import 'package:sum_academy/modules/admin/models/admin_user.dart';
 import 'package:sum_academy/modules/admin/services/admin_activity_service.dart';
@@ -34,10 +34,12 @@ class AdminController extends GetxController {
   int _currentPage = 1;
   final int _pageSize = 20;
   final RxString currentUserUid = ''.obs;
-  bool _initialUsersDelayShown = false;
   int _usersRequestId = 0;
   final RxBool isStatsLoading = false.obs;
   final RxBool isActivitiesLoading = false.obs;
+  final RxBool isUsersInitialized = false.obs;
+  final RxBool isStatsInitialized = false.obs;
+  final RxBool isActivitiesInitialized = false.obs;
 
   final RxList<AdminUserFilter> userFilters = <AdminUserFilter>[].obs;
 
@@ -89,20 +91,22 @@ class AdminController extends GetxController {
         ),
       );
     } on ApiException catch (e) {
-      if (e.statusCode == 0) {
-        final context = Get.context;
-        if (context != null) {
-          await showNoInternetDialog(context);
-        } else {
-          Get.snackbar('No internet', e.message);
-        }
-        return;
-      }
-      Get.snackbar('Stats', _formatApiError(e));
+      final handled = await handleNetworkError(e);
+      if (handled) return;
+      await showAppErrorDialog(
+        title: 'Stats',
+        message: _formatApiError(e),
+      );
     } catch (_) {
-      Get.snackbar('Stats', 'Failed to load stats.');
+      await showAppErrorDialog(
+        title: 'Stats',
+        message: 'Failed to load stats.',
+      );
     } finally {
       isStatsLoading.value = false;
+      if (!isStatsInitialized.value) {
+        isStatsInitialized.value = true;
+      }
     }
   }
 
@@ -113,20 +117,22 @@ class AdminController extends GetxController {
       final payloads = await _activityService.fetchRecentActivity();
       recentActivities.assignAll(payloads.map(_mapActivity));
     } on ApiException catch (e) {
-      if (e.statusCode == 0) {
-        final context = Get.context;
-        if (context != null) {
-          await showNoInternetDialog(context);
-        } else {
-          Get.snackbar('No internet', e.message);
-        }
-        return;
-      }
-      Get.snackbar('Recent activity', _formatApiError(e));
+      final handled = await handleNetworkError(e);
+      if (handled) return;
+      await showAppErrorDialog(
+        title: 'Recent activity',
+        message: _formatApiError(e),
+      );
     } catch (_) {
-      Get.snackbar('Recent activity', 'Failed to load activity.');
+      await showAppErrorDialog(
+        title: 'Recent activity',
+        message: 'Failed to load activity.',
+      );
     } finally {
       isActivitiesLoading.value = false;
+      if (!isActivitiesInitialized.value) {
+        isActivitiesInitialized.value = true;
+      }
     }
   }
 
@@ -146,10 +152,6 @@ class AdminController extends GetxController {
       isUsersLoadingMore.value = true;
     }
     try {
-      if (reset && !_initialUsersDelayShown) {
-        await Future.delayed(const Duration(milliseconds: 1500));
-        _initialUsersDelayShown = true;
-      }
       await _ensureAuthReady();
       final result = await _userService.fetchUsers(
         page: _currentPage,
@@ -176,15 +178,8 @@ class AdminController extends GetxController {
       if (requestId != _usersRequestId) {
         return;
       }
-      if (e.statusCode == 0) {
-        final context = Get.context;
-        if (context != null) {
-          await showNoInternetDialog(context);
-        } else {
-          Get.snackbar('No internet', e.message);
-        }
-        return;
-      }
+      final handled = await handleNetworkError(e);
+      if (handled) return;
       if (e.statusCode == 401) {
         final retry = await _retryFetchUsers(
           requestId: requestId,
@@ -194,18 +189,27 @@ class AdminController extends GetxController {
           return;
         }
       }
-      Get.snackbar('Users', _formatApiError(e));
+      await showAppErrorDialog(
+        title: 'Users',
+        message: _formatApiError(e),
+      );
     } catch (_) {
       if (requestId != _usersRequestId) {
         return;
       }
-      Get.snackbar('Users', 'Failed to load users.');
+      await showAppErrorDialog(
+        title: 'Users',
+        message: 'Failed to load users.',
+      );
     } finally {
       if (requestId != _usersRequestId) {
         return;
       }
       if (reset) {
         isUsersLoading.value = false;
+        if (!isUsersInitialized.value) {
+          isUsersInitialized.value = true;
+        }
       } else {
         isUsersLoadingMore.value = false;
       }
@@ -398,9 +402,12 @@ class AdminController extends GetxController {
     try {
       await _userService.resetUserDevice(uid);
     } on ApiException catch (e) {
-      Get.snackbar('Reset failed', e.message);
+      await showAppErrorDialog(title: 'Reset failed', message: e.message);
     } catch (_) {
-      Get.snackbar('Reset failed', 'Please try again.');
+      await showAppErrorDialog(
+        title: 'Reset failed',
+        message: 'Please try again.',
+      );
     }
   }
 

@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
+import 'package:sum_academy/core/utils/network_error.dart';
 import 'package:sum_academy/core/widgets/confirmation_dialog.dart';
 import 'package:sum_academy/core/widgets/status_dialogs.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_course_controller.dart';
 import 'package:sum_academy/modules/admin/models/admin_course.dart';
+import 'package:sum_academy/modules/admin/views/courses/admin_course_content_view.dart';
 import 'package:sum_academy/modules/admin/widgets/courses/course_form_dialog.dart';
 import 'package:sum_academy/modules/admin/widgets/users/role_pill.dart';
 
@@ -26,7 +28,7 @@ class CourseListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final muted = textColor.withOpacityFloat(0.6);
-    final statusColor = _statusColor(course.status);
+    final statusColor = _statusColor(course.status, isArchived: course.isArchived);
     final statusTone = statusColor.withOpacityFloat(0.12);
     final discounted = _discountedPrice(course.price, course.discount);
     final subjectLabel =
@@ -70,9 +72,11 @@ class CourseListCard extends StatelessWidget {
               ),
               alignment: Alignment.topRight,
               child: RolePill(
-                label: course.status.isNotEmpty
-                    ? _capitalize(course.status)
-                    : 'Draft',
+                label: course.isArchived
+                    ? 'Archived'
+                    : course.status.isNotEmpty
+                        ? _capitalize(course.status)
+                        : 'Draft',
                 color: statusColor,
                 background: statusTone,
               ),
@@ -165,7 +169,9 @@ class CourseListCard extends StatelessWidget {
                     Expanded(
                       child: _OutlineActionButton(
                         label: 'Manage Content',
-                        onPressed: () {},
+                        onPressed: () => Get.to(
+                          () => AdminCourseContentView(course: course),
+                        ),
                       ),
                     ),
                   ],
@@ -175,8 +181,16 @@ class CourseListCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _OutlineActionButton(
-                        label: 'Archive',
-                        onPressed: () {},
+                        label: course.isArchived ? 'Publish' : 'Archive',
+                        color: course.isArchived
+                            ? SumAcademyTheme.success
+                            : SumAcademyTheme.darkBase,
+                        borderColor: course.isArchived
+                            ? SumAcademyTheme.success.withOpacityFloat(0.4)
+                            : SumAcademyTheme.brandBluePale,
+                        onPressed: () => course.isArchived
+                            ? _confirmPublish(context)
+                            : _confirmArchive(context),
                       ),
                     ),
                     SizedBox(width: 10.w),
@@ -228,15 +242,96 @@ class CourseListCard extends StatelessWidget {
         );
       } else {
         if (result.isNetworkError) {
-          await showNoInternetDialog(
-            overlayContext,
-            message: result.message,
-          );
+          await showNoInternetDialogOnce(message: result.message);
           return;
         }
         await showErrorDialog(
           overlayContext,
           title: 'Delete Failed',
+          message: result.message,
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmArchive(BuildContext context) async {
+    final controller = Get.find<AdminCourseController>();
+    final confirmed = await showConfirmationDialog(
+      context,
+      title: 'Archive course',
+      message: 'Archived courses are hidden from learners.',
+      confirmText: 'Archive',
+      cancelText: 'Cancel',
+      confirmColor: SumAcademyTheme.warning,
+    );
+
+    if (confirmed == true) {
+      final overlayContext = Get.context ?? context;
+      showLoadingDialog(overlayContext, message: 'Archiving course...');
+      late final result;
+      try {
+        result = await controller.archiveCourse(course.id);
+      } finally {
+        if (Navigator.of(overlayContext, rootNavigator: true).canPop()) {
+          Navigator.of(overlayContext, rootNavigator: true).pop();
+        }
+      }
+      if (result.isSuccess) {
+        await showSuccessDialog(
+          overlayContext,
+          title: 'Course Archived',
+          message: result.message,
+        );
+      } else {
+        if (result.isNetworkError) {
+          await showNoInternetDialogOnce(message: result.message);
+          return;
+        }
+        await showErrorDialog(
+          overlayContext,
+          title: 'Archive Failed',
+          message: result.message,
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmPublish(BuildContext context) async {
+    final controller = Get.find<AdminCourseController>();
+    final confirmed = await showConfirmationDialog(
+      context,
+      title: 'Publish course',
+      message: 'This course will be visible to learners.',
+      confirmText: 'Publish',
+      cancelText: 'Cancel',
+      confirmColor: SumAcademyTheme.success,
+    );
+
+    if (confirmed == true) {
+      final overlayContext = Get.context ?? context;
+      showLoadingDialog(overlayContext, message: 'Publishing course...');
+      late final result;
+      try {
+        result = await controller.publishCourse(course.id);
+      } finally {
+        if (Navigator.of(overlayContext, rootNavigator: true).canPop()) {
+          Navigator.of(overlayContext, rootNavigator: true).pop();
+        }
+      }
+      if (result.isSuccess) {
+        await showSuccessDialog(
+          overlayContext,
+          title: 'Course Published',
+          message: result.message,
+        );
+      } else {
+        if (result.isNetworkError) {
+          await showNoInternetDialogOnce(message: result.message);
+          return;
+        }
+        await showErrorDialog(
+          overlayContext,
+          title: 'Publish Failed',
           message: result.message,
         );
       }
@@ -309,7 +404,10 @@ class _OutlineActionButton extends StatelessWidget {
   }
 }
 
-Color _statusColor(String status) {
+Color _statusColor(String status, {bool isArchived = false}) {
+  if (isArchived) {
+    return SumAcademyTheme.error;
+  }
   final normalized = status.toLowerCase();
   if (normalized.contains('publish') || normalized.contains('active')) {
     return SumAcademyTheme.success;
