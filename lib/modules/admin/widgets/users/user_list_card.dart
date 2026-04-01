@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
-import 'package:sum_academy/core/utils/network_error.dart';
 import 'package:sum_academy/core/widgets/confirmation_dialog.dart';
 import 'package:sum_academy/core/widgets/status_dialogs.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_controller.dart';
@@ -202,7 +201,7 @@ class UserListCard extends StatelessWidget {
           message: result.message,
         );
       } else {
-        if (isNetworkErrorMessage(result.message)) {
+        if (result.isNetworkError) {
           await showNoInternetDialog(
             overlayContext,
             message: result.message,

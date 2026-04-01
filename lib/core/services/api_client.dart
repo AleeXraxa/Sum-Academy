@@ -63,6 +63,7 @@ class ApiClient {
     Map<String, dynamic>? body,
     bool auth = false,
     Map<String, dynamic>? query,
+    bool retryAuth = true,
   }) async {
     final headers = await _headers(auth: auth);
     final uri = _buildUri(path, query);
@@ -118,6 +119,18 @@ class ApiClient {
       );
     }
 
+    if (auth && response.statusCode == 401 && retryAuth) {
+      await _refreshToken();
+      return _send(
+        method,
+        path,
+        body: body,
+        auth: auth,
+        query: query,
+        retryAuth: false,
+      );
+    }
+
     return _handleResponse(response);
   }
 
@@ -141,7 +154,7 @@ class ApiClient {
     final headers = <String, String>{'Content-Type': 'application/json'};
 
     if (auth) {
-      final token = await FirebaseAuth.instance.currentUser?.getIdToken(true);
+      final token = await FirebaseAuth.instance.currentUser?.getIdToken();
       if (token == null || token.isEmpty) {
         throw ApiException('Authentication required.', statusCode: 401);
       }
@@ -149,6 +162,14 @@ class ApiClient {
     }
 
     return headers;
+  }
+
+  Future<void> _refreshToken() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw ApiException('Authentication required.', statusCode: 401);
+    }
+    await user.getIdToken(true);
   }
 
   Map<String, dynamic> _handleResponse(http.Response response) {

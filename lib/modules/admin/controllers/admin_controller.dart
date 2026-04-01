@@ -289,6 +289,9 @@ class AdminController extends GetxController {
       users.insert(0, _toRow(created));
       return const AdminActionResult.success('User created successfully.');
     } on ApiException catch (e) {
+      if (e.statusCode == 0) {
+        return AdminActionResult.networkFailure(e.message);
+      }
       return AdminActionResult.failure(_formatApiError(e));
     } catch (_) {
       return const AdminActionResult.failure('Please try again.');
@@ -341,6 +344,9 @@ class AdminController extends GetxController {
       }
       return const AdminActionResult.success('User updated successfully.');
     } on ApiException catch (e) {
+      if (e.statusCode == 0) {
+        return AdminActionResult.networkFailure(e.message);
+      }
       return AdminActionResult.failure(_formatApiError(e));
     } catch (_) {
       return const AdminActionResult.failure('Please try again.');
@@ -353,6 +359,9 @@ class AdminController extends GetxController {
       users.removeWhere((user) => user.uid == uid);
       return const AdminActionResult.success('User deleted successfully.');
     } on ApiException catch (e) {
+      if (e.statusCode == 0) {
+        return AdminActionResult.networkFailure(e.message);
+      }
       return AdminActionResult.failure(_formatApiError(e));
     } catch (_) {
       return const AdminActionResult.failure('Please try again.');
@@ -376,6 +385,9 @@ class AdminController extends GetxController {
       }
       return const AdminActionResult.success('Role updated successfully.');
     } on ApiException catch (e) {
+      if (e.statusCode == 0) {
+        return AdminActionResult.networkFailure(e.message);
+      }
       return AdminActionResult.failure(_formatApiError(e));
     } catch (_) {
       return const AdminActionResult.failure('Please try again.');
@@ -756,13 +768,26 @@ class AdminActivity {
 
 class AdminActionResult {
   final bool isSuccess;
+  final bool isNetworkError;
   final String message;
 
-  const AdminActionResult._(this.isSuccess, this.message);
+  const AdminActionResult._(
+    this.isSuccess,
+    this.message, {
+    this.isNetworkError = false,
+  });
 
-  const AdminActionResult.success(this.message) : isSuccess = true;
+  const AdminActionResult.success(this.message)
+      : isSuccess = true,
+        isNetworkError = false;
 
-  const AdminActionResult.failure(this.message) : isSuccess = false;
+  const AdminActionResult.failure(this.message)
+      : isSuccess = false,
+        isNetworkError = false;
+
+  const AdminActionResult.networkFailure(this.message)
+      : isSuccess = false,
+        isNetworkError = true;
 }
 
 class _ActivityStyle {

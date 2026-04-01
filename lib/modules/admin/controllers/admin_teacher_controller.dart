@@ -127,6 +127,9 @@ class AdminTeacherController extends GetxController {
       teachers.insert(0, _toRow(created));
       return const TeacherActionResult.success('Teacher created successfully.');
     } on ApiException catch (e) {
+      if (e.statusCode == 0) {
+        return TeacherActionResult.networkFailure(e.message);
+      }
       return TeacherActionResult.failure(_formatApiError(e));
     } catch (_) {
       return const TeacherActionResult.failure('Please try again.');
@@ -182,6 +185,9 @@ class AdminTeacherController extends GetxController {
       }
       return const TeacherActionResult.success('Teacher updated successfully.');
     } on ApiException catch (e) {
+      if (e.statusCode == 0) {
+        return TeacherActionResult.networkFailure(e.message);
+      }
       return TeacherActionResult.failure(_formatApiError(e));
     } catch (_) {
       return const TeacherActionResult.failure('Please try again.');
@@ -194,6 +200,9 @@ class AdminTeacherController extends GetxController {
       teachers.removeWhere((t) => t.uid == uid);
       return const TeacherActionResult.success('Teacher deleted successfully.');
     } on ApiException catch (e) {
+      if (e.statusCode == 0) {
+        return TeacherActionResult.networkFailure(e.message);
+      }
       return TeacherActionResult.failure(_formatApiError(e));
     } catch (_) {
       return const TeacherActionResult.failure('Please try again.');
@@ -344,13 +353,26 @@ class AdminTeacherRow {
 
 class TeacherActionResult {
   final bool isSuccess;
+  final bool isNetworkError;
   final String message;
 
-  const TeacherActionResult._(this.isSuccess, this.message);
+  const TeacherActionResult._(
+    this.isSuccess,
+    this.message, {
+    this.isNetworkError = false,
+  });
 
-  const TeacherActionResult.success(this.message) : isSuccess = true;
+  const TeacherActionResult.success(this.message)
+      : isSuccess = true,
+        isNetworkError = false;
 
-  const TeacherActionResult.failure(this.message) : isSuccess = false;
+  const TeacherActionResult.failure(this.message)
+      : isSuccess = false,
+        isNetworkError = false;
+
+  const TeacherActionResult.networkFailure(this.message)
+      : isSuccess = false,
+        isNetworkError = true;
 }
 
 String _formatApiError(ApiException exception) {

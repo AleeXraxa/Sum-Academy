@@ -55,14 +55,24 @@ class DialogTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final borderRadius = BorderRadius.circular(SumAcademyTheme.radiusInput.r);
+    final resolvedMaxLines = maxLines ?? 1;
+    final isMultiline = resolvedMaxLines > 1 || (minLines ?? 0) > 1;
+    final useNewlineAction = textInputAction == TextInputAction.newline;
+    final resolvedKeyboardType =
+        (isMultiline || useNewlineAction) && keyboardType == TextInputType.text
+            ? TextInputType.multiline
+            : keyboardType;
+    final resolvedAction = isMultiline && textInputAction == TextInputAction.next
+        ? TextInputAction.newline
+        : textInputAction;
 
     return TextFormField(
       controller: controller,
-      keyboardType: keyboardType,
+      keyboardType: resolvedKeyboardType,
       obscureText: obscureText,
-      textInputAction: textInputAction,
+      textInputAction: resolvedAction,
       validator: validator,
-      maxLines: maxLines ?? 1,
+      maxLines: resolvedMaxLines,
       minLines: minLines,
       maxLength: maxLength,
       onChanged: onChanged,
