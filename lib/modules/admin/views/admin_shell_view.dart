@@ -1,6 +1,4 @@
-import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/core/widgets/app_bootstrap_loader.dart';
@@ -75,37 +73,7 @@ class AdminShellView extends GetView<AdminController> {
             }
           },
         ),
-        bottomNavigationBar: CurvedNavigationBar(
-          index: controller.navIndex.value,
-          height: 60.h,
-          backgroundColor: Colors.transparent,
-          color: SumAcademyTheme.brandBlue,
-          buttonBackgroundColor: SumAcademyTheme.darkBase,
-          animationDuration: const Duration(milliseconds: 280),
-          items: [
-            Icon(
-              Icons.dashboard_rounded,
-              color: SumAcademyTheme.white,
-              size: 22.sp,
-            ),
-            Icon(
-              Icons.group_rounded,
-              color: SumAcademyTheme.white,
-              size: 22.sp,
-            ),
-            Icon(
-              Icons.payments_rounded,
-              color: SumAcademyTheme.white,
-              size: 22.sp,
-            ),
-            Icon(
-              Icons.settings_rounded,
-              color: SumAcademyTheme.white,
-              size: 22.sp,
-            ),
-          ],
-          onTap: controller.setNavIndex,
-        ),
+        // Bottom navbar removed: navigation handled via sidebar.
         body: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(

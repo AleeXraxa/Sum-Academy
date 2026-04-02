@@ -53,16 +53,97 @@ class StudentProfile {
       'lastSignInAt',
       'lastSignIn',
     ]);
-    final assignedMobileDevice = _readString(
+    var assignedMobileDevice = _readString(
       json,
-      ['assignedMobileDevice', 'assignedDevice', 'deviceName', 'device'],
+      [
+        'assignedMobileDevice',
+        'assignedDevice',
+        'deviceName',
+        'device',
+      ],
     );
-    final assignedWebDevice =
-        _readString(json, ['assignedWebDevice', 'assignedWeb']);
-    final assignedMobileIp =
-        _readString(json, ['lastKnownMobileIp', 'mobileIp', 'lastKnownIP']);
-    final assignedWebIp =
-        _readString(json, ['lastKnownWebIp', 'webIp', 'webIP']);
+    var assignedWebDevice = _readString(
+      json,
+      [
+        'assignedWebDevice',
+        'assignedWeb',
+        'assignedWebDEVICE',
+        'assignedWebDeviceName',
+        'webDevice',
+      ],
+    );
+    var assignedMobileIp = _readString(
+      json,
+      [
+        'lastKnownMobileIp',
+        'mobileIp',
+        'mobileIP',
+        'assignedMobileIp',
+        'assignedMobileIP',
+        'lastKnownIP',
+      ],
+    );
+    var assignedWebIp = _readString(
+      json,
+      [
+        'assignedWebIp',
+        'assignedWebIP',
+        'assignedWebIpAddress',
+        'lastKnownWebIp',
+        'lastKnownWebIP',
+        'webIp',
+        'webIP',
+        'webIpAddress',
+      ],
+    );
+
+    assignedMobileDevice = assignedMobileDevice.isNotEmpty
+        ? assignedMobileDevice
+        : _readNestedString(
+            json,
+            _securityContainers,
+            [
+              'assignedMobileDevice',
+              'deviceName',
+              'device',
+            ],
+          );
+    assignedWebDevice = assignedWebDevice.isNotEmpty
+        ? assignedWebDevice
+        : _readNestedString(
+            json,
+            _securityContainers,
+            [
+              'assignedWebDevice',
+              'assignedWebDeviceName',
+              'webDevice',
+            ],
+          );
+    assignedMobileIp = assignedMobileIp.isNotEmpty
+        ? assignedMobileIp
+        : _readNestedString(
+            json,
+            _securityContainers,
+            [
+              'assignedMobileIp',
+              'mobileIp',
+              'mobileIP',
+              'lastKnownMobileIp',
+            ],
+          );
+    assignedWebIp = assignedWebIp.isNotEmpty
+        ? assignedWebIp
+        : _readNestedString(
+            json,
+            _securityContainers,
+            [
+              'assignedWebIp',
+              'assignedWebIP',
+              'webIp',
+              'webIP',
+              'lastKnownWebIp',
+            ],
+          );
     final device =
         assignedMobileDevice.isNotEmpty ? assignedMobileDevice : 'N/A';
 
@@ -232,6 +313,39 @@ String _readString(
     if (text.isNotEmpty) return text;
   }
   return fallback;
+}
+
+const List<String> _securityContainers = [
+  'security',
+  'device',
+  'devices',
+  'meta',
+  'profile',
+  'user',
+  'account',
+  'auth',
+  'session',
+  'sessions',
+  'lastDevice',
+  'last_device',
+  'deviceInfo',
+  'ip',
+  'ips',
+];
+
+String _readNestedString(
+  Map<String, dynamic> json,
+  List<String> containerKeys,
+  List<String> keys,
+) {
+  for (final containerKey in containerKeys) {
+    final container = json[containerKey];
+    if (container is Map<String, dynamic>) {
+      final value = _readString(container, keys);
+      if (value.isNotEmpty) return value;
+    }
+  }
+  return '';
 }
 
 int _readInt(

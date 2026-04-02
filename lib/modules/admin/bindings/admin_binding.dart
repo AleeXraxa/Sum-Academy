@@ -12,6 +12,8 @@ import 'package:sum_academy/modules/admin/services/admin_student_service.dart';
 import 'package:sum_academy/modules/admin/services/admin_teacher_service.dart';
 import 'package:sum_academy/modules/admin/services/admin_user_service.dart';
 import 'package:sum_academy/modules/admin/services/student_profile_service.dart';
+import 'package:sum_academy/modules/admin/services/teacher_profile_service.dart';
+import 'package:sum_academy/modules/admin/services/user_profile_service.dart';
 
 class AdminBinding extends Bindings {
   @override
@@ -22,6 +24,8 @@ class AdminBinding extends Bindings {
     Get.lazyPut<AdminCourseService>(() => AdminCourseService(), fenix: true);
     Get.lazyPut<AdminClassService>(() => AdminClassService(), fenix: true);
     Get.lazyPut<StudentProfileService>(() => StudentProfileService(), fenix: true);
+    Get.lazyPut<UserProfileService>(() => UserProfileService(), fenix: true);
+    Get.lazyPut<TeacherProfileService>(() => TeacherProfileService(), fenix: true);
     Get.lazyPut<AdminActivityService>(() => AdminActivityService(), fenix: true);
     Get.lazyPut<AdminStatsService>(() => AdminStatsService(), fenix: true);
     Get.lazyPut<AdminController>(() => AdminController());

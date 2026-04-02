@@ -28,7 +28,7 @@ class AdminTeacherController extends GetxController {
 
   Timer? _searchDebounce;
   int _currentPage = 1;
-  final int _pageSize = 20;
+  final int _pageSize = 10;
 
   @override
   void onInit() {
@@ -60,17 +60,23 @@ class AdminTeacherController extends GetxController {
       final result = await _service.fetchTeachers(
         page: _currentPage,
         limit: _pageSize,
-        search: searchQuery.value,
+        search: null,
       );
       final rows = result.map(_toRow).toList();
+      final pageRows = rows.length > _pageSize
+          ? _slicePage(rows, _currentPage, _pageSize)
+          : rows;
       if (reset) {
         teachers
           ..clear()
-          ..addAll(rows);
+          ..addAll(pageRows);
       } else {
-        teachers.addAll(rows);
+        final existing = teachers.map((item) => item.uid).toSet();
+        teachers.addAll(
+          pageRows.where((item) => !existing.contains(item.uid)),
+        );
       }
-      if (rows.length < _pageSize) {
+      if (pageRows.length < _pageSize) {
         hasMore.value = false;
       }
       _refreshFilters();
@@ -252,7 +258,6 @@ class AdminTeacherController extends GetxController {
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 300), () {
       searchQuery.value = searchController.text.trim();
-      fetchTeachers();
     });
   }
 
@@ -397,4 +402,12 @@ String _formatApiError(ApiException exception) {
   }
 
   return '$base\n${details.join('\n')}';
+}
+
+List<T> _slicePage<T>(List<T> items, int page, int pageSize) {
+  if (items.isEmpty) return items;
+  final start = (page - 1) * pageSize;
+  if (start >= items.length) return <T>[];
+  final end = start + pageSize;
+  return items.sublist(start, end > items.length ? items.length : end);
 }

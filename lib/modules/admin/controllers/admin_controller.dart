@@ -32,7 +32,7 @@ class AdminController extends GetxController {
   Timer? _searchDebounce;
   final RxBool hasMoreUsers = true.obs;
   int _currentPage = 1;
-  final int _pageSize = 20;
+  final int _pageSize = 10;
   final RxString currentUserUid = ''.obs;
   int _usersRequestId = 0;
   final RxBool isStatsLoading = false.obs;
@@ -156,21 +156,27 @@ class AdminController extends GetxController {
       final result = await _userService.fetchUsers(
         page: _currentPage,
         limit: _pageSize,
-        search: searchQuery.value,
-        role: _selectedRoleFilter(),
+        search: null,
+        role: null,
       );
       if (requestId != _usersRequestId) {
         return;
       }
       final rows = result.map(_toRow).toList();
+      final pageRows = rows.length > _pageSize
+          ? _slicePage(rows, _currentPage, _pageSize)
+          : rows;
       if (reset) {
         users
           ..clear()
-          ..addAll(rows);
+          ..addAll(pageRows);
       } else {
-        users.addAll(rows);
+        final existing = users.map((item) => item.uid).toSet();
+        users.addAll(
+          pageRows.where((item) => !existing.contains(item.uid)),
+        );
       }
-      if (rows.length < _pageSize) {
+      if (pageRows.length < _pageSize) {
         hasMoreUsers.value = false;
       }
       _refreshUserFilters();
@@ -251,21 +257,27 @@ class AdminController extends GetxController {
       final result = await _userService.fetchUsers(
         page: _currentPage,
         limit: _pageSize,
-        search: searchQuery.value,
-        role: _selectedRoleFilter(),
+        search: null,
+        role: null,
       );
       if (requestId != _usersRequestId) {
         return false;
       }
       final rows = result.map(_toRow).toList();
+      final pageRows = rows.length > _pageSize
+          ? _slicePage(rows, _currentPage, _pageSize)
+          : rows;
       if (reset) {
         users
           ..clear()
-          ..addAll(rows);
+          ..addAll(pageRows);
       } else {
-        users.addAll(rows);
+        final existing = users.map((item) => item.uid).toSet();
+        users.addAll(
+          pageRows.where((item) => !existing.contains(item.uid)),
+        );
       }
-      if (rows.length < _pageSize) {
+      if (pageRows.length < _pageSize) {
         hasMoreUsers.value = false;
       }
       _refreshUserFilters();
@@ -429,7 +441,6 @@ class AdminController extends GetxController {
 
   void setUserFilterIndex(int index) {
     userFilterIndex.value = index;
-    fetchUsers();
   }
 
   void toggleSearch() {
@@ -456,7 +467,6 @@ class AdminController extends GetxController {
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 300), () {
       searchQuery.value = searchController.text.trim();
-      fetchUsers();
     });
   }
 
@@ -475,7 +485,30 @@ class AdminController extends GetxController {
   }
 
   List<AdminUserRow> get filteredUsers {
-    return users.toList();
+    final query = searchQuery.value.trim().toLowerCase();
+    Iterable<AdminUserRow> list = users;
+    if (query.isNotEmpty) {
+      list = list.where(
+        (user) =>
+            user.name.toLowerCase().contains(query) ||
+            user.email.toLowerCase().contains(query) ||
+            user.phone.toLowerCase().contains(query),
+      );
+    }
+    switch (userFilterIndex.value) {
+      case 1:
+        list = list.where(_isStudent);
+        break;
+      case 2:
+        list = list.where(_isTeacher);
+        break;
+      case 3:
+        list = list.where(_isAdmin);
+        break;
+      default:
+        break;
+    }
+    return list.toList();
   }
 
   String? _selectedRoleFilter() {
@@ -914,6 +947,14 @@ String _friendlyActivitySubtitle(String title, String type) {
     return 'Course activity updated.';
   }
   return 'Activity update';
+}
+
+List<T> _slicePage<T>(List<T> items, int page, int pageSize) {
+  if (items.isEmpty) return items;
+  final start = (page - 1) * pageSize;
+  if (start >= items.length) return <T>[];
+  final end = start + pageSize;
+  return items.sublist(start, end > items.length ? items.length : end);
 }
 
 String? _resolveUserName(AdminActivityPayload payload) {

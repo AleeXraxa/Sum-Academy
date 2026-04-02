@@ -292,6 +292,8 @@ class _StudentProfileDialogState extends State<StudentProfileDialog> {
                   borderColor: lightBorder,
                   assignedWebDevice: profile?.assignedWebDevice ?? '',
                   assignedWebIp: profile?.assignedWebIp ?? '',
+                  assignedMobileDevice: profile?.assignedMobileDevice ?? '',
+                  assignedMobileIp: profile?.assignedMobileIp ?? '',
                   onReset: () async {
                     final overlayContext = context;
                     showLoadingDialog(
@@ -621,12 +623,16 @@ class _SecurityCard extends StatelessWidget {
   final Color borderColor;
   final String assignedWebDevice;
   final String assignedWebIp;
+  final String assignedMobileDevice;
+  final String assignedMobileIp;
   final VoidCallback onReset;
 
   const _SecurityCard({
     required this.borderColor,
     required this.assignedWebDevice,
     required this.assignedWebIp,
+    required this.assignedMobileDevice,
+    required this.assignedMobileIp,
     required this.onReset,
   });
 
@@ -650,6 +656,17 @@ class _SecurityCard extends StatelessWidget {
           _SecurityRow(
             label: 'Assigned Web IP',
             value: assignedWebIp.isNotEmpty ? assignedWebIp : 'N/A',
+          ),
+          SizedBox(height: 6.h),
+          _SecurityRow(
+            label: 'Assigned Mobile Device',
+            value:
+                assignedMobileDevice.isNotEmpty ? assignedMobileDevice : 'N/A',
+          ),
+          SizedBox(height: 6.h),
+          _SecurityRow(
+            label: 'Assigned Mobile IP',
+            value: assignedMobileIp.isNotEmpty ? assignedMobileIp : 'N/A',
           ),
           SizedBox(height: 12.h),
           ElevatedButton(

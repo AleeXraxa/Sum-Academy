@@ -690,7 +690,6 @@ class _ClassFormDialogState extends State<ClassFormDialog> {
           ? widget.classItem!.id
           : result.classItem?.id ?? '';
       if (classId.isNotEmpty) {
-        await _submitCourses(classService, classId);
         final shiftCount = result.classItem?.shiftCount ?? 0;
         if (shiftPayloads.isNotEmpty && shiftCount == 0) {
           await _submitShifts(classService, classId);

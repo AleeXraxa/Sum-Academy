@@ -8,11 +8,11 @@ class StudentProfileService {
 
   Future<StudentProfileData> fetchStudentProfile(String studentId) async {
     final detailResponse = await _client.get(
-      '/teacher/students/$studentId',
+      '/admin/students/$studentId',
       auth: true,
     );
     final progressResponse = await _client.get(
-      '/teacher/students/$studentId/progress/',
+      '/admin/students/$studentId/progress',
       auth: true,
     );
 

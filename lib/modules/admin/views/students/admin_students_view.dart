@@ -32,35 +32,12 @@ class AdminStudentsView extends StatefulWidget {
 }
 
 class _AdminStudentsViewState extends State<AdminStudentsView> {
-  late final ScrollController _scrollController;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController = ScrollController()..addListener(_onScroll);
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _onScroll() {
-    if (!_scrollController.hasClients) return;
-    final threshold = 240.0;
-    if (_scrollController.position.extentAfter < threshold) {
-      widget.controller.loadMoreStudents();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
       onRefresh: () => widget.controller.fetchStudents(),
       color: widget.textColor,
       child: ListView(
-        controller: _scrollController,
         padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 28.h),
         physics: const AlwaysScrollableScrollPhysics(
           parent: BouncingScrollPhysics(),
@@ -136,6 +113,22 @@ class _AdminStudentsViewState extends State<AdminStudentsView> {
           ),
           SizedBox(height: 16.h),
           Obx(() {
+            final hasQuery =
+                widget.controller.searchQuery.value.trim().isNotEmpty;
+            if (!hasQuery || !widget.controller.hasMore.value) {
+              return const SizedBox.shrink();
+            }
+            return Padding(
+              padding: EdgeInsets.only(bottom: 12.h),
+              child: Text(
+                'Load more to search everything.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: widget.textColor.withOpacityFloat(0.6),
+                    ),
+              ),
+            );
+          }),
+          Obx(() {
             if (widget.controller.isLoading.value) {
               return const UsersSkeletonList(count: 5);
             }
@@ -181,7 +174,32 @@ class _AdminStudentsViewState extends State<AdminStudentsView> {
                 ),
               );
             }
-            return const SizedBox.shrink();
+            if (!widget.controller.hasMore.value) {
+              return const SizedBox.shrink();
+            }
+            return Padding(
+              padding: EdgeInsets.only(top: 8.h),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: widget.controller.loadMoreStudents,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: SumAcademyTheme.brandBlue,
+                    side: const BorderSide(
+                      color: SumAcademyTheme.brandBluePale,
+                    ),
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 18.w, vertical: 12.h),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        SumAcademyTheme.radiusButton.r,
+                      ),
+                    ),
+                  ),
+                  child: const Text('Load More'),
+                ),
+              ),
+            );
           }),
         ],
       ),
