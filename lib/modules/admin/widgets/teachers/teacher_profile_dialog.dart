@@ -251,6 +251,9 @@ class _TeacherProfileDialogState extends State<TeacherProfileDialog> {
         title: 'Device Reset',
         message: 'Device has been reset successfully.',
       );
+      if (mounted) {
+        setState(_loadProfile);
+      }
     } finally {
       if (Navigator.of(overlayContext, rootNavigator: true).canPop()) {
         Navigator.of(overlayContext, rootNavigator: true).pop();

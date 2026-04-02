@@ -416,12 +416,16 @@ class _InfoCard extends StatelessWidget {
                                 ),
                       ),
                     ),
-                    Text(
-                      item.value,
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: SumAcademyTheme.darkBase,
-                            fontWeight: FontWeight.w600,
-                          ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: Text(
+                        item.value,
+                        textAlign: TextAlign.right,
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                              color: SumAcademyTheme.darkBase,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
                     ),
                   ],
                 ),
@@ -823,6 +827,7 @@ String _formatPercent(double value) {
   final adjusted = value <= 1 ? value * 100 : value;
   return '${adjusted.round()}%';
 }
+
 
 String _formatError(String raw) {
   if (raw.isEmpty) return 'Please try again.';

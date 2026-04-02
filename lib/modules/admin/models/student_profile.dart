@@ -4,6 +4,14 @@ class StudentProfile {
   final String email;
   final String phone;
   final String role;
+  final String address;
+  final String caste;
+  final String district;
+  final String domicile;
+  final String fatherName;
+  final String fatherOccupation;
+  final String fatherPhone;
+  final String phoneNumber;
   final DateTime? joinedAt;
   final DateTime? lastLoginAt;
   final String device;
@@ -18,6 +26,14 @@ class StudentProfile {
     required this.email,
     required this.phone,
     required this.role,
+    required this.address,
+    required this.caste,
+    required this.district,
+    required this.domicile,
+    required this.fatherName,
+    required this.fatherOccupation,
+    required this.fatherPhone,
+    required this.phoneNumber,
     required this.joinedAt,
     required this.lastLoginAt,
     required this.device,
@@ -31,11 +47,24 @@ class StudentProfile {
     final uid = _readString(json, ['uid', '_id', 'id', 'userId']);
     final fullName = _readString(json, ['fullName', 'name']);
     final email = _readString(json, ['email']);
-    final phone = _readString(
-      json,
-      ['phone', 'phoneNumber', 'mobile', 'mobileNumber'],
-    );
+    final phoneNumber = _readString(json, [
+      'phone',
+      'phoneNumber',
+      'mobile',
+      'mobileNumber',
+    ]);
+    final phone = phoneNumber;
     final role = _readString(json, ['role'], fallback: 'student');
+    final address = _readString(json, ['address', 'addr', 'location']);
+    final caste = _readString(json, ['caste']);
+    final district = _readString(json, ['district']);
+    final domicile = _readString(json, ['domicile']);
+    final fatherName = _readString(json, ['fatherName', 'father']);
+    final fatherOccupation = _readString(json, [
+      'fatherOccupation',
+      'fatherJob',
+    ]);
+    final fatherPhone = _readString(json, ['fatherPhone', 'fatherPhoneNumber']);
     final joinedAt = _readDate(json, [
       'createdAt',
       'created_at',
@@ -53,99 +82,72 @@ class StudentProfile {
       'lastSignInAt',
       'lastSignIn',
     ]);
-    var assignedMobileDevice = _readString(
-      json,
-      [
-        'assignedMobileDevice',
-        'assignedDevice',
-        'deviceName',
-        'device',
-      ],
-    );
-    var assignedWebDevice = _readString(
-      json,
-      [
-        'assignedWebDevice',
-        'assignedWeb',
-        'assignedWebDEVICE',
-        'assignedWebDeviceName',
-        'webDevice',
-      ],
-    );
-    var assignedMobileIp = _readString(
-      json,
-      [
-        'lastKnownMobileIp',
-        'mobileIp',
-        'mobileIP',
-        'assignedMobileIp',
-        'assignedMobileIP',
-        'lastKnownIP',
-      ],
-    );
-    var assignedWebIp = _readString(
-      json,
-      [
-        'assignedWebIp',
-        'assignedWebIP',
-        'assignedWebIpAddress',
-        'lastKnownWebIp',
-        'lastKnownWebIP',
-        'webIp',
-        'webIP',
-        'webIpAddress',
-      ],
-    );
+    var assignedMobileDevice = _readString(json, [
+      'assignedMobileDevice',
+      'assignedDevice',
+      'deviceName',
+      'device',
+    ]);
+    var assignedWebDevice = _readString(json, [
+      'assignedWebDevice',
+      'assignedWeb',
+      'assignedWebDEVICE',
+      'assignedWebDeviceName',
+      'webDevice',
+    ]);
+    var assignedMobileIp = _readString(json, [
+      'lastKnownMobileIp',
+      'mobileIp',
+      'mobileIP',
+      'assignedMobileIp',
+      'assignedMobileIP',
+      'lastKnownIP',
+    ]);
+    var assignedWebIp = _readString(json, [
+      'assignedWebIp',
+      'assignedWebIP',
+      'assignedWebIpAddress',
+      'lastKnownWebIp',
+      'lastKnownWebIP',
+      'webIp',
+      'webIP',
+      'webIpAddress',
+    ]);
 
     assignedMobileDevice = assignedMobileDevice.isNotEmpty
         ? assignedMobileDevice
-        : _readNestedString(
-            json,
-            _securityContainers,
-            [
-              'assignedMobileDevice',
-              'deviceName',
-              'device',
-            ],
-          );
+        : _readNestedString(json, _securityContainers, [
+            'assignedMobileDevice',
+            'deviceName',
+            'device',
+          ]);
     assignedWebDevice = assignedWebDevice.isNotEmpty
         ? assignedWebDevice
-        : _readNestedString(
-            json,
-            _securityContainers,
-            [
-              'assignedWebDevice',
-              'assignedWebDeviceName',
-              'webDevice',
-            ],
-          );
+        : _readNestedString(json, _securityContainers, [
+            'assignedWebDevice',
+            'assignedWebDeviceName',
+            'webDevice',
+          ]);
     assignedMobileIp = assignedMobileIp.isNotEmpty
         ? assignedMobileIp
-        : _readNestedString(
-            json,
-            _securityContainers,
-            [
-              'assignedMobileIp',
-              'mobileIp',
-              'mobileIP',
-              'lastKnownMobileIp',
-            ],
-          );
+        : _readNestedString(json, _securityContainers, [
+            'assignedMobileIp',
+            'mobileIp',
+            'mobileIP',
+            'lastKnownMobileIp',
+          ]);
     assignedWebIp = assignedWebIp.isNotEmpty
         ? assignedWebIp
-        : _readNestedString(
-            json,
-            _securityContainers,
-            [
-              'assignedWebIp',
-              'assignedWebIP',
-              'webIp',
-              'webIP',
-              'lastKnownWebIp',
-            ],
-          );
-    final device =
-        assignedMobileDevice.isNotEmpty ? assignedMobileDevice : 'N/A';
+        : _readNestedString(json, _securityContainers, [
+            'assignedWebIp',
+            'assignedWebIP',
+            'webIp',
+            'webIP',
+            'lastKnownWebIp',
+          ]);
+    final device = assignedMobileDevice.isNotEmpty
+        ? assignedMobileDevice
+        : 'N/A';
 
     return StudentProfile(
       uid: uid,
@@ -153,6 +155,14 @@ class StudentProfile {
       email: email,
       phone: phone,
       role: role,
+      address: address,
+      caste: caste,
+      district: district,
+      domicile: domicile,
+      fatherName: fatherName,
+      fatherOccupation: fatherOccupation,
+      fatherPhone: fatherPhone,
+      phoneNumber: phoneNumber,
       joinedAt: joinedAt,
       lastLoginAt: lastLoginAt,
       device: device,
@@ -192,29 +202,34 @@ class StudentProgress {
       'items',
       'list',
     ]);
-    final certsList = _extractList(
-      root,
-      ['certificates', 'certificatesList', 'awards', 'items', 'list'],
-    );
+    final certsList = _extractList(root, [
+      'certificates',
+      'certificatesList',
+      'awards',
+      'items',
+      'list',
+    ]);
 
-    final enrolled = _readInt(
-      stats,
-      ['enrolledCourses', 'totalCourses', 'courseCount'],
-      fallback: coursesList.length,
-    );
-    final certificates = _readInt(
-      stats,
-      ['certificates', 'certificatesCount', 'earnedCertificates'],
-      fallback: certsList.length,
-    );
-    final completed = _readInt(
-      stats,
-      ['completedCourses', 'completedCount', 'coursesCompleted'],
-    );
-    final avg = _readDouble(
-      stats,
-      ['avgProgress', 'averageProgress', 'progressAverage'],
-    );
+    final enrolled = _readInt(stats, [
+      'enrolledCourses',
+      'totalCourses',
+      'courseCount',
+    ], fallback: coursesList.length);
+    final certificates = _readInt(stats, [
+      'certificates',
+      'certificatesCount',
+      'earnedCertificates',
+    ], fallback: certsList.length);
+    final completed = _readInt(stats, [
+      'completedCourses',
+      'completedCount',
+      'coursesCompleted',
+    ]);
+    final avg = _readDouble(stats, [
+      'avgProgress',
+      'averageProgress',
+      'progressAverage',
+    ]);
 
     return StudentProgress(
       enrolledCourses: enrolled,
@@ -222,8 +237,7 @@ class StudentProgress {
       completedCourses: completed,
       avgProgress: avg,
       courses: coursesList.map(StudentCourseProgress.fromJson).toList(),
-      certificatesList:
-          certsList.map(StudentCertificate.fromJson).toList(),
+      certificatesList: certsList.map(StudentCertificate.fromJson).toList(),
     );
   }
 }
@@ -245,11 +259,12 @@ class StudentCourseProgress {
     return StudentCourseProgress(
       id: _readString(json, ['courseId', 'id', '_id']),
       title: _readString(json, ['courseName', 'title', 'name'], fallback: '—'),
-      progress: _readDouble(
-        json,
-        ['progress', 'completion', 'percent', 'percentage'],
-        fallback: 0,
-      ),
+      progress: _readDouble(json, [
+        'progress',
+        'completion',
+        'percent',
+        'percentage',
+      ], fallback: 0),
       enrolledAt: _readDate(json, ['enrolledAt', 'createdAt', 'joinedAt']),
     );
   }
@@ -278,14 +293,8 @@ class StudentCertificate {
 
   factory StudentCertificate.fromJson(Map<String, dynamic> json) {
     return StudentCertificate(
-      id: _readString(
-        json,
-        ['certId', 'certificateId', 'id', '_id', 'code'],
-      ),
-      courseName: _readString(
-        json,
-        ['courseName', 'course', 'title', 'name'],
-      ),
+      id: _readString(json, ['certId', 'certificateId', 'id', '_id', 'code']),
+      courseName: _readString(json, ['courseName', 'course', 'title', 'name']),
       issuedAt: _readDate(json, ['issuedAt', 'createdAt']),
     );
   }
@@ -295,10 +304,7 @@ class StudentProfileData {
   final StudentProfile profile;
   final StudentProgress progress;
 
-  const StudentProfileData({
-    required this.profile,
-    required this.progress,
-  });
+  const StudentProfileData({required this.profile, required this.progress});
 }
 
 String _readString(
@@ -348,11 +354,7 @@ String _readNestedString(
   return '';
 }
 
-int _readInt(
-  Map<String, dynamic> json,
-  List<String> keys, {
-  int fallback = 0,
-}) {
+int _readInt(Map<String, dynamic> json, List<String> keys, {int fallback = 0}) {
   for (final key in keys) {
     final value = json[key];
     if (value == null) continue;
