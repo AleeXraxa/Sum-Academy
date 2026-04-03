@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sum_academy/app/routes/app_routes.dart';
 import 'package:sum_academy/core/utils/network_error.dart';
+import 'package:sum_academy/core/widgets/status_dialogs.dart';
 import 'package:sum_academy/modules/admin/bindings/admin_binding.dart';
 import 'package:sum_academy/modules/admin/views/admin_shell_view.dart';
 import 'package:sum_academy/modules/auth/services/auth_service.dart';
@@ -45,6 +46,13 @@ class LoginController extends GetxController {
         await _showNoInternetDialog();
         return;
       }
+      if (e.code == 'device-ip-mismatch') {
+        final dialogContext = Get.context ?? Get.key.currentContext;
+        if (dialogContext != null) {
+          await showDeviceBlockedDialog(dialogContext);
+        }
+        return;
+      }
       final message = _friendlyAuthMessage(e);
       await showAppErrorDialog(title: 'Login failed', message: message);
     } catch (_) {
@@ -74,6 +82,13 @@ class LoginController extends GetxController {
         await _showNoInternetDialog();
         return;
       }
+      if (e.code == 'device-ip-mismatch') {
+        final dialogContext = Get.context ?? Get.key.currentContext;
+        if (dialogContext != null) {
+          await showDeviceBlockedDialog(dialogContext);
+        }
+        return;
+      }
       final message = _friendlyAuthMessage(e);
       await showAppErrorDialog(title: 'Login failed', message: message);
     } catch (_) {
@@ -100,6 +115,10 @@ class LoginController extends GetxController {
       case 'account-exists-with-different-credential':
       case 'credential-already-in-use':
         return 'This email is linked to a different sign-in method.';
+      case 'device-ip-mismatch':
+        return 'Access denied. Your device or IP does not match the registered device.';
+      case 'ip-check-failed':
+        return 'Unable to verify your network. Please try again.';
       case 'too-many-requests':
         return 'Too many attempts. Please try again later.';
       default:

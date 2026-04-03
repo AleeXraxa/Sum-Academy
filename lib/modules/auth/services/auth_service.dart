@@ -21,6 +21,7 @@ class AuthService {
 
     final user = credential.user;
     if (user != null) {
+      await _enforceStudentDeviceLock(user);
       await _upsertUserDocuments(user: user, isNewUser: false);
       await _updateLastSeen(user.uid);
     }
@@ -45,6 +46,7 @@ class AuthService {
     }
 
     final isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
+    await _enforceStudentDeviceLock(user);
     await _upsertUserDocuments(user: user, isNewUser: isNewUser);
     await _updateLastSeen(user.uid);
     return true;
@@ -251,6 +253,53 @@ class AuthService {
         .set(payload, SetOptions(merge: true));
   }
 
+  Future<void> _enforceStudentDeviceLock(User user) async {
+    final snapshot = await _firestore.collection('users').doc(user.uid).get();
+    if (!snapshot.exists) {
+      return;
+    }
+    final data = snapshot.data() ?? {};
+    final role = data['role']?.toString().trim().toLowerCase() ?? 'student';
+    if (role != 'student') {
+      return;
+    }
+    if (kIsWeb) {
+      return;
+    }
+
+    final storedDevice = _readField(
+      data,
+      ['assignedMobileDevice', 'assignedDevice', 'lastDevice'],
+    );
+    final storedIp = _readField(
+      data,
+      ['lastKnownMobileIp', 'assignedMobileIp', 'lastKnownIP'],
+    );
+    if (storedDevice.isEmpty || storedIp.isEmpty) {
+      return;
+    }
+
+    final currentDevice = await _resolveDeviceLabel();
+    final currentIp = await _fetchPublicIp();
+    if (currentIp.isEmpty) {
+      throw FirebaseAuthException(
+        code: 'ip-check-failed',
+        message: 'Unable to verify your network. Please try again.',
+      );
+    }
+
+    final deviceMatches =
+        _normalizeDevice(storedDevice) == _normalizeDevice(currentDevice);
+    final ipMatches = storedIp.trim() == currentIp.trim();
+    if (!deviceMatches || !ipMatches) {
+      await logout();
+      throw FirebaseAuthException(
+        code: 'device-ip-mismatch',
+        message: 'DEVICE_IP_MISMATCH',
+      );
+    }
+  }
+
   Future<Map<String, dynamic>> _buildLastSeenPayload() async {
     final deviceLabel = await _resolveDeviceLabel();
     final ipAddress = await _fetchPublicIp();
@@ -351,6 +400,20 @@ class AuthService {
         .map((value) => value!.trim())
         .join(' ')
         .trim();
+  }
+
+  String _readField(Map<String, dynamic> data, List<String> keys) {
+    for (final key in keys) {
+      final value = data[key];
+      if (value == null) continue;
+      final text = value.toString().trim();
+      if (text.isNotEmpty) return text;
+    }
+    return '';
+  }
+
+  String _normalizeDevice(String value) {
+    return value.trim().toLowerCase();
   }
 
   Future<String> _fetchPublicIp() async {

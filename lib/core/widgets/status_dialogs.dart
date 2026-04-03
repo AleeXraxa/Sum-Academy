@@ -119,6 +119,21 @@ Future<void> showNoInternetDialog(
   );
 }
 
+Future<void> showDeviceBlockedDialog(
+  BuildContext context, {
+  String title = 'Access Blocked',
+  String message =
+      'Your device or IP does not match the registered device. Please contact support.',
+}) {
+  return _showStatusDialog(
+    context,
+    title: title,
+    message: message,
+    icon: Icons.lock_rounded,
+    iconColor: SumAcademyTheme.error,
+  );
+}
+
 Future<void> _showStatusDialog(
   BuildContext context, {
   required String title,
