@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_controller.dart';
+import 'package:sum_academy/modules/admin/widgets/common/admin_ui.dart';
 
 class AdminActionCard extends StatelessWidget {
   final AdminAction action;
@@ -17,12 +18,13 @@ class AdminActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final borderColor = AdminUi.borderColor(context);
     return Container(
       padding: EdgeInsets.all(16.r),
-      decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
-        border: Border.all(color: SumAcademyTheme.brandBluePale),
+      decoration: AdminUi.cardDecoration(
+        surface: surface,
+        border: borderColor,
+        showShadow: true,
       ),
       child: Row(
         children: [

@@ -10,6 +10,7 @@ import 'package:sum_academy/modules/admin/models/admin_user.dart';
 import 'package:sum_academy/modules/admin/models/course_subject.dart';
 import 'package:sum_academy/modules/admin/services/admin_course_service.dart';
 import 'package:sum_academy/modules/admin/services/admin_teacher_service.dart';
+import 'package:sum_academy/modules/admin/widgets/common/admin_ui.dart';
 import 'package:sum_academy/modules/admin/widgets/users/role_pill.dart';
 import 'package:sum_academy/modules/admin/widgets/users/user_dialog_fields.dart';
 
@@ -114,7 +115,7 @@ class _AdminCourseContentViewState extends State<AdminCourseContentView> {
             final leftPanel = _buildLeftPanel(context);
             final rightPanel = _buildRightPanel(context, statusColor, statusTone);
             return SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 24.h),
+              padding: AdminUi.pagePadding(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -201,12 +202,12 @@ class _AdminCourseContentViewState extends State<AdminCourseContentView> {
   }
 
   Widget _buildLeftPanel(BuildContext context) {
+    final borderColor = AdminUi.borderColor(context);
     return Container(
       padding: EdgeInsets.all(16.r),
-      decoration: BoxDecoration(
-        color: SumAcademyTheme.white,
-        borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: SumAcademyTheme.brandBluePale),
+      decoration: AdminUi.cardDecoration(
+        surface: SumAcademyTheme.white,
+        border: borderColor,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -322,6 +323,7 @@ class _AdminCourseContentViewState extends State<AdminCourseContentView> {
     Color statusColor,
     Color statusTone,
   ) {
+    final borderColor = AdminUi.borderColor(context);
     final selected = _subjects.isEmpty
         ? null
         : _subjects[_selectedIndex.clamp(0, _subjects.length - 1)];
@@ -331,10 +333,9 @@ class _AdminCourseContentViewState extends State<AdminCourseContentView> {
       children: [
         Container(
           padding: EdgeInsets.all(16.r),
-          decoration: BoxDecoration(
-            color: SumAcademyTheme.white,
-            borderRadius: BorderRadius.circular(20.r),
-            border: Border.all(color: SumAcademyTheme.brandBluePale),
+          decoration: AdminUi.cardDecoration(
+            surface: SumAcademyTheme.white,
+            border: borderColor,
           ),
           child: _subjectsLoading
               ? Center(
@@ -680,12 +681,12 @@ class _ContentSectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final borderColor = AdminUi.borderColor(context);
     return Container(
       padding: EdgeInsets.all(16.r),
-      decoration: BoxDecoration(
-        color: SumAcademyTheme.white,
-        borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: SumAcademyTheme.brandBluePale),
+      decoration: AdminUi.cardDecoration(
+        surface: SumAcademyTheme.white,
+        border: borderColor,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

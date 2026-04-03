@@ -3,6 +3,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_course_controller.dart';
+import 'package:sum_academy/modules/admin/widgets/common/admin_filter_panel.dart';
+import 'package:sum_academy/modules/admin/widgets/common/admin_ui.dart';
 import 'package:sum_academy/modules/admin/widgets/courses/course_form_dialog.dart';
 import 'package:sum_academy/modules/admin/widgets/courses/course_list.dart';
 import 'package:sum_academy/modules/admin/widgets/courses/courses_empty_state.dart';
@@ -60,7 +62,7 @@ class _AdminCoursesViewState extends State<AdminCoursesView> {
       color: widget.textColor,
       child: ListView(
         controller: _scrollController,
-        padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 28.h),
+        padding: AdminUi.pagePadding(),
         physics: const AlwaysScrollableScrollPhysics(
           parent: BouncingScrollPhysics(),
         ),
@@ -77,44 +79,25 @@ class _AdminCoursesViewState extends State<AdminCoursesView> {
             showNotifications: false,
           ),
           SizedBox(height: 18.h),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Course Management',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: widget.textColor,
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-              ),
-              SizedBox(width: 12.w),
-              Container(
-                width: 40.r,
-                height: 40.r,
-                decoration: BoxDecoration(
-                  color: SumAcademyTheme.brandBlue,
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-                child: IconButton(
-                  onPressed: () => showAddCourseDialog(context),
-                  icon: Icon(
-                    Icons.add_rounded,
-                    color: SumAcademyTheme.white,
-                    size: 20.sp,
-                  ),
-                ),
-              ),
-            ],
+          AdminSectionHeader(
+            title: 'Course Management',
+            textColor: widget.textColor,
+            isPageHeader: true,
+            trailing: AdminAddIconButton(
+              onPressed: () => showAddCourseDialog(context),
+            ),
           ),
           SizedBox(height: 14.h),
-          AuthTextField(
-            controller: widget.controller.searchController,
-            label: 'Search',
-            hint: 'Search by title',
-            icon: Icons.search_rounded,
-            textInputAction: TextInputAction.search,
-            onFieldSubmitted: (_) {},
+          AdminFilterPanel(
+            surface: widget.surface,
+            child: AuthTextField(
+              controller: widget.controller.searchController,
+              label: 'Search',
+              hint: 'Search by title',
+              icon: Icons.search_rounded,
+              textInputAction: TextInputAction.search,
+              onFieldSubmitted: (_) {},
+            ),
           ),
           SizedBox(height: 16.h),
           Obx(() {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:sum_academy/app/theme.dart';
+import 'package:sum_academy/modules/admin/widgets/common/admin_ui.dart';
 
 class AdminDashboardSkeleton extends StatelessWidget {
   const AdminDashboardSkeleton({super.key});
@@ -91,17 +92,9 @@ class _SkeletonCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.all(14.r),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(18.r),
-        border: Border.all(color: borderColor),
-        boxShadow: [
-          BoxShadow(
-            color: SumAcademyTheme.darkBase.withOpacityFloat(0.05),
-            blurRadius: 16.r,
-            offset: Offset(0, 10.h),
-          ),
-        ],
+      decoration: AdminUi.cardDecoration(
+        surface: cardColor,
+        border: borderColor,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,10 +125,10 @@ class _SkeletonRowCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.all(16.r),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
-        border: Border.all(color: borderColor),
+      decoration: AdminUi.cardDecoration(
+        surface: cardColor,
+        border: borderColor,
+        showShadow: false,
       ),
       child: Row(
         children: [

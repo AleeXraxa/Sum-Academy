@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/core/widgets/status_dialogs.dart';
 import 'package:sum_academy/modules/admin/models/admin_class.dart';
+import 'package:sum_academy/modules/admin/widgets/common/admin_ui.dart';
 import 'package:sum_academy/modules/admin/widgets/users/role_pill.dart';
 
 class AdminClassManageView extends StatelessWidget {
@@ -20,7 +21,7 @@ class AdminClassManageView extends StatelessWidget {
       backgroundColor: SumAcademyTheme.surfaceSecondary,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 24.h),
+          padding: AdminUi.pagePadding(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -136,12 +137,12 @@ class _ManageSectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final borderColor = AdminUi.borderColor(context);
     return Container(
       padding: EdgeInsets.all(16.r),
-      decoration: BoxDecoration(
-        color: SumAcademyTheme.white,
-        borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: SumAcademyTheme.brandBluePale),
+      decoration: AdminUi.cardDecoration(
+        surface: SumAcademyTheme.white,
+        border: borderColor,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_controller.dart';
 import 'package:sum_academy/modules/admin/views/dashboard/admin_recent_activity_view.dart';
+import 'package:sum_academy/modules/admin/widgets/common/admin_ui.dart';
 import 'package:sum_academy/modules/admin/widgets/dashboard/admin_action_card.dart';
 import 'package:sum_academy/modules/admin/widgets/dashboard/admin_activity_card.dart';
 import 'package:sum_academy/modules/admin/widgets/dashboard/activity_detail_sheet.dart';
@@ -35,7 +36,7 @@ class AdminDashboardView extends StatelessWidget {
       onRefresh: controller.refreshDashboard,
       color: textColor,
       child: ListView(
-        padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 28.h),
+        padding: AdminUi.pagePadding(),
         physics: const AlwaysScrollableScrollPhysics(
           parent: BouncingScrollPhysics(),
         ),
@@ -59,12 +60,9 @@ class AdminDashboardView extends StatelessWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Overview',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: textColor,
-                    fontWeight: FontWeight.w700,
-                  ),
+                AdminSectionHeader(
+                  title: 'Overview',
+                  textColor: textColor,
                 ),
                 SizedBox(height: 12.h),
                 GridView.builder(
@@ -86,12 +84,9 @@ class AdminDashboardView extends StatelessWidget {
                   },
                 ),
                 SizedBox(height: 24.h),
-                Text(
-                  'Quick actions',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: textColor,
-                    fontWeight: FontWeight.w700,
-                  ),
+                AdminSectionHeader(
+                  title: 'Quick actions',
+                  textColor: textColor,
                 ),
                 SizedBox(height: 12.h),
                 ...controller.quickActions.map(
@@ -105,27 +100,18 @@ class AdminDashboardView extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 20.h),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Recent activity',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: textColor,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                AdminSectionHeader(
+                  title: 'Recent activity',
+                  textColor: textColor,
+                  trailing: TextButton(
+                    onPressed: () => Get.to(
+                      () => const AdminRecentActivityView(),
                     ),
-                    TextButton(
-                      onPressed: () => Get.to(
-                        () => const AdminRecentActivityView(),
-                      ),
-                      style: TextButton.styleFrom(
-                        foregroundColor: SumAcademyTheme.brandBlue,
-                      ),
-                      child: const Text('View all'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: SumAcademyTheme.brandBlue,
                     ),
-                  ],
+                    child: const Text('View all'),
+                  ),
                 ),
                 SizedBox(height: 12.h),
                 Obx(() {

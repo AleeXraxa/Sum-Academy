@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:sum_academy/app/theme.dart';
+import 'package:sum_academy/modules/admin/widgets/common/admin_ui.dart';
 
 class UsersSkeletonList extends StatelessWidget {
   final int count;
@@ -26,17 +27,9 @@ class _SkeletonCard extends StatelessWidget {
     final base = SumAcademyTheme.surfaceTertiary;
     return Container(
       padding: EdgeInsets.all(14.r),
-      decoration: BoxDecoration(
-        color: SumAcademyTheme.white,
-        borderRadius: BorderRadius.circular(18.r),
-        border: Border.all(color: SumAcademyTheme.brandBluePale),
-        boxShadow: [
-          BoxShadow(
-            color: SumAcademyTheme.darkBase.withOpacityFloat(0.05),
-            blurRadius: 16.r,
-            offset: Offset(0, 10.h),
-          ),
-        ],
+      decoration: AdminUi.cardDecoration(
+        surface: SumAcademyTheme.white,
+        border: AdminUi.borderColor(context),
       ),
       child: Column(
         children: [

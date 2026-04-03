@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_controller.dart';
+import 'package:sum_academy/modules/admin/widgets/common/admin_ui.dart';
 
 class AdminStatCard extends StatelessWidget {
   final AdminStat stat;
@@ -21,19 +22,13 @@ class AdminStatCard extends StatelessWidget {
     final muted = textColor.withOpacityFloat(0.55);
     final tone = stat.tone ?? SumAcademyTheme.brandBluePale;
     final iconColor = stat.iconColor ?? SumAcademyTheme.brandBlue;
+    final borderColor = iconColor.withOpacityFloat(0.35);
 
     return Container(
       padding: EdgeInsets.all(14.r),
-      decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(18.r),
-        boxShadow: [
-          BoxShadow(
-            color: SumAcademyTheme.darkBase.withOpacityFloat(0.06),
-            blurRadius: 18.r,
-            offset: Offset(0, 10.h),
-          ),
-        ],
+      decoration: AdminUi.cardDecoration(
+        surface: surface,
+        border: borderColor,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -68,7 +63,7 @@ class AdminStatCard extends StatelessWidget {
             stat.label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
               color: muted,
               fontWeight: FontWeight.w600,
             ),

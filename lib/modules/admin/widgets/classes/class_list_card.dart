@@ -8,6 +8,7 @@ import 'package:sum_academy/core/widgets/status_dialogs.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_class_controller.dart';
 import 'package:sum_academy/modules/admin/models/admin_class.dart';
 import 'package:sum_academy/modules/admin/views/classes/admin_class_manage_view.dart';
+import 'package:sum_academy/modules/admin/widgets/common/admin_ui.dart';
 import 'package:sum_academy/modules/admin/widgets/classes/class_form_dialog.dart';
 import 'package:sum_academy/modules/admin/widgets/users/status_pill.dart';
 
@@ -43,17 +44,9 @@ class ClassListCard extends StatelessWidget {
 
     return Container(
       padding: EdgeInsets.all(16.r),
-      decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(18.r),
-        border: Border.all(color: borderColor),
-        boxShadow: [
-          BoxShadow(
-            color: SumAcademyTheme.darkBase.withOpacityFloat(0.05),
-            blurRadius: 16.r,
-            offset: Offset(0, 10.h),
-          ),
-        ],
+      decoration: AdminUi.cardDecoration(
+        surface: surface,
+        border: borderColor,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

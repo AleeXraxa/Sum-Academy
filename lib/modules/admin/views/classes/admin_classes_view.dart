@@ -3,6 +3,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_class_controller.dart';
+import 'package:sum_academy/modules/admin/widgets/common/admin_filter_panel.dart';
+import 'package:sum_academy/modules/admin/widgets/common/admin_ui.dart';
 import 'package:sum_academy/modules/admin/widgets/classes/class_form_dialog.dart';
 import 'package:sum_academy/modules/admin/widgets/classes/class_list.dart';
 import 'package:sum_academy/modules/admin/widgets/classes/class_stats_grid.dart';
@@ -62,7 +64,7 @@ class _AdminClassesViewState extends State<AdminClassesView> {
       color: widget.textColor,
       child: ListView(
         controller: _scrollController,
-        padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 28.h),
+        padding: AdminUi.pagePadding(),
         physics: const AlwaysScrollableScrollPhysics(
           parent: BouncingScrollPhysics(),
         ),
@@ -79,42 +81,15 @@ class _AdminClassesViewState extends State<AdminClassesView> {
             showNotifications: false,
           ),
           SizedBox(height: 18.h),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Classes Management',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: widget.textColor,
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-              ),
-              SizedBox(width: 12.w),
-              Container(
-                width: 40.r,
-                height: 40.r,
-                decoration: BoxDecoration(
-                  color: SumAcademyTheme.brandBlue,
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-                child: IconButton(
-                  onPressed: () => showAddClassDialog(context),
-                  icon: Icon(
-                    Icons.add_rounded,
-                    color: SumAcademyTheme.white,
-                    size: 20.sp,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 6.h),
-          Text(
-            'Create classes, assign courses and shifts, and manage enrollment.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: widget.textColor.withOpacityFloat(0.6),
-                ),
+          AdminSectionHeader(
+            title: 'Classes Management',
+            textColor: widget.textColor,
+            isPageHeader: true,
+            subtitle:
+                'Create classes, assign courses and shifts, and manage enrollment.',
+            trailing: AdminAddIconButton(
+              onPressed: () => showAddClassDialog(context),
+            ),
           ),
           SizedBox(height: 16.h),
           Obx(() {
@@ -128,30 +103,38 @@ class _AdminClassesViewState extends State<AdminClassesView> {
             );
           }),
           SizedBox(height: 16.h),
-          Obx(() {
-            return SizedBox(
-              width: double.infinity,
-              child: DialogDropdown(
-                value: widget.controller.statusFilter.value,
-                hintText: 'All Status',
-                items: AdminClassController.statusOptions,
-                onChanged: (value) {
-                  if (value == null) return;
-                  widget.controller.setStatusFilter(value);
-                },
-              ),
-            );
-          }),
-          SizedBox(height: 12.h),
-          SizedBox(
-            width: double.infinity,
-            child: AuthTextField(
-              controller: widget.controller.searchController,
-              label: 'Search',
-              hint: 'Search by class name',
-              icon: Icons.search_rounded,
-              textInputAction: TextInputAction.search,
-              onFieldSubmitted: (_) {},
+          AdminFilterPanel(
+            surface: widget.surface,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Obx(() {
+                  return SizedBox(
+                    width: double.infinity,
+                    child: DialogDropdown(
+                      value: widget.controller.statusFilter.value,
+                      hintText: 'All Status',
+                      items: AdminClassController.statusOptions,
+                      onChanged: (value) {
+                        if (value == null) return;
+                        widget.controller.setStatusFilter(value);
+                      },
+                    ),
+                  );
+                }),
+                SizedBox(height: 12.h),
+                SizedBox(
+                  width: double.infinity,
+                  child: AuthTextField(
+                    controller: widget.controller.searchController,
+                    label: 'Search',
+                    hint: 'Search by class name',
+                    icon: Icons.search_rounded,
+                    textInputAction: TextInputAction.search,
+                    onFieldSubmitted: (_) {},
+                  ),
+                ),
+              ],
             ),
           ),
           SizedBox(height: 16.h),

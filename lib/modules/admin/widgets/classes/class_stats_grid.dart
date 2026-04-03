@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:sum_academy/app/theme.dart';
+import 'package:sum_academy/modules/admin/widgets/common/admin_ui.dart';
 
 class ClassStatsGrid extends StatelessWidget {
   final int totalClasses;
@@ -73,18 +74,12 @@ class _ClassStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final borderColor = AdminUi.borderColor(context);
     return Container(
       padding: EdgeInsets.all(16.r),
-      decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(18.r),
-        boxShadow: [
-          BoxShadow(
-            color: SumAcademyTheme.darkBase.withOpacityFloat(0.06),
-            blurRadius: 18.r,
-            offset: Offset(0, 10.h),
-          ),
-        ],
+      decoration: AdminUi.cardDecoration(
+        surface: surface,
+        border: borderColor,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

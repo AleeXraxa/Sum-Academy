@@ -6,6 +6,7 @@ import 'package:sum_academy/core/utils/network_error.dart';
 import 'package:sum_academy/core/widgets/confirmation_dialog.dart';
 import 'package:sum_academy/core/widgets/status_dialogs.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_teacher_controller.dart';
+import 'package:sum_academy/modules/admin/widgets/common/admin_ui.dart';
 import 'package:sum_academy/modules/admin/widgets/teachers/edit_teacher_dialog.dart';
 import 'package:sum_academy/modules/admin/widgets/teachers/teacher_profile_dialog.dart';
 import 'package:sum_academy/modules/admin/widgets/users/action_icon_button.dart';
@@ -42,24 +43,16 @@ class TeacherListCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(18.r),
+        borderRadius: AdminUi.cardRadius(),
         onTap: () => showTeacherProfileDialog(
           context,
           teacher: teacher,
         ),
         child: Container(
           padding: EdgeInsets.all(14.r),
-          decoration: BoxDecoration(
-            color: surface,
-            borderRadius: BorderRadius.circular(18.r),
-            border: Border.all(color: borderColor),
-            boxShadow: [
-              BoxShadow(
-                color: SumAcademyTheme.darkBase.withOpacityFloat(0.05),
-                blurRadius: 16.r,
-                offset: Offset(0, 10.h),
-              ),
-            ],
+          decoration: AdminUi.cardDecoration(
+            surface: surface,
+            border: borderColor,
           ),
           child: Column(
             children: [

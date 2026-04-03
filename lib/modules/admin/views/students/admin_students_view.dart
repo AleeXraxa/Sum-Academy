@@ -3,6 +3,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_student_controller.dart';
+import 'package:sum_academy/modules/admin/widgets/common/admin_filter_panel.dart';
+import 'package:sum_academy/modules/admin/widgets/common/admin_ui.dart';
 import 'package:sum_academy/modules/admin/widgets/header/admin_header_row.dart';
 import 'package:sum_academy/modules/admin/widgets/students/add_student_dialog.dart';
 import 'package:sum_academy/modules/admin/widgets/students/student_list.dart';
@@ -38,7 +40,7 @@ class _AdminStudentsViewState extends State<AdminStudentsView> {
       onRefresh: () => widget.controller.fetchStudents(),
       color: widget.textColor,
       child: ListView(
-        padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 28.h),
+        padding: AdminUi.pagePadding(),
         physics: const AlwaysScrollableScrollPhysics(
           parent: BouncingScrollPhysics(),
         ),
@@ -55,79 +57,65 @@ class _AdminStudentsViewState extends State<AdminStudentsView> {
             showNotifications: false,
           ),
           SizedBox(height: 18.h),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Student Management',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: widget.textColor,
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-              ),
-              SizedBox(width: 12.w),
-              Container(
-                width: 40.r,
-                height: 40.r,
-                decoration: BoxDecoration(
-                  color: SumAcademyTheme.brandBlue,
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-                child: IconButton(
-                  onPressed: () => showAddStudentDialog(context),
-                  icon: Icon(
-                    Icons.add_rounded,
-                    color: SumAcademyTheme.white,
-                    size: 20.sp,
-                  ),
-                ),
-              ),
-            ],
+          AdminSectionHeader(
+            title: 'Student Management',
+            textColor: widget.textColor,
+            isPageHeader: true,
+            trailing: AdminAddIconButton(
+              onPressed: () => showAddStudentDialog(context),
+            ),
           ),
           SizedBox(height: 12.h),
-          Obx(() {
-            final selected = widget.controller.filterIndex.value;
-            return Wrap(
-              spacing: 10.w,
-              runSpacing: 10.h,
+          AdminFilterPanel(
+            surface: widget.surface,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                for (var i = 0; i < widget.controller.filters.length; i++)
-                  UserFilterChip(
-                    label: widget.controller.filters[i].label,
-                    count: widget.controller.filters[i].count,
-                    isSelected: selected == i,
-                    onTap: () => widget.controller.setFilterIndex(i),
-                  ),
+                Obx(() {
+                  final selected = widget.controller.filterIndex.value;
+                  return Wrap(
+                    spacing: 10.w,
+                    runSpacing: 10.h,
+                    children: [
+                      for (var i = 0; i < widget.controller.filters.length; i++)
+                        UserFilterChip(
+                          label: widget.controller.filters[i].label,
+                          count: widget.controller.filters[i].count,
+                          isSelected: selected == i,
+                          onTap: () => widget.controller.setFilterIndex(i),
+                        ),
+                    ],
+                  );
+                }),
+                SizedBox(height: 14.h),
+                AuthTextField(
+                  controller: widget.controller.searchController,
+                  label: 'Search',
+                  hint: 'Search by email',
+                  icon: Icons.search_rounded,
+                  textInputAction: TextInputAction.search,
+                  onFieldSubmitted: (_) {},
+                ),
+                Obx(() {
+                  final hasQuery =
+                      widget.controller.searchQuery.value.trim().isNotEmpty;
+                  if (!hasQuery || !widget.controller.hasMore.value) {
+                    return const SizedBox.shrink();
+                  }
+                  return Padding(
+                    padding: EdgeInsets.only(top: 10.h),
+                    child: Text(
+                      'Load more to search everything.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: widget.textColor.withOpacityFloat(0.6),
+                          ),
+                    ),
+                  );
+                }),
               ],
-            );
-          }),
-          SizedBox(height: 14.h),
-          AuthTextField(
-            controller: widget.controller.searchController,
-            label: 'Search',
-            hint: 'Search by email',
-            icon: Icons.search_rounded,
-            textInputAction: TextInputAction.search,
-            onFieldSubmitted: (_) {},
+            ),
           ),
           SizedBox(height: 16.h),
-          Obx(() {
-            final hasQuery =
-                widget.controller.searchQuery.value.trim().isNotEmpty;
-            if (!hasQuery || !widget.controller.hasMore.value) {
-              return const SizedBox.shrink();
-            }
-            return Padding(
-              padding: EdgeInsets.only(bottom: 12.h),
-              child: Text(
-                'Load more to search everything.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: widget.textColor.withOpacityFloat(0.6),
-                    ),
-              ),
-            );
-          }),
           Obx(() {
             if (widget.controller.isLoading.value) {
               return const UsersSkeletonList(count: 5);

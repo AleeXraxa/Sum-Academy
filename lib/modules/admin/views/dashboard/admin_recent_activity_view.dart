@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_controller.dart';
+import 'package:sum_academy/modules/admin/widgets/common/admin_ui.dart';
 import 'package:sum_academy/modules/admin/widgets/dashboard/admin_activity_card.dart';
 import 'package:sum_academy/modules/admin/widgets/dashboard/activity_detail_sheet.dart';
 
@@ -17,6 +18,7 @@ class AdminRecentActivityView extends GetView<AdminController> {
         : SumAcademyTheme.white;
     final textColor =
         isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
+    final borderColor = AdminUi.borderColor(context);
 
     return Scaffold(
       body: Container(
@@ -40,7 +42,7 @@ class AdminRecentActivityView extends GetView<AdminController> {
             onRefresh: controller.fetchRecentActivities,
             color: textColor,
             child: ListView(
-              padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 28.h),
+              padding: AdminUi.pagePadding(),
               physics: const AlwaysScrollableScrollPhysics(
                 parent: BouncingScrollPhysics(),
               ),
@@ -123,16 +125,11 @@ class AdminRecentActivityView extends GetView<AdminController> {
                 SizedBox(height: 16.h),
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-                  decoration: BoxDecoration(
-                    color: surface,
-                    borderRadius: BorderRadius.circular(
-                      SumAcademyTheme.radiusCard.r,
-                    ),
-                    border: Border.all(
-                      color: isDark
-                          ? SumAcademyTheme.darkBorder
-                          : SumAcademyTheme.brandBluePale,
-                    ),
+                  decoration: AdminUi.cardDecoration(
+                    surface: surface,
+                    border: borderColor,
+                    showShadow: false,
+                    radius: SumAcademyTheme.radiusCard,
                   ),
                   child: Row(
                     children: [
@@ -189,16 +186,11 @@ class AdminRecentActivityView extends GetView<AdminController> {
                         horizontal: 18.w,
                         vertical: 20.h,
                       ),
-                      decoration: BoxDecoration(
-                        color: surface,
-                        borderRadius: BorderRadius.circular(
-                          SumAcademyTheme.radiusCard.r,
-                        ),
-                        border: Border.all(
-                          color: isDark
-                              ? SumAcademyTheme.darkBorder
-                              : SumAcademyTheme.brandBluePale,
-                        ),
+                      decoration: AdminUi.cardDecoration(
+                        surface: surface,
+                        border: borderColor,
+                        showShadow: false,
+                        radius: SumAcademyTheme.radiusCard,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

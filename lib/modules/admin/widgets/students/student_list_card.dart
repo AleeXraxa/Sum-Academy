@@ -8,6 +8,7 @@ import 'package:sum_academy/core/widgets/status_dialogs.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_student_controller.dart';
 import 'package:sum_academy/modules/admin/widgets/students/student_profile_dialog.dart';
 import 'package:sum_academy/modules/admin/widgets/students/edit_student_dialog.dart';
+import 'package:sum_academy/modules/admin/widgets/common/admin_ui.dart';
 import 'package:sum_academy/modules/admin/widgets/users/action_icon_button.dart';
 import 'package:sum_academy/modules/admin/widgets/users/status_pill.dart';
 
@@ -39,24 +40,16 @@ class StudentListCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(18.r),
+        borderRadius: AdminUi.cardRadius(),
         onTap: () => showStudentProfileDialog(
           context,
           student: student,
         ),
         child: Container(
           padding: EdgeInsets.all(14.r),
-          decoration: BoxDecoration(
-            color: surface,
-            borderRadius: BorderRadius.circular(18.r),
-            border: Border.all(color: borderColor),
-            boxShadow: [
-              BoxShadow(
-                color: SumAcademyTheme.darkBase.withOpacityFloat(0.05),
-                blurRadius: 16.r,
-                offset: Offset(0, 10.h),
-              ),
-            ],
+          decoration: AdminUi.cardDecoration(
+            surface: surface,
+            border: borderColor,
           ),
           child: Column(
             children: [
