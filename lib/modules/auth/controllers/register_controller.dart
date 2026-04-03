@@ -5,8 +5,8 @@ import 'package:sum_academy/core/utils/network_error.dart';
 import 'package:sum_academy/modules/admin/bindings/admin_binding.dart';
 import 'package:sum_academy/modules/admin/views/admin_shell_view.dart';
 import 'package:sum_academy/modules/auth/services/auth_service.dart';
-import 'package:sum_academy/modules/home/bindings/home_binding.dart';
-import 'package:sum_academy/modules/home/views/home_view.dart';
+import 'package:sum_academy/modules/student/bindings/student_binding.dart';
+import 'package:sum_academy/modules/student/views/student_shell_view.dart';
 
 class RegisterController extends GetxController {
   final formKey = GlobalKey<FormState>();
@@ -109,8 +109,8 @@ class RegisterController extends GetxController {
       );
     } else {
       Get.offAll(
-        () => const HomeView(),
-        binding: HomeBinding(),
+        () => const StudentShellView(),
+        binding: StudentBinding(),
       );
     }
   }

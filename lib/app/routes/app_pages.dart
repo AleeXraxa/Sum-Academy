@@ -8,12 +8,12 @@ import 'package:sum_academy/modules/auth/bindings/register_binding.dart';
 import 'package:sum_academy/modules/auth/views/forgot_password_view.dart';
 import 'package:sum_academy/modules/auth/views/login_view.dart';
 import 'package:sum_academy/modules/auth/views/register_view.dart';
-import 'package:sum_academy/modules/home/bindings/home_binding.dart';
-import 'package:sum_academy/modules/home/views/home_view.dart';
 import 'package:sum_academy/modules/onboarding/bindings/onboarding_binding.dart';
 import 'package:sum_academy/modules/onboarding/views/onboarding_view.dart';
 import 'package:sum_academy/modules/splash/bindings/splash_binding.dart';
 import 'package:sum_academy/modules/splash/views/splash_view.dart';
+import 'package:sum_academy/modules/student/bindings/student_binding.dart';
+import 'package:sum_academy/modules/student/views/student_shell_view.dart';
 
 class AppPages {
   static final pages = <GetPage<dynamic>>[
@@ -44,13 +44,13 @@ class AppPages {
     ),
     GetPage(
       name: AppRoutes.home,
-      page: () => const HomeView(),
-      binding: HomeBinding(),
+      page: () => const StudentShellView(),
+      binding: StudentBinding(),
     ),
     GetPage(
       name: AppRoutes.student,
-      page: () => const HomeView(),
-      binding: HomeBinding(),
+      page: () => const StudentShellView(),
+      binding: StudentBinding(),
     ),
     GetPage(
       name: AppRoutes.admin,
