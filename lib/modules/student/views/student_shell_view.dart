@@ -8,6 +8,9 @@ import 'package:sum_academy/modules/auth/views/login_view.dart';
 import 'package:sum_academy/modules/home/controllers/home_controller.dart';
 import 'package:sum_academy/modules/home/views/home_view.dart';
 import 'package:sum_academy/modules/student/controllers/student_shell_controller.dart';
+import 'package:sum_academy/modules/student/views/explore_courses_view.dart';
+import 'package:sum_academy/modules/student/views/help_support_view.dart';
+import 'package:sum_academy/modules/student/views/my_courses_view.dart';
 import 'package:sum_academy/modules/student/views/student_placeholder_view.dart';
 import 'package:sum_academy/modules/student/widgets/student_sidebar.dart';
 
@@ -23,14 +26,8 @@ class StudentShellView extends GetView<StudentShellController> {
       final isBootLoading = homeController.isLoading.value;
       final pages = <Widget>[
         const HomeDashboardContent(),
-        const StudentPlaceholderView(
-          title: 'My Courses',
-          icon: Icons.menu_book_rounded,
-        ),
-        const StudentPlaceholderView(
-          title: 'Explore Courses',
-          icon: Icons.explore_rounded,
-        ),
+        const MyCoursesView(),
+        const ExploreCoursesView(),
         const StudentPlaceholderView(
           title: 'My Certificates',
           icon: Icons.verified_rounded,
@@ -51,10 +48,7 @@ class StudentShellView extends GetView<StudentShellController> {
           title: 'Attendance',
           icon: Icons.event_available_rounded,
         ),
-        const StudentPlaceholderView(
-          title: 'Help and Support',
-          icon: Icons.support_agent_rounded,
-        ),
+        const HelpSupportView(),
         const StudentPlaceholderView(
           title: 'Settings',
           icon: Icons.settings_rounded,
