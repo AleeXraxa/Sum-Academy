@@ -8,6 +8,7 @@ import 'package:sum_academy/modules/admin/controllers/admin_course_controller.da
 import 'package:sum_academy/modules/admin/controllers/admin_student_controller.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_teacher_controller.dart';
 import 'package:sum_academy/modules/admin/utils/admin_navigation.dart';
+import 'package:sum_academy/modules/admin/views/analytics/admin_analytics_view.dart';
 import 'package:sum_academy/modules/admin/views/common/admin_placeholder_view.dart';
 import 'package:sum_academy/modules/admin/views/classes/admin_classes_view.dart';
 import 'package:sum_academy/modules/admin/views/courses/admin_courses_view.dart';
@@ -40,9 +41,11 @@ class AdminShellView extends GetView<AdminController> {
       final authService = Get.find<AuthService>();
       final name = controller.userName.value;
       final isSearchExpanded = controller.isSearchExpanded.value;
-      final activeLabel = controller.navIndex.value == 1
-          ? controller.managementLabel.value
-          : activeLabelForIndex(controller.navIndex.value);
+      final activeLabel = controller.navIndex.value == 0
+          ? controller.overviewLabel.value
+          : controller.navIndex.value == 1
+              ? controller.managementLabel.value
+              : activeLabelForIndex(controller.navIndex.value);
       final isBootLoading = !controller.isUsersInitialized.value ||
           !controller.isStatsInitialized.value ||
           !controller.isActivitiesInitialized.value ||
@@ -65,7 +68,9 @@ class AdminShellView extends GetView<AdminController> {
 
             final targetIndex = navIndexForLabel(label);
             if (targetIndex != null) {
-              if (targetIndex == 1) {
+              if (targetIndex == 0) {
+                controller.setOverviewLabel(label);
+              } else if (targetIndex == 1) {
                 controller.setManagementLabel(label);
               }
               Get.back();
@@ -96,14 +101,22 @@ class AdminShellView extends GetView<AdminController> {
                 IndexedStack(
                   index: controller.navIndex.value,
                   children: [
-                    AdminDashboardView(
-                      controller: controller,
-                      textColor: textColor,
-                      surface: surface,
-                      isDark: isDark,
-                      userName: name,
-                      isSearchExpanded: isSearchExpanded,
-                    ),
+                    controller.overviewLabel.value == 'Analytics'
+                        ? AdminAnalyticsView(
+                            controller: controller,
+                            textColor: textColor,
+                            surface: surface,
+                            isDark: isDark,
+                            userName: name,
+                          )
+                        : AdminDashboardView(
+                            controller: controller,
+                            textColor: textColor,
+                            surface: surface,
+                            isDark: isDark,
+                            userName: name,
+                            isSearchExpanded: isSearchExpanded,
+                          ),
                     _ManagementShell(
                       controller: controller,
                       textColor: textColor,

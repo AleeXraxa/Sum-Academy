@@ -22,6 +22,7 @@ class AdminController extends GetxController {
   final AdminStatsService _statsService = Get.find<AdminStatsService>();
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   final RxInt navIndex = 0.obs;
+  final RxString overviewLabel = 'Dashboard'.obs;
   final RxString managementLabel = 'Users'.obs;
   final RxBool isSearchExpanded = false.obs;
   final TextEditingController searchController = TextEditingController();
@@ -425,11 +426,20 @@ class AdminController extends GetxController {
 
   void setNavIndex(int index) {
     navIndex.value = index;
+    if (index == 0 && !_isOverviewLabel(overviewLabel.value)) {
+      overviewLabel.value = 'Dashboard';
+    }
     if (index == 1 && !_isManagementLabel(managementLabel.value)) {
       managementLabel.value = 'Users';
     }
     if (isSearchExpanded.value) {
       closeSearch();
+    }
+  }
+
+  void setOverviewLabel(String label) {
+    if (_isOverviewLabel(label)) {
+      overviewLabel.value = label;
     }
   }
 
@@ -971,5 +981,10 @@ String? _resolveUserName(AdminActivityPayload payload) {
 
 bool _isManagementLabel(String label) {
   const labels = ['Users', 'Teachers', 'Students', 'Courses', 'Classes'];
+  return labels.contains(label);
+}
+
+bool _isOverviewLabel(String label) {
+  const labels = ['Dashboard', 'Analytics'];
   return labels.contains(label);
 }
