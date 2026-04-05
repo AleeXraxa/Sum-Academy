@@ -323,17 +323,18 @@ class AdminController extends GetxController {
     required String role,
     required bool isActive,
   }) async {
-    if (isCurrentUser(uid)) {
-      AdminUserRow? existing;
-      for (final user in users) {
-        if (user.uid == uid) {
-          existing = user;
-          break;
-        }
+    AdminUserRow? existing;
+    for (final user in users) {
+      if (user.uid == uid) {
+        existing = user;
+        break;
       }
-      if (existing != null &&
-          (existing.role.toLowerCase() != role.toLowerCase() ||
-              existing.isActive != isActive)) {
+    }
+    final existingRole = existing?.role ?? role;
+    final roleChanged =
+        existingRole.toLowerCase() != role.toLowerCase();
+    if (isCurrentUser(uid)) {
+      if (roleChanged || (existing != null && existing.isActive != isActive)) {
         return const AdminActionResult.failure(
           'You cannot change your own role or status.',
         );
@@ -345,19 +346,42 @@ class AdminController extends GetxController {
         fullName: fullName,
         email: email,
         phone: phone,
-        role: role,
         isActive: isActive,
       );
       final resolved = updated.copyWith(
         name: fullName,
         email: email,
         phone: phone,
-        role: role,
+        role: existingRole,
         isActive: isActive,
       );
       final index = users.indexWhere((user) => user.uid == uid);
       if (index != -1) {
         users[index] = _toRow(resolved);
+      }
+      if (roleChanged) {
+        final roleResult = await _userService.updateUserRole(
+          uid: uid,
+          role: role,
+        );
+        final roleIndex = users.indexWhere((user) => user.uid == uid);
+        if (roleIndex != -1) {
+          final row = users[roleIndex];
+          users[roleIndex] = AdminUserRow(
+            uid: row.uid,
+            initials: row.initials,
+            name: row.name,
+            email: row.email,
+            role: _formatRole(roleResult.role.isNotEmpty
+                ? roleResult.role
+                : role),
+            phone: row.phone,
+            isActive: row.isActive,
+            avatarColor: _roleColor(
+              roleResult.role.isNotEmpty ? roleResult.role : role,
+            ),
+          );
+        }
       }
       return const AdminActionResult.success('User updated successfully.');
     } on ApiException catch (e) {

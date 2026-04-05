@@ -15,7 +15,11 @@ class AdminAnalyticsService {
       auth: true,
       query: _buildQuery(range: range, interval: interval, from: from, to: to),
     );
-    return _parseSeries(response['data'] ?? response);
+    return _parseSeries(
+      response['data'] ?? response,
+      labelKeys: const ['date', 'day', 'label', 'period', 'x'],
+      valueKeys: const ['amount', 'value', 'total', 'revenue', 'y'],
+    );
   }
 
   Future<ChartSeries> fetchEnrollmentChart({
@@ -38,7 +42,13 @@ class AdminAnalyticsService {
         'name',
         'label',
       ],
-      valueKeys: const ['enrollments', 'count', 'total', 'value'],
+      valueKeys: const [
+        'enrollments',
+        'enrollmentCount',
+        'count',
+        'total',
+        'value',
+      ],
     );
   }
 
@@ -52,14 +62,37 @@ class AdminAnalyticsService {
     if (from != null && to != null) {
       query['from'] = _formatDate(from);
       query['to'] = _formatDate(to);
+      final diffDays = to.difference(from).inDays.abs() + 1;
+      query['days'] = diffDays;
     } else {
-      query['range'] = range;
+      final days = _rangeToDays(range);
+      if (days != null) {
+        query['days'] = days;
+      } else {
+        query['range'] = range;
+      }
     }
     if (interval != null) {
       query['groupBy'] = interval;
       query['interval'] = interval;
     }
     return query;
+  }
+
+  int? _rangeToDays(String range) {
+    switch (range) {
+      case 'today':
+        return 1;
+      case '7d':
+        return 7;
+      case '30d':
+        return 30;
+      case '3m':
+        return 90;
+      case '1y':
+        return 365;
+    }
+    return null;
   }
 
   String _formatDate(DateTime date) {

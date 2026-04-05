@@ -11,15 +11,17 @@ class AdminUserService {
     int limit = 20,
     String? search,
     String? role,
+    bool? isActive,
   }) async {
     final response = await _client.get(
       '/admin/users',
       auth: true,
       query: {
-        'page': page,
-        'limit': limit,
-        'search': search,
-        'role': role,
+        if (page > 0) 'page': page,
+        if (limit > 0) 'limit': limit,
+        if (search != null && search.isNotEmpty) 'search': search,
+        if (role != null && role.isNotEmpty) 'role': role,
+        if (isActive != null) 'isActive': isActive.toString(),
       },
     );
     final data = response['data'];
@@ -43,8 +45,8 @@ class AdminUserService {
         'fullName': fullName,
         'email': email,
         'password': password,
-        'phoneNumber': phone,
         'phone': phone,
+        'phoneNumber': phone,
         'role': normalizedRole,
         'isActive': true,
       },
@@ -57,20 +59,17 @@ class AdminUserService {
     required String fullName,
     required String email,
     required String phone,
-    required String role,
     required bool isActive,
   }) async {
-    final normalizedRole = role.toLowerCase();
     final response = await _client.put(
       '/admin/users/$uid',
       auth: true,
       body: {
-        'name': fullName,
         'fullName': fullName,
-        'email': email,
-        'phoneNumber': phone,
-        'phone': phone,
-        'role': normalizedRole,
+        'name': fullName,
+        if (email.isNotEmpty) 'email': email,
+        if (phone.isNotEmpty) 'phoneNumber': phone,
+        if (phone.isNotEmpty) 'phone': phone,
         'isActive': isActive,
       },
     );
@@ -118,7 +117,7 @@ class AdminUserService {
           .toList();
     }
     if (data is Map<String, dynamic>) {
-      final list = data['users'] ?? data['data'];
+      final list = data['users'] ?? data['data'] ?? data['items'];
       if (list is List) {
         return list
             .whereType<Map>()

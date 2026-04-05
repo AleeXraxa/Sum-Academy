@@ -819,18 +819,21 @@ class _ClassFormDialogState extends State<ClassFormDialog> {
         resolvedCourseId.isEmpty) {
       return null;
     }
-    return {
+    final payload = <String, dynamic>{
       'name': name,
-      'shiftName': name,
       'startTime': start,
       'endTime': end,
-      'start': start,
-      'end': end,
       'courseId': resolvedCourseId,
-      'teacherId': resolvedTeacherId,
-      'room': shift.roomController.text.trim(),
       'days': shift.days.toList(),
     };
+    if (resolvedTeacherId.isNotEmpty) {
+      payload['teacherId'] = resolvedTeacherId;
+    }
+    final room = shift.roomController.text.trim();
+    if (room.isNotEmpty) {
+      payload['room'] = room;
+    }
+    return payload;
   }
 
   String? _validateShiftTimes() {

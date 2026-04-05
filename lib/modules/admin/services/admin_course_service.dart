@@ -16,7 +16,11 @@ class AdminCourseService {
     final response = await _client.get(
       '/admin/courses',
       auth: true,
-      query: {'page': page, 'limit': limit, 'search': search},
+      query: {
+        if (page > 0) 'page': page,
+        if (limit > 0) 'limit': limit,
+        if (search != null && search.isNotEmpty) 'search': search,
+      },
     );
     final data = response['data'];
     final courses = _extractList(data);
@@ -40,45 +44,31 @@ class AdminCourseService {
         .map(
           (subject) => {
             'name': subject.name,
-            'subjectName': subject.name,
-            'title': subject.name,
             'teacherId': subject.teacherId,
-            'teacher': subject.teacherId,
-            'teacherUid': subject.teacherId,
             'order': subject.order,
           },
         )
         .toList();
     final coursePayload = <String, dynamic>{
       'title': title,
-      'shortDescription': shortDescription,
+      if (shortDescription.isNotEmpty) 'shortDescription': shortDescription,
       'description': description,
       'category': category,
       'level': level,
       'price': price,
-      'discount': discount,
-      'status': status,
-      'certificateOnCompletion': certificateEnabled,
+      'discountPercent': discount,
+      if (status.isNotEmpty) 'status': status,
+      if (certificateEnabled) 'certificateOnCompletion': certificateEnabled,
       if (thumbnailUrl != null && thumbnailUrl.isNotEmpty)
         'thumbnail': thumbnailUrl,
     };
     if (subjectPayload.isNotEmpty) {
       coursePayload['subjects'] = subjectPayload;
-      coursePayload['subjectList'] = subjectPayload;
-      coursePayload['courseSubjects'] = subjectPayload;
-      coursePayload['subjectsData'] = subjectPayload;
-      coursePayload['subjectNames'] = subjectPayload
-          .map((item) => item['name'])
-          .toList();
     }
     final response = await _client.post(
       '/admin/courses',
       auth: true,
-      body: {
-        ...coursePayload,
-        if (subjectPayload.isNotEmpty) 'course': coursePayload,
-        if (subjectPayload.isNotEmpty) 'data': coursePayload,
-      },
+      body: coursePayload,
     );
     return AdminCourse.fromJson(_extractItem(response['data']));
   }
@@ -101,14 +91,14 @@ class AdminCourseService {
       auth: true,
       body: {
         'title': title,
-        'shortDescription': shortDescription,
-        'description': description,
-        'category': category,
-        'level': level,
+        if (shortDescription.isNotEmpty) 'shortDescription': shortDescription,
+        if (description.isNotEmpty) 'description': description,
+        if (category.isNotEmpty) 'category': category,
+        if (level.isNotEmpty) 'level': level,
         'price': price,
-        'discount': discount,
-        'status': status,
-        'certificateOnCompletion': certificateEnabled,
+        'discountPercent': discount,
+        if (status.isNotEmpty) 'status': status,
+        if (certificateEnabled) 'certificateOnCompletion': certificateEnabled,
         if (thumbnailUrl != null && thumbnailUrl.isNotEmpty)
           'thumbnail': thumbnailUrl,
       },
@@ -207,7 +197,7 @@ class AdminCourseService {
           .toList();
     }
     if (data is Map<String, dynamic>) {
-      final list = data['courses'] ?? data['data'];
+      final list = data['courses'] ?? data['data'] ?? data['items'];
       if (list is List) {
         return list
             .whereType<Map>()

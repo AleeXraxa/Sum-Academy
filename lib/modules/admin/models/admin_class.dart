@@ -28,7 +28,12 @@ class AdminClass {
   factory AdminClass.fromJson(Map<String, dynamic> json) {
     final id = _readString(json, ['id', '_id', 'classId']);
     final name = _readString(json, ['name', 'title', 'className']);
-    final code = _readString(json, ['code', 'classCode', 'slug']);
+    final code = _readString(json, [
+      'batchCode',
+      'code',
+      'classCode',
+      'slug',
+    ]);
     final description = _readString(json, [
       'description',
       'desc',

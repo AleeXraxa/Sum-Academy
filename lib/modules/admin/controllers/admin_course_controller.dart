@@ -113,7 +113,22 @@ class AdminCourseController extends GetxController {
         thumbnailUrl: thumbnailUrl,
         subjects: subjects,
       );
-      courses.insert(0, created);
+      final resolved = created.title.isEmpty
+          ? created.copyWith(
+              title: title,
+              shortDescription: shortDescription,
+              description: description,
+              category: category,
+              level: level,
+              price: price,
+              discount: discount,
+              status: status,
+              certificateEnabled: certificateEnabled,
+              thumbnailUrl: thumbnailUrl ?? '',
+              subjectCount: subjects.length,
+            )
+          : created;
+      courses.insert(0, resolved);
       return const CourseActionResult.success('Course created successfully.');
     } on ApiException catch (e) {
       if (e.statusCode == 0) {
@@ -154,7 +169,22 @@ class AdminCourseController extends GetxController {
       );
       final index = courses.indexWhere((course) => course.id == courseId);
       if (index != -1) {
-        courses[index] = updated;
+        final existing = courses[index];
+        final resolved = updated.title.isEmpty
+            ? existing.copyWith(
+                title: title,
+                shortDescription: shortDescription,
+                description: description,
+                category: category,
+                level: level,
+                price: price,
+                discount: discount,
+                status: status,
+                certificateEnabled: certificateEnabled,
+                thumbnailUrl: thumbnailUrl ?? existing.thumbnailUrl,
+              )
+            : updated;
+        courses[index] = resolved;
       }
       return const CourseActionResult.success('Course updated successfully.');
     } on ApiException catch (e) {

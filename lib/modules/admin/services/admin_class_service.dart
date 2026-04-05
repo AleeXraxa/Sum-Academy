@@ -16,10 +16,10 @@ class AdminClassService {
       '/admin/classes',
       auth: true,
       query: {
-        'page': page,
-        'limit': limit,
-        'search': search,
-        'status': status,
+        if (page > 0) 'page': page,
+        if (limit > 0) 'limit': limit,
+        if (search != null && search.isNotEmpty) 'search': search,
+        if (status != null && status.isNotEmpty) 'status': status,
       },
     );
     final data = response['data'];
@@ -40,32 +40,19 @@ class AdminClassService {
   }) async {
     final payload = <String, dynamic>{
       'name': name,
-      'title': name,
-      'className': name,
-      'description': description,
-      'desc': description,
+      if (description.isNotEmpty) 'description': description,
       'capacity': capacity,
-      'maxStudents': capacity,
       'status': status,
       if (startDate != null) 'startDate': startDate.toIso8601String(),
       if (endDate != null) 'endDate': endDate.toIso8601String(),
-      if (code != null && code.isNotEmpty) 'code': code,
+      if (code != null && code.isNotEmpty) 'batchCode': code,
     };
     if (courseIds != null && courseIds.isNotEmpty) {
-      final courseObjects = courseIds
-          .map((id) => {'courseId': id, 'id': id})
-          .toList();
-      payload['courses'] = courseObjects;
-      payload['courseIds'] = courseIds;
-      payload['courseList'] = courseIds;
-      payload['classCourses'] = courseObjects;
-      payload['assignedCourses'] = courseIds;
+      payload['assignedCourses'] =
+          courseIds.map((id) => {'courseId': id}).toList();
     }
     if (shifts != null && shifts.isNotEmpty) {
       payload['shifts'] = shifts;
-      payload['classShifts'] = shifts;
-      payload['shiftList'] = shifts;
-      payload['schedule'] = shifts;
     }
     final response = await _client.post(
       '/admin/classes',
@@ -89,32 +76,19 @@ class AdminClassService {
   }) async {
     final payload = <String, dynamic>{
       'name': name,
-      'title': name,
-      'className': name,
-      'description': description,
-      'desc': description,
+      if (description.isNotEmpty) 'description': description,
       'capacity': capacity,
-      'maxStudents': capacity,
       'status': status,
       if (startDate != null) 'startDate': startDate.toIso8601String(),
       if (endDate != null) 'endDate': endDate.toIso8601String(),
-      if (code != null && code.isNotEmpty) 'code': code,
+      if (code != null && code.isNotEmpty) 'batchCode': code,
     };
     if (courseIds != null && courseIds.isNotEmpty) {
-      final courseObjects = courseIds
-          .map((id) => {'courseId': id, 'id': id})
-          .toList();
-      payload['courses'] = courseObjects;
-      payload['courseIds'] = courseIds;
-      payload['courseList'] = courseIds;
-      payload['classCourses'] = courseObjects;
-      payload['assignedCourses'] = courseIds;
+      payload['assignedCourses'] =
+          courseIds.map((id) => {'courseId': id}).toList();
     }
     if (shifts != null && shifts.isNotEmpty) {
       payload['shifts'] = shifts;
-      payload['classShifts'] = shifts;
-      payload['shiftList'] = shifts;
-      payload['schedule'] = shifts;
     }
     final response = await _client.put(
       '/admin/classes/$classId',
@@ -185,11 +159,15 @@ class AdminClassService {
   Future<void> addStudent({
     required String classId,
     required String studentId,
+    String? shiftId,
   }) async {
     await _client.post(
       '/admin/classes/$classId/students',
       auth: true,
-      body: {'studentId': studentId},
+      body: {
+        'studentId': studentId,
+        if (shiftId != null && shiftId.isNotEmpty) 'shiftId': shiftId,
+      },
     );
   }
 
@@ -207,11 +185,15 @@ class AdminClassService {
   Future<void> enrollStudent({
     required String classId,
     required String studentId,
+    String? shiftId,
   }) async {
     await _client.post(
       '/admin/classes/$classId/enroll',
       auth: true,
-      body: {'studentId': studentId},
+      body: {
+        'studentId': studentId,
+        if (shiftId != null && shiftId.isNotEmpty) 'shiftId': shiftId,
+      },
     );
   }
 
