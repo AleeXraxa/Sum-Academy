@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/core/services/api_exception.dart';
 import 'package:sum_academy/core/utils/network_error.dart';
+import 'package:sum_academy/modules/student/controllers/student_courses_controller.dart';
 import 'package:sum_academy/modules/student/models/student_explore_course.dart';
+import 'package:sum_academy/modules/student/models/student_course.dart';
 import 'package:sum_academy/modules/student/services/student_explore_courses_service.dart';
 
 class StudentExploreCoursesController extends GetxController {
@@ -16,11 +18,13 @@ class StudentExploreCoursesController extends GetxController {
   final activeFilter = 'All'.obs;
 
   final searchController = TextEditingController();
+  bool _coursesLinked = false;
 
   @override
   void onInit() {
     super.onInit();
     fetchCourses();
+    _linkMyCourses();
     searchController.addListener(_onSearchChanged);
   }
 
@@ -57,6 +61,7 @@ class StudentExploreCoursesController extends GetxController {
     try {
       final result = await _service.fetchCourses();
       courses.assignAll(result);
+      _applyEnrollmentStatus(_enrolledCoursesSnapshot());
     } on ApiException catch (e) {
       final handled = await handleNetworkError(e);
       if (!handled) {
@@ -85,6 +90,49 @@ class StudentExploreCoursesController extends GetxController {
 
   void _onSearchChanged() {
     searchQuery.value = searchController.text;
+  }
+
+  void _linkMyCourses() {
+    if (_coursesLinked) return;
+    if (!Get.isRegistered<StudentCoursesController>()) return;
+    _coursesLinked = true;
+    final coursesController = Get.find<StudentCoursesController>();
+    ever<List<StudentCourse>>(coursesController.courses, (list) {
+      if (list.isNotEmpty && courses.isNotEmpty) {
+        _applyEnrollmentStatus(list);
+      }
+    });
+  }
+
+  List<StudentCourse> _enrolledCoursesSnapshot() {
+    if (!Get.isRegistered<StudentCoursesController>()) {
+      return const [];
+    }
+    return Get.find<StudentCoursesController>().courses.toList();
+  }
+
+  void _applyEnrollmentStatus(List<StudentCourse> enrolledCourses) {
+    if (enrolledCourses.isEmpty || courses.isEmpty) return;
+    final enrolledIds = enrolledCourses
+        .map((course) => course.id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet();
+    final enrolledTitles = enrolledCourses
+        .map((course) => course.title.trim().toLowerCase())
+        .where((title) => title.isNotEmpty)
+        .toSet();
+
+    final updated = courses.map((course) {
+      if (course.isEnrolled) return course;
+      final idMatch =
+          course.id.isNotEmpty && enrolledIds.contains(course.id.trim());
+      final titleMatch = course.title.isNotEmpty &&
+          enrolledTitles.contains(course.title.trim().toLowerCase());
+      final shouldMark = idMatch || titleMatch;
+      return shouldMark ? course.copyWith(isEnrolled: true) : course;
+    }).toList();
+
+    courses.assignAll(updated);
   }
 
   @override

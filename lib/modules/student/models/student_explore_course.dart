@@ -20,6 +20,30 @@ class StudentExploreCourse {
     required this.thumbnailUrl,
     required this.isEnrolled,
   });
+
+  StudentExploreCourse copyWith({
+    String? id,
+    String? title,
+    String? category,
+    String? level,
+    double? price,
+    double? discount,
+    int? enrolledCount,
+    String? thumbnailUrl,
+    bool? isEnrolled,
+  }) {
+    return StudentExploreCourse(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      category: category ?? this.category,
+      level: level ?? this.level,
+      price: price ?? this.price,
+      discount: discount ?? this.discount,
+      enrolledCount: enrolledCount ?? this.enrolledCount,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      isEnrolled: isEnrolled ?? this.isEnrolled,
+    );
+  }
 }
 
 List<StudentExploreCourse> parseExploreCourses(dynamic data) {

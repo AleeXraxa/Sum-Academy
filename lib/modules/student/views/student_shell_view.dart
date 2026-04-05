@@ -44,10 +44,6 @@ class StudentShellView extends GetView<StudentShellController> {
           title: 'Announcements',
           icon: Icons.campaign_rounded,
         ),
-        const StudentPlaceholderView(
-          title: 'Attendance',
-          icon: Icons.event_available_rounded,
-        ),
         const HelpSupportView(),
         const StudentPlaceholderView(
           title: 'Settings',

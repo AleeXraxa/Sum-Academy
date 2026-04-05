@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:sum_academy/modules/home/models/course.dart';
 import 'package:sum_academy/modules/home/models/live_session.dart';
+import 'package:sum_academy/modules/student/models/student_course.dart';
 
 class HomeDashboard {
   final String learnerName;
@@ -127,6 +128,7 @@ class HomeDashboard {
           'enrolledCourses',
           'coursesEnrolled',
           'totalCourses',
+          'courses',
           'enrolled',
         ]),
         completedCourses: _readInt(data, const [
@@ -182,6 +184,69 @@ class HomeDashboard {
 
     return HomeDashboard.empty();
   }
+
+  factory HomeDashboard.fromApi({
+    required Map<String, dynamic> dashboard,
+    List<dynamic> courses = const [],
+    List<dynamic> certificates = const [],
+    Map<String, dynamic> attendance = const {},
+  }) {
+    final merged = <String, dynamic>{
+      ...dashboard,
+      'courses': courses,
+    };
+
+    final base = HomeDashboard.fromAny(merged);
+    final snapshots = _parseCourseSnapshots(courses);
+
+    final enrolledCount =
+        snapshots.isNotEmpty ? snapshots.length : base.enrolledCourses;
+    final completedCount = snapshots.isNotEmpty
+        ? snapshots.where((snap) => snap.isCompleted).length
+        : base.completedCourses;
+    final certCount = certificates.isNotEmpty
+        ? _countList(certificates)
+        : base.certificatesEarned;
+
+    final attendancePercent = _resolveAttendancePercent(
+      attendance,
+      base.attendancePercent,
+    );
+
+    final activeCourse = _resolveActiveCourse(snapshots, base.activeCourse);
+    final recentCourses =
+        snapshots.isNotEmpty ? _buildRecentCourses(snapshots) : base.recentCourses;
+
+    final resolvedName = base.learnerName.isNotEmpty
+        ? base.learnerName
+        : _readString(dashboard, const [
+            'fullName',
+            'name',
+            'studentName',
+            'displayName',
+          ]);
+
+    return HomeDashboard(
+      learnerName: resolvedName,
+      enrolledCourses: enrolledCount,
+      completedCourses: completedCount,
+      certificatesEarned: certCount,
+      attendancePercent: attendancePercent,
+      learningHours: base.learningHours,
+      learningStreakDays: base.learningStreakDays,
+      learningDays: base.learningDays,
+      lastLoginAt: base.lastLoginAt,
+      isProfileComplete: base.isProfileComplete,
+      activeCourse: activeCourse,
+      weeklyGoalHours: base.weeklyGoalHours,
+      weeklyProgressHours: base.weeklyProgressHours,
+      continueCourse: base.continueCourse,
+      recentCourses: recentCourses,
+      liveSessions: base.liveSessions,
+      categories: base.categories,
+      highlightedCategoryIndexes: base.highlightedCategoryIndexes,
+    );
+  }
 }
 
 class ActiveCourseInfo {
@@ -198,6 +263,27 @@ class ActiveCourseInfo {
   });
 
   bool get isEmpty => title.trim().isEmpty;
+}
+
+class _CourseSnapshot {
+  final String title;
+  final String teacher;
+  final String category;
+  final double progress;
+  final String status;
+  final String nextLecture;
+
+  const _CourseSnapshot({
+    required this.title,
+    required this.teacher,
+    required this.category,
+    required this.progress,
+    required this.status,
+    required this.nextLecture,
+  });
+
+  bool get isCompleted =>
+      progress >= 1 || status.toLowerCase().contains('complete');
 }
 
 String _readString(Map<String, dynamic> data, List<String> keys) {
@@ -391,8 +477,25 @@ List<Course> _parseCourseList(List<dynamic> items) {
   final courses = <Course>[];
   var colorIndex = 0;
   for (final raw in items) {
-    if (raw is Map<String, dynamic>) {
-      final title = _readString(raw, const ['title', 'name', 'courseTitle']);
+    if (raw is StudentCourse) {
+      courses.add(
+        Course(
+          title: raw.title,
+          subtitle: raw.teacher.isNotEmpty ? raw.teacher : raw.category,
+          duration: '',
+          progress: raw.progress,
+          accent: colors[colorIndex % colors.length],
+          tags: const [],
+        ),
+      );
+      colorIndex += 1;
+    } else if (raw is Map<String, dynamic>) {
+      var title =
+          _readString(raw, const ['title', 'name', 'courseTitle', 'courseName']);
+      final id = _readString(raw, const ['courseId', 'course_id', 'id', '_id']);
+      if (title.isEmpty && id.isNotEmpty) {
+        title = 'Course $id';
+      }
       if (title.isEmpty) {
         continue;
       }
@@ -431,6 +534,151 @@ List<Course> _parseCourseList(List<dynamic> items) {
     }
   }
   return courses;
+}
+
+List<_CourseSnapshot> _parseCourseSnapshots(List<dynamic> items) {
+  if (items.isEmpty) return const [];
+  final snapshots = <_CourseSnapshot>[];
+  for (final raw in items) {
+    if (raw is StudentCourse) {
+      snapshots.add(
+        _CourseSnapshot(
+          title: raw.title,
+          teacher: raw.teacher,
+          category: raw.category,
+          progress: raw.progress,
+          status: raw.status,
+          nextLecture: raw.nextLecture,
+        ),
+      );
+    } else if (raw is Map<String, dynamic>) {
+      var title =
+          _readString(raw, const ['title', 'name', 'courseTitle', 'courseName']);
+      final id = _readString(raw, const ['courseId', 'course_id', 'id', '_id']);
+      if (title.isEmpty && id.isNotEmpty) {
+        title = 'Course $id';
+      }
+      if (title.isEmpty) continue;
+      final teacher = _readString(
+        raw,
+        const ['teacher', 'teacherName', 'instructor', 'mentor'],
+      );
+      final category =
+          _readString(raw, const ['category', 'subject', 'track']);
+      final status = _readString(raw, const ['status', 'state', 'courseStatus']);
+      final nextLecture = _readString(
+        raw,
+        const ['nextLecture', 'nextLesson', 'nextActivity', 'nextContent'],
+      );
+      final progress = _normalizeProgress(
+        _readDouble(raw, const [
+          'progress',
+          'completion',
+          'completionPercent',
+          'progressPercent',
+        ]),
+      );
+      snapshots.add(
+        _CourseSnapshot(
+          title: title,
+          teacher: teacher,
+          category: category,
+          progress: progress,
+          status: status,
+          nextLecture: nextLecture,
+        ),
+      );
+    }
+  }
+  return snapshots;
+}
+
+ActiveCourseInfo? _resolveActiveCourse(
+  List<_CourseSnapshot> snapshots,
+  ActiveCourseInfo? fallback,
+) {
+  if (snapshots.isEmpty) {
+    return fallback;
+  }
+
+  snapshots.sort((a, b) => b.progress.compareTo(a.progress));
+  final best = snapshots.first;
+
+  return ActiveCourseInfo(
+    title: best.title,
+    teacher: best.teacher,
+    progress: best.progress,
+    nextLecture: best.nextLecture.isEmpty
+        ? 'Resume from your last activity'
+        : best.nextLecture,
+  );
+}
+
+List<Course> _buildRecentCourses(List<_CourseSnapshot> snapshots) {
+  final colors = [
+    const Color(0xFF4A63F5),
+    const Color(0xFF7088FF),
+    const Color(0xFFFF6F0F),
+    const Color(0xFF3347E8),
+  ];
+  final courses = <Course>[];
+  var colorIndex = 0;
+  for (final snap in snapshots) {
+    courses.add(
+      Course(
+        title: snap.title,
+        subtitle: snap.teacher.isNotEmpty ? snap.teacher : snap.category,
+        duration: '',
+        progress: snap.progress,
+        accent: colors[colorIndex % colors.length],
+        tags: const [],
+      ),
+    );
+    colorIndex += 1;
+  }
+  return courses;
+}
+
+double _resolveAttendancePercent(
+  Map<String, dynamic> attendance,
+  double fallback,
+) {
+  if (attendance.isEmpty) return fallback;
+  final summary = attendance['summary'];
+  if (summary is Map) {
+    final present = _parseInt(summary['present']);
+    final absent = _parseInt(summary['absent']);
+    if (present != null || absent != null) {
+      final total = (present ?? 0) + (absent ?? 0);
+      if (total > 0) {
+        return (present ?? 0) / total * 100;
+      }
+    }
+  }
+
+  final classes = attendance['classes'];
+  if (classes is List && classes.isNotEmpty) {
+    final percentages = classes
+        .whereType<Map>()
+        .map((item) => _parseDouble(item['percentage']))
+        .whereType<double>()
+        .toList();
+    if (percentages.isNotEmpty) {
+      final sum = percentages.reduce((a, b) => a + b);
+      return sum / percentages.length;
+    }
+  }
+
+  final direct = _parseDouble(
+    attendance['attendancePercent'] ??
+        attendance['percentage'] ??
+        attendance['attendance'],
+  );
+  return direct ?? fallback;
+}
+
+int _countList(List<dynamic> items) {
+  return items.where((item) => item != null).length;
 }
 
 List<String> _readStringList(Map<String, dynamic> data, List<String> keys) {

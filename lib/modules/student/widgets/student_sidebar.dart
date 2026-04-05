@@ -128,7 +128,6 @@ List<_SidebarSection> _buildSections() {
     title: 'Engagement',
     items: [
       _SidebarItem(label: 'Announcements', icon: Icons.campaign_rounded),
-      _SidebarItem(label: 'Attendance', icon: Icons.event_available_rounded),
       _SidebarItem(label: 'Help and Support', icon: Icons.support_agent_rounded),
     ],
   );

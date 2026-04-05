@@ -27,7 +27,7 @@ class ExploreCourseCard extends StatelessWidget {
         ? course.price * (1 - (course.discount / 100))
         : course.price;
     final isEnrolled = course.isEnrolled;
-    final actionLabel = isEnrolled ? 'Continue Learning' : 'Enroll';
+    final actionLabel = isEnrolled ? 'Enrolled' : 'Enroll';
     final actionColor =
         isEnrolled ? SumAcademyTheme.success : SumAcademyTheme.brandBlue;
 

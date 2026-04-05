@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
-import 'package:sum_academy/core/utils/network_error.dart';
 import 'package:sum_academy/modules/student/controllers/student_explore_courses_controller.dart';
 import 'package:sum_academy/modules/student/controllers/student_shell_controller.dart';
 import 'package:sum_academy/modules/student/widgets/explore_course_card.dart';
+import 'package:sum_academy/modules/student/views/student_checkout_view.dart';
 
 class ExploreCoursesView extends GetView<StudentExploreCoursesController> {
   const ExploreCoursesView({super.key});
@@ -53,11 +53,7 @@ class ExploreCoursesView extends GetView<StudentExploreCoursesController> {
                               }
                               return;
                             }
-                            await showAppErrorDialog(
-                              title: 'Enrollment',
-                              message:
-                                  'Enrollment flow will be available soon.',
-                            );
+                            Get.to(() => StudentCheckoutView(course: course));
                           },
                         ),
                       ),

@@ -6,7 +6,6 @@ const List<String> studentNavItems = [
   'Quizzes',
   'Payments',
   'Announcements',
-  'Attendance',
   'Help and Support',
   'Settings',
 ];

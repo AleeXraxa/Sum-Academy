@@ -51,7 +51,9 @@ class HomeDashboardContent extends GetView<HomeController> {
         onRefresh: controller.loadDashboard,
         child: ListView(
           padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 24.h),
-          physics: const BouncingScrollPhysics(),
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
           children: [
             const _HeaderRow(),
             SizedBox(height: 14.h),
@@ -97,7 +99,7 @@ class _DashboardContent extends StatelessWidget {
           enrolled: dashboard.enrolledCourses,
           completed: dashboard.completedCourses,
           certificates: dashboard.certificatesEarned,
-          attendancePercent: dashboard.attendancePercent,
+          learningDays: dashboard.learningDays,
         ),
         SizedBox(height: 18.h),
         if (dashboard.activeCourse != null &&
@@ -330,13 +332,13 @@ class _StudentStatsGrid extends StatelessWidget {
   final int enrolled;
   final int completed;
   final int certificates;
-  final double attendancePercent;
+  final int learningDays;
 
   const _StudentStatsGrid({
     required this.enrolled,
     required this.completed,
     required this.certificates,
-    required this.attendancePercent,
+    required this.learningDays,
   });
 
   @override
@@ -378,10 +380,10 @@ class _StudentStatsGrid extends StatelessWidget {
             SizedBox(width: 12.w),
             Expanded(
               child: _StatCard(
-                label: 'Attendance %',
-                value: '${attendancePercent.toStringAsFixed(0)}%',
-                accent: SumAcademyTheme.accentOrange,
-                tone: SumAcademyTheme.accentOrangePale,
+                label: 'Learning Days',
+                value: learningDays.toString(),
+                accent: SumAcademyTheme.brandBlueDark,
+                tone: SumAcademyTheme.brandBluePale,
               ),
             ),
           ],
