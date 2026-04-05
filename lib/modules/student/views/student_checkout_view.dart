@@ -623,7 +623,7 @@ class _PaymentMethodStep extends StatelessWidget {
             );
           }),
           SizedBox(height: 12.h),
-          _BankDetails(controller: controller),
+          _PaymentDetails(controller: controller),
           SizedBox(height: 18.h),
           _StepActions(
             onBack: controller.goBack,
@@ -699,21 +699,32 @@ class _PaymentMethodCard extends StatelessWidget {
   }
 }
 
-class _BankDetails extends StatelessWidget {
+class _PaymentDetails extends StatelessWidget {
   final StudentCheckoutController controller;
 
-  const _BankDetails({required this.controller});
+  const _PaymentDetails({required this.controller});
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      if (!controller.selectedMethod.value.toLowerCase().contains('bank')) {
+      final method = controller.selectedMethod.value;
+      if (method.isEmpty) {
         return const SizedBox.shrink();
       }
-      final details = controller.paymentConfig.value?.bankDetails ?? {};
+      final lower = method.toLowerCase();
+      Map<String, dynamic> details = {};
+      if (lower.contains('jazz')) {
+        details = controller.paymentConfig.value?.jazzcashDetails ?? {};
+      } else if (lower.contains('easy')) {
+        details = controller.paymentConfig.value?.easypaisaDetails ?? {};
+      } else if (lower.contains('bank')) {
+        details = controller.paymentConfig.value?.bankTransferDetails ??
+            controller.paymentConfig.value?.bankDetails ??
+            {};
+      }
       if (details.isEmpty) {
         return _InfoBanner(
-          message: 'Bank details will be shown after selecting Bank Transfer.',
+          message: 'Payment details will appear once available.',
         );
       }
 
@@ -723,6 +734,9 @@ class _BankDetails extends StatelessWidget {
       final accountNumber =
           _readAny(details, ['accountNumber', 'account', 'number']);
       final iban = _readAny(details, ['iban', 'IBAN']);
+      final merchantId = _readAny(details, ['merchantId', 'merchant_id']);
+      final username = _readAny(details, ['username', 'userName']);
+      final instructions = _readAny(details, ['instructions', 'instruction']);
 
       return Container(
         width: double.infinity,
@@ -736,7 +750,7 @@ class _BankDetails extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Bank Details',
+              '${method.trim()} Details',
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
                     color: SumAcademyTheme.darkBase,
                     fontWeight: FontWeight.w600,
@@ -744,11 +758,24 @@ class _BankDetails extends StatelessWidget {
             ),
             SizedBox(height: 8.h),
             if (bankName.isNotEmpty) _DetailRow(label: 'Bank', value: bankName),
+            if (merchantId.isNotEmpty)
+              _DetailRow(label: 'Merchant ID', value: merchantId),
+            if (username.isNotEmpty)
+              _DetailRow(label: 'Username', value: username),
             if (accountTitle.isNotEmpty)
               _DetailRow(label: 'Account Title', value: accountTitle),
             if (accountNumber.isNotEmpty)
               _DetailRow(label: 'Account Number', value: accountNumber),
             if (iban.isNotEmpty) _DetailRow(label: 'IBAN', value: iban),
+            if (instructions.isNotEmpty) ...[
+              SizedBox(height: 6.h),
+              Text(
+                instructions,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: SumAcademyTheme.darkBase.withOpacityFloat(0.7),
+                    ),
+              ),
+            ],
           ],
         ),
       );

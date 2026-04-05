@@ -37,6 +37,9 @@ class StudentCheckoutService {
       methods: ['JazzCash', 'EasyPaisa', 'Bank Transfer'],
       installmentOptions: [2, 3, 4],
       bankDetails: {},
+      jazzcashDetails: {},
+      easypaisaDetails: {},
+      bankTransferDetails: {},
     );
   }
 

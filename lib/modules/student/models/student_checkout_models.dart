@@ -101,11 +101,17 @@ class StudentPaymentConfig {
   final List<String> methods;
   final List<int> installmentOptions;
   final Map<String, dynamic> bankDetails;
+  final Map<String, dynamic> jazzcashDetails;
+  final Map<String, dynamic> easypaisaDetails;
+  final Map<String, dynamic> bankTransferDetails;
 
   const StudentPaymentConfig({
     required this.methods,
     required this.installmentOptions,
     required this.bankDetails,
+    required this.jazzcashDetails,
+    required this.easypaisaDetails,
+    required this.bankTransferDetails,
   });
 
   factory StudentPaymentConfig.fromJson(Map<String, dynamic> json) {
@@ -117,7 +123,12 @@ class StudentPaymentConfig {
       root,
       const ['installmentOptions', 'installments', 'plans'],
     );
-    final bank = _resolveBankDetails(root);
+    final jazzcash = _readMap(root, const ['jazzcash', 'jazzCash']);
+    final easypaisa = _readMap(root, const ['easypaisa', 'easyPaisa']);
+    final bankTransfer = _readMap(root, const ['bankTransfer', 'bank_transfer']);
+    final bank = bankTransfer.isNotEmpty
+        ? bankTransfer
+        : _resolveBankDetails(root);
     final hasFlags = _hasMethodFlags(root);
     final derived = _deriveMethodsFromFlags(root);
     final resolvedMethods =
@@ -131,6 +142,9 @@ class StudentPaymentConfig {
       installmentOptions:
           installments.isNotEmpty ? installments : const [2, 3, 4],
       bankDetails: bank,
+      jazzcashDetails: jazzcash,
+      easypaisaDetails: easypaisa,
+      bankTransferDetails: bankTransfer,
     );
   }
 }

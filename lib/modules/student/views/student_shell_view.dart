@@ -12,6 +12,7 @@ import 'package:sum_academy/modules/student/views/explore_courses_view.dart';
 import 'package:sum_academy/modules/student/views/help_support_view.dart';
 import 'package:sum_academy/modules/student/views/my_courses_view.dart';
 import 'package:sum_academy/modules/student/views/student_placeholder_view.dart';
+import 'package:sum_academy/modules/student/views/student_quizzes_view.dart';
 import 'package:sum_academy/modules/student/widgets/student_sidebar.dart';
 
 class StudentShellView extends GetView<StudentShellController> {
@@ -32,10 +33,7 @@ class StudentShellView extends GetView<StudentShellController> {
           title: 'My Certificates',
           icon: Icons.verified_rounded,
         ),
-        const StudentPlaceholderView(
-          title: 'Quizzes',
-          icon: Icons.quiz_rounded,
-        ),
+        const StudentQuizzesView(),
         const StudentPlaceholderView(
           title: 'Payments',
           icon: Icons.payments_rounded,
