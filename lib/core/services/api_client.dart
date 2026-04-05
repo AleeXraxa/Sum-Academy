@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:sum_academy/core/services/api_exception.dart';
 
@@ -147,8 +148,22 @@ class ApiClient {
     final headers = <String, String>{'Content-Type': 'application/json'};
 
     if (auth) {
-      final token = await FirebaseAuth.instance.currentUser?.getIdToken();
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        try {
+          user = await FirebaseAuth.instance
+              .authStateChanges()
+              .firstWhere((u) => u != null)
+              .timeout(const Duration(seconds: 3));
+        } catch (_) {
+          user = null;
+        }
+      }
+      final token = await user?.getIdToken();
       if (token == null || token.isEmpty) {
+        debugPrint(
+          'API auth header missing token. user=${user?.uid ?? 'null'}',
+        );
         throw ApiException('Authentication required.', statusCode: 401);
       }
       headers['Authorization'] = 'Bearer $token';
@@ -166,10 +181,26 @@ class ApiClient {
   }
 
   Map<String, dynamic> _handleResponse(http.Response response) {
-    final data = _decodeBody(response.body);
+    Map<String, dynamic> data;
+    try {
+      data = _decodeBody(response.body);
+    } catch (_) {
+      debugPrint(
+        'API ${response.request?.method ?? ''} ${response.request?.url ?? ''} '
+        '-> ${response.statusCode} (non-JSON response)',
+      );
+      throw ApiException(
+        'Unexpected server response. Please try again.',
+        statusCode: response.statusCode,
+      );
+    }
     final success = data['success'];
 
     if (response.statusCode >= 400 || success == false) {
+      debugPrint(
+        'API ${response.request?.method ?? ''} ${response.request?.url ?? ''} '
+        '-> ${response.statusCode} ${data['message'] ?? ''}',
+      );
       final message =
           data['message']?.toString() ?? 'Request failed. Please try again.';
       final errors = data['errors'];

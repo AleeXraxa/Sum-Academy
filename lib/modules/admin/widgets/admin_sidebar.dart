@@ -106,7 +106,6 @@ List<_SidebarSection> _buildSections(String role) {
     title: 'Overview',
     items: [
       _SidebarItem(label: 'Dashboard', icon: Icons.dashboard_rounded),
-      _SidebarItem(label: 'Analytics', icon: Icons.query_stats_rounded),
     ],
   );
 
@@ -125,30 +124,26 @@ List<_SidebarSection> _buildSections(String role) {
     title: 'Payments',
     items: [
       _SidebarItem(label: 'Payments', icon: Icons.payments_outlined),
-      _SidebarItem(label: 'Transactions', icon: Icons.receipt_long_outlined),
       _SidebarItem(label: 'Installments', icon: Icons.stacked_line_chart_outlined),
-      _SidebarItem(label: 'Promo Codes', icon: Icons.confirmation_number_outlined),
     ],
   );
 
-  const content = _SidebarSection(
-    title: 'Content',
+  const announcements = _SidebarSection(
+    title: 'Announcements',
     items: [
-      _SidebarItem(label: 'Certificates', icon: Icons.verified_outlined),
       _SidebarItem(label: 'Announcements', icon: Icons.campaign_outlined),
-      _SidebarItem(label: 'Site Settings', icon: Icons.settings_outlined),
     ],
   );
 
   if (role == 'admin') {
-    return [overview, management, payments, content];
+    return [overview, management, payments, announcements];
   }
 
   if (role == 'teacher') {
-    return [overview, management, content];
+    return [overview, management];
   }
 
-  return [overview, content];
+  return [overview];
 }
 
 class _SectionHeader extends StatelessWidget {

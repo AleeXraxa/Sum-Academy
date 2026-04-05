@@ -1,7 +1,6 @@
 int? navIndexForLabel(String label) {
   switch (label) {
     case 'Dashboard':
-    case 'Analytics':
       return 0;
     case 'Users':
     case 'Teachers':
@@ -10,9 +9,7 @@ int? navIndexForLabel(String label) {
     case 'Classes':
       return 1;
     case 'Payments':
-    case 'Transactions':
     case 'Installments':
-    case 'Promo Codes':
       return 2;
     case 'Certificates':
     case 'Announcements':

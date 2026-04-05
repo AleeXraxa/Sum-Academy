@@ -24,6 +24,7 @@ class AdminController extends GetxController {
   final RxInt navIndex = 0.obs;
   final RxString overviewLabel = 'Dashboard'.obs;
   final RxString managementLabel = 'Users'.obs;
+  final RxString paymentsLabel = 'Payments'.obs;
   final RxBool isSearchExpanded = false.obs;
   final TextEditingController searchController = TextEditingController();
   final RxInt userFilterIndex = 0.obs;
@@ -456,6 +457,9 @@ class AdminController extends GetxController {
     if (index == 1 && !_isManagementLabel(managementLabel.value)) {
       managementLabel.value = 'Users';
     }
+    if (index == 2 && !_isPaymentsLabel(paymentsLabel.value)) {
+      paymentsLabel.value = 'Payments';
+    }
     if (isSearchExpanded.value) {
       closeSearch();
     }
@@ -470,6 +474,12 @@ class AdminController extends GetxController {
   void setManagementLabel(String label) {
     if (_isManagementLabel(label)) {
       managementLabel.value = label;
+    }
+  }
+
+  void setPaymentsLabel(String label) {
+    if (_isPaymentsLabel(label)) {
+      paymentsLabel.value = label;
     }
   }
 
@@ -1009,6 +1019,11 @@ bool _isManagementLabel(String label) {
 }
 
 bool _isOverviewLabel(String label) {
-  const labels = ['Dashboard', 'Analytics'];
+  const labels = ['Dashboard'];
+  return labels.contains(label);
+}
+
+bool _isPaymentsLabel(String label) {
+  const labels = ['Payments', 'Installments'];
   return labels.contains(label);
 }

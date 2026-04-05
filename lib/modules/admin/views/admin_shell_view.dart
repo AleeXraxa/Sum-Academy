@@ -5,14 +5,16 @@ import 'package:sum_academy/core/widgets/app_bootstrap_loader.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_controller.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_class_controller.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_course_controller.dart';
+import 'package:sum_academy/modules/admin/controllers/admin_payments_controller.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_student_controller.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_teacher_controller.dart';
 import 'package:sum_academy/modules/admin/utils/admin_navigation.dart';
-import 'package:sum_academy/modules/admin/views/analytics/admin_analytics_view.dart';
 import 'package:sum_academy/modules/admin/views/common/admin_placeholder_view.dart';
 import 'package:sum_academy/modules/admin/views/classes/admin_classes_view.dart';
 import 'package:sum_academy/modules/admin/views/courses/admin_courses_view.dart';
 import 'package:sum_academy/modules/admin/views/dashboard/admin_dashboard_view.dart';
+import 'package:sum_academy/modules/admin/views/payments/admin_installments_view.dart';
+import 'package:sum_academy/modules/admin/views/payments/admin_payments_view.dart';
 import 'package:sum_academy/modules/admin/views/students/admin_students_view.dart';
 import 'package:sum_academy/modules/admin/views/teachers/admin_teachers_view.dart';
 import 'package:sum_academy/modules/admin/views/users/admin_users_view.dart';
@@ -45,7 +47,9 @@ class AdminShellView extends GetView<AdminController> {
           ? controller.overviewLabel.value
           : controller.navIndex.value == 1
               ? controller.managementLabel.value
-              : activeLabelForIndex(controller.navIndex.value);
+              : controller.navIndex.value == 2
+                  ? controller.paymentsLabel.value
+                  : activeLabelForIndex(controller.navIndex.value);
       final isBootLoading = !controller.isUsersInitialized.value ||
           !controller.isStatsInitialized.value ||
           !controller.isActivitiesInitialized.value ||
@@ -72,6 +76,8 @@ class AdminShellView extends GetView<AdminController> {
                 controller.setOverviewLabel(label);
               } else if (targetIndex == 1) {
                 controller.setManagementLabel(label);
+              } else if (targetIndex == 2) {
+                controller.setPaymentsLabel(label);
               }
               Get.back();
               controller.setNavIndex(targetIndex);
@@ -101,22 +107,14 @@ class AdminShellView extends GetView<AdminController> {
                 IndexedStack(
                   index: controller.navIndex.value,
                   children: [
-                    controller.overviewLabel.value == 'Analytics'
-                        ? AdminAnalyticsView(
-                            controller: controller,
-                            textColor: textColor,
-                            surface: surface,
-                            isDark: isDark,
-                            userName: name,
-                          )
-                        : AdminDashboardView(
-                            controller: controller,
-                            textColor: textColor,
-                            surface: surface,
-                            isDark: isDark,
-                            userName: name,
-                            isSearchExpanded: isSearchExpanded,
-                          ),
+                    AdminDashboardView(
+                      controller: controller,
+                      textColor: textColor,
+                      surface: surface,
+                      isDark: isDark,
+                      userName: name,
+                      isSearchExpanded: isSearchExpanded,
+                    ),
                     _ManagementShell(
                       controller: controller,
                       textColor: textColor,
@@ -124,15 +122,13 @@ class AdminShellView extends GetView<AdminController> {
                       isDark: isDark,
                       userName: name,
                     ),
-                    AdminPlaceholderView(
-                      controller: controller,
+                    _PaymentsShell(
+                      controller: Get.find<AdminPaymentsController>(),
+                      adminController: controller,
                       textColor: textColor,
                       surface: surface,
                       isDark: isDark,
                       userName: name,
-                      title: 'Payments',
-                      icon: Icons.payments_rounded,
-                      isSearchExpanded: isSearchExpanded,
                     ),
                     AdminPlaceholderView(
                       controller: controller,
@@ -236,6 +232,55 @@ class _ManagementShell extends StatelessWidget {
           title: label,
           icon: _managementIcon(label),
           isSearchExpanded: controller.isSearchExpanded.value,
+        );
+    }
+  }
+}
+
+class _PaymentsShell extends StatelessWidget {
+  final AdminPaymentsController controller;
+  final AdminController adminController;
+  final Color textColor;
+  final Color surface;
+  final bool isDark;
+  final String userName;
+
+  const _PaymentsShell({
+    required this.controller,
+    required this.adminController,
+    required this.textColor,
+    required this.surface,
+    required this.isDark,
+    required this.userName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final label = adminController.paymentsLabel.value;
+    switch (label) {
+      case 'Installments':
+        return AdminInstallmentsView(
+          controller: controller,
+          textColor: textColor,
+          surface: surface,
+          isDark: isDark,
+          userName: userName,
+        );
+      case 'Payments':
+        return AdminPaymentsView(
+          controller: controller,
+          textColor: textColor,
+          surface: surface,
+          isDark: isDark,
+          userName: userName,
+        );
+      default:
+        return AdminPaymentsView(
+          controller: controller,
+          textColor: textColor,
+          surface: surface,
+          isDark: isDark,
+          userName: userName,
         );
     }
   }
