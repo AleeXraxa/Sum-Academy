@@ -110,25 +110,11 @@ class StudentCheckoutService {
         body: {'receiptUrl': url},
       );
       return _extractItem(response['data']);
-    } on FirebaseException {
-      // Fall back to API-based uploads if storage fails.
-    } on ApiException catch (_) {
-      // Fall back to API-based uploads if backend rejects the URL upload.
-    }
-
-    try {
-      return await _uploadReceiptMultipart(
-        paymentId: paymentId,
-        receiptFile: receiptFile,
+    } on FirebaseException catch (e) {
+      throw ApiException(
+        _mapStorageError(e),
+        statusCode: _mapStorageStatusCode(e),
       );
-    } on ApiException catch (e) {
-      if (_shouldFallbackToBase64(e)) {
-        return _uploadReceiptBase64(
-          paymentId: paymentId,
-          receiptFile: receiptFile,
-        );
-      }
-      rethrow;
     }
   }
 
@@ -140,9 +126,18 @@ class StudentCheckoutService {
     if (user == null) {
       throw ApiException('Authentication required.', statusCode: 401);
     }
+    final sizeBytes = await receiptFile.length();
+    const maxBytes = 5 * 1024 * 1024;
+    if (sizeBytes > maxBytes) {
+      throw ApiException(
+        'Receipt image must be 5MB or smaller.',
+        statusCode: 413,
+      );
+    }
     final ext = _inferImageExt(receiptFile.path);
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final path = 'payments/receipts/${user.uid}/$paymentId-$timestamp.$ext';
+    // Use a simple receipts/{uid}/... path to match common storage rules.
+    final path = 'receipts/${user.uid}/$paymentId-$timestamp.$ext';
     final ref = FirebaseStorage.instance.ref().child(path);
     final metadata = SettableMetadata(contentType: 'image/$ext');
     final uploadTask = ref.putFile(receiptFile, metadata);
@@ -161,6 +156,14 @@ class StudentCheckoutService {
     required String paymentId,
     required File receiptFile,
   }) async {
+    final sizeBytes = await receiptFile.length();
+    const maxBytes = 5 * 1024 * 1024;
+    if (sizeBytes > maxBytes) {
+      throw ApiException(
+        'Receipt image must be 5MB or smaller.',
+        statusCode: 413,
+      );
+    }
     final token = await _resolveToken();
     final uri = Uri.parse('${ApiClient.baseUrl}/payments/$paymentId/receipt');
     final request = http.MultipartRequest('POST', uri)
@@ -204,6 +207,14 @@ class StudentCheckoutService {
     required String paymentId,
     required File receiptFile,
   }) async {
+    final sizeBytes = await receiptFile.length();
+    const maxBytes = 5 * 1024 * 1024;
+    if (sizeBytes > maxBytes) {
+      throw ApiException(
+        'Receipt image must be 5MB or smaller.',
+        statusCode: 413,
+      );
+    }
     final bytes = await receiptFile.readAsBytes();
     final ext = _inferImageExt(receiptFile.path);
     final dataUrl = 'data:image/$ext;base64,${base64Encode(bytes)}';
@@ -218,12 +229,58 @@ class StudentCheckoutService {
   bool _shouldFallbackToBase64(ApiException error) {
     final status = error.statusCode ?? 0;
     if (status == 415) return true;
-    if (status == 400 || status == 422) {
+    if (status == 400 || status == 413 || status == 422) {
       final message = error.message.toLowerCase();
       return message.contains('receipturl') ||
           message.contains('receipt url') ||
           message.contains('unsupported') ||
           message.contains('invalid');
+    }
+    return false;
+  }
+
+  String _mapStorageError(FirebaseException error) {
+    switch (error.code) {
+      case 'unauthenticated':
+        return 'Please login again to upload the receipt.';
+      case 'unauthorized':
+      case 'permission-denied':
+        return 'Permission denied while uploading. Please contact support.';
+      case 'retry-limit-exceeded':
+        return 'Network issue while uploading. Please try again.';
+      case 'quota-exceeded':
+        return 'Upload failed because storage quota was exceeded.';
+      case 'canceled':
+        return 'Upload was cancelled. Please try again.';
+      case 'invalid-checksum':
+        return 'Upload failed due to file integrity. Please try another image.';
+      default:
+        return 'Failed to upload receipt. Please try again.';
+    }
+  }
+
+  int _mapStorageStatusCode(FirebaseException error) {
+    switch (error.code) {
+      case 'unauthenticated':
+        return 401;
+      case 'unauthorized':
+      case 'permission-denied':
+        return 403;
+      case 'retry-limit-exceeded':
+        return 0;
+      default:
+        return 500;
+    }
+  }
+
+  bool _shouldFallbackToMultipart(ApiException error) {
+    final status = error.statusCode ?? 0;
+    if (status == 400 || status == 415 || status == 422) {
+      final message = error.message.toLowerCase();
+      return message.contains('receipturl') ||
+          message.contains('receipt url') ||
+          message.contains('invalid') ||
+          message.contains('url');
     }
     return false;
   }
