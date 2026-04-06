@@ -250,12 +250,14 @@ class HomeDashboard {
 }
 
 class ActiveCourseInfo {
+  final String courseId;
   final String title;
   final String teacher;
   final double progress;
   final String nextLecture;
 
   const ActiveCourseInfo({
+    required this.courseId,
     required this.title,
     required this.teacher,
     required this.progress,
@@ -266,6 +268,7 @@ class ActiveCourseInfo {
 }
 
 class _CourseSnapshot {
+  final String id;
   final String title;
   final String teacher;
   final String category;
@@ -274,6 +277,7 @@ class _CourseSnapshot {
   final String nextLecture;
 
   const _CourseSnapshot({
+    required this.id,
     required this.title,
     required this.teacher,
     required this.category,
@@ -402,6 +406,7 @@ Map<String, dynamic>? _readMapForKeys(
 }
 
 ActiveCourseInfo _parseActiveCourse(Map<String, dynamic> source) {
+  final id = _readString(source, const ['courseId', 'course_id', 'id', '_id']);
   final title = _readString(source, const ['title', 'courseTitle', 'name']);
   final teacher = _readString(source, const [
     'teacher',
@@ -428,6 +433,7 @@ ActiveCourseInfo _parseActiveCourse(Map<String, dynamic> source) {
   final progress = _normalizeProgress(progressRaw);
 
   return ActiveCourseInfo(
+    courseId: id,
     title: title,
     teacher: teacher,
     progress: progress,
@@ -543,6 +549,7 @@ List<_CourseSnapshot> _parseCourseSnapshots(List<dynamic> items) {
     if (raw is StudentCourse) {
       snapshots.add(
         _CourseSnapshot(
+          id: raw.id,
           title: raw.title,
           teacher: raw.teacher,
           category: raw.category,
@@ -580,6 +587,7 @@ List<_CourseSnapshot> _parseCourseSnapshots(List<dynamic> items) {
       );
       snapshots.add(
         _CourseSnapshot(
+          id: id,
           title: title,
           teacher: teacher,
           category: category,
@@ -605,6 +613,7 @@ ActiveCourseInfo? _resolveActiveCourse(
   final best = snapshots.first;
 
   return ActiveCourseInfo(
+    courseId: best.id,
     title: best.title,
     teacher: best.teacher,
     progress: best.progress,

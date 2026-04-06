@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/modules/student/controllers/student_courses_controller.dart';
 import 'package:sum_academy/modules/student/widgets/student_course_card.dart';
+import 'package:sum_academy/modules/student/views/student_course_detail_view.dart';
 
 class MyCoursesView extends GetView<StudentCoursesController> {
   const MyCoursesView({super.key});
@@ -20,7 +21,9 @@ class MyCoursesView extends GetView<StudentCoursesController> {
         onRefresh: controller.refresh,
         child: ListView(
           padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 28.h),
-          physics: const BouncingScrollPhysics(),
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
           children: [
             _HeaderRow(textColor: textColor),
             SizedBox(height: 18.h),
@@ -38,7 +41,20 @@ class MyCoursesView extends GetView<StudentCoursesController> {
                     .map(
                       (course) => Padding(
                         padding: EdgeInsets.only(bottom: 12.h),
-                        child: StudentCourseCard(course: course),
+                        child: StudentCourseCard(
+                          course: course,
+                          onContinue: () {
+                            Get.to(
+                              () => StudentCourseDetailView(
+                                courseId: course.id,
+                                title: course.title,
+                                teacher: course.teacher,
+                                progress: course.progress,
+                                nextLecture: course.nextLecture,
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     )
                     .toList(),

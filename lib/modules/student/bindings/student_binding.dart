@@ -7,11 +7,13 @@ import 'package:sum_academy/modules/student/controllers/student_explore_courses_
 import 'package:sum_academy/modules/student/controllers/student_payments_controller.dart';
 import 'package:sum_academy/modules/student/controllers/student_quizzes_controller.dart';
 import 'package:sum_academy/modules/student/controllers/student_shell_controller.dart';
+import 'package:sum_academy/modules/student/controllers/student_settings_controller.dart';
 import 'package:sum_academy/modules/student/controllers/student_support_controller.dart';
 import 'package:sum_academy/modules/student/services/student_courses_service.dart';
 import 'package:sum_academy/modules/student/services/student_explore_courses_service.dart';
 import 'package:sum_academy/modules/student/services/student_payments_service.dart';
 import 'package:sum_academy/modules/student/services/student_quiz_service.dart';
+import 'package:sum_academy/modules/student/services/student_settings_service.dart';
 import 'package:sum_academy/modules/student/services/student_support_service.dart';
 
 class StudentBinding extends Bindings {
@@ -73,6 +75,17 @@ class StudentBinding extends Bindings {
     if (!Get.isRegistered<StudentPaymentsController>()) {
       Get.lazyPut<StudentPaymentsController>(
         () => StudentPaymentsController(Get.find<StudentPaymentsService>()),
+      );
+    }
+    if (!Get.isRegistered<StudentSettingsService>()) {
+      Get.lazyPut<StudentSettingsService>(
+        StudentSettingsService.new,
+        fenix: true,
+      );
+    }
+    if (!Get.isRegistered<StudentSettingsController>()) {
+      Get.lazyPut<StudentSettingsController>(
+        () => StudentSettingsController(Get.find<StudentSettingsService>()),
       );
     }
     if (!Get.isRegistered<StudentQuizService>()) {

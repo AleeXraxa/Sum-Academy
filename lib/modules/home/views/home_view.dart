@@ -7,6 +7,7 @@ import 'package:sum_academy/modules/home/models/course.dart';
 import 'package:sum_academy/modules/home/models/home_dashboard.dart';
 import 'package:sum_academy/modules/home/widgets/home_dashboard_skeleton.dart';
 import 'package:sum_academy/modules/student/controllers/student_shell_controller.dart';
+import 'package:sum_academy/modules/student/views/student_course_detail_view.dart';
 
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
@@ -546,7 +547,26 @@ class _ActiveCourseCard extends StatelessWidget {
                     ),
                     SizedBox(width: 12.w),
                     ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        if (course.courseId.trim().isNotEmpty) {
+                          Get.to(
+                            () => StudentCourseDetailView(
+                              courseId: course.courseId,
+                              title: course.title,
+                              teacher: course.teacher,
+                              progress: course.progress,
+                              nextLecture: course.nextLecture,
+                            ),
+                          );
+                          return;
+                        }
+                        final shell = Get.isRegistered<StudentShellController>()
+                            ? Get.find<StudentShellController>()
+                            : null;
+                        if (shell != null) {
+                          shell.setActiveLabel('My Courses');
+                        }
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: SumAcademyTheme.brandBlue,
                         foregroundColor: SumAcademyTheme.white,

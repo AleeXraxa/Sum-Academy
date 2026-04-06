@@ -61,8 +61,11 @@ class HomeController extends GetxController {
     ever<List<dynamic>>(coursesController.courses, (_) {
       if (_isDashboardEmpty(dashboard.value) &&
           coursesController.courses.isNotEmpty) {
+        final profileComplete = dashboard.value.isProfileComplete;
         dashboard.value = HomeDashboard.fromApi(
-          dashboard: const {},
+          dashboard: {
+            'profileComplete': profileComplete,
+          },
           courses: coursesController.courses,
           certificates: const [],
           attendance: const {},

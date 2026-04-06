@@ -110,6 +110,37 @@ class AuthService {
     await _auth.sendPasswordResetEmail(email: email);
   }
 
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw FirebaseAuthException(
+        code: 'no-user',
+        message: 'No authenticated user found.',
+      );
+    }
+
+    final email = user.email;
+    final providers = user.providerData.map((p) => p.providerId).toList();
+    final hasPasswordProvider =
+        providers.contains(EmailAuthProvider.PROVIDER_ID);
+    if (email == null || !hasPasswordProvider) {
+      throw FirebaseAuthException(
+        code: 'no-password-provider',
+        message: 'Password change is only available for email accounts.',
+      );
+    }
+
+    final credential = EmailAuthProvider.credential(
+      email: email,
+      password: currentPassword,
+    );
+    await user.reauthenticateWithCredential(credential);
+    await user.updatePassword(newPassword);
+  }
+
   Future<void> verifyOtp({required String code}) async {
     await Future<void>.delayed(const Duration(milliseconds: 700));
   }

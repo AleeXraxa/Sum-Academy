@@ -20,7 +20,9 @@ class StudentPaymentsView extends GetView<StudentPaymentsController> {
         onRefresh: controller.fetchAll,
         child: ListView(
           padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 28.h),
-          physics: const BouncingScrollPhysics(),
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
           children: [
             _HeaderRow(textColor: textColor),
             SizedBox(height: 6.h),

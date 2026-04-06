@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
+import 'package:sum_academy/core/services/secure_screen_service.dart';
 import 'package:sum_academy/core/utils/network_error.dart';
 import 'package:sum_academy/modules/student/controllers/student_quiz_attempt_controller.dart';
 import 'package:sum_academy/modules/student/models/student_quiz.dart';
@@ -40,11 +41,15 @@ class _StudentQuizAttemptViewState extends State<StudentQuizAttemptView>
       );
     }
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      SecureScreenService.enable();
+    });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    SecureScreenService.disable();
     if (Get.isRegistered<StudentQuizAttemptController>(tag: widget.quizId)) {
       Get.delete<StudentQuizAttemptController>(tag: widget.quizId);
     }
@@ -54,6 +59,9 @@ class _StudentQuizAttemptViewState extends State<StudentQuizAttemptView>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!mounted) return;
+    if (state == AppLifecycleState.resumed) {
+      SecureScreenService.enable();
+    }
     if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused) {
       _showFocusWarning();

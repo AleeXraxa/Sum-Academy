@@ -1,6 +1,7 @@
 import 'package:sum_academy/core/services/api_client.dart';
 import 'package:sum_academy/core/services/api_exception.dart';
 import 'package:sum_academy/modules/home/models/home_dashboard.dart';
+import 'package:sum_academy/modules/student/models/student_settings.dart';
 import 'package:sum_academy/modules/student/models/student_course.dart';
 
 class HomeService {
@@ -19,6 +20,17 @@ class HomeService {
 
     List<dynamic> courses = const [];
     List<dynamic> certificates = const [];
+    bool? isProfileComplete;
+
+    final settingsResponse = await _safeGet(
+      _client.get('/student/settings', auth: true),
+    );
+    final settingsPayload = settingsResponse?['data'] ?? settingsResponse;
+    final settingsMap = _extractMap(settingsPayload);
+    if (settingsMap.isNotEmpty) {
+      final settings = StudentSettings.fromJson(settingsMap);
+      isProfileComplete = settings.isComplete;
+    }
 
     final coursesResponse = await _safeGet(
       _client.get('/student/courses', auth: true),
@@ -33,8 +45,13 @@ class HomeService {
         : _extractList(coursesPayload);
     certificates = _extractList(certsResponse?['data'] ?? certsResponse);
 
+    final mergedDashboard = _extractMap(dashboardData);
+    if (isProfileComplete != null) {
+      mergedDashboard['profileComplete'] = isProfileComplete;
+    }
+
     return HomeDashboard.fromApi(
-      dashboard: _extractMap(dashboardData),
+      dashboard: mergedDashboard,
       courses: courses,
       certificates: certificates,
       attendance: const {},

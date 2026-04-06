@@ -22,7 +22,9 @@ class ExploreCoursesView extends GetView<StudentExploreCoursesController> {
         onRefresh: controller.refresh,
         child: ListView(
           padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 28.h),
-          physics: const BouncingScrollPhysics(),
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
           children: [
             _HeaderRow(textColor: textColor),
             SizedBox(height: 18.h),

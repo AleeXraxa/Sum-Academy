@@ -66,7 +66,7 @@ StudentCourse _courseFromMap(Map<String, dynamic> map) {
   );
 
   return StudentCourse(
-    id: _readString(map, const ['id', '_id', 'courseId']),
+    id: _readString(map, const ['courseId', 'course_id', 'id', '_id']),
     title: title,
     teacher: teacher,
     category: category,

@@ -1,0 +1,20 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+
+class SecureScreenService {
+  static const MethodChannel _channel = MethodChannel('secure_screen');
+
+  static Future<void> enable() async {
+    if (kIsWeb) return;
+    try {
+      await _channel.invokeMethod('enable');
+    } catch (_) {}
+  }
+
+  static Future<void> disable() async {
+    if (kIsWeb) return;
+    try {
+      await _channel.invokeMethod('disable');
+    } catch (_) {}
+  }
+}
