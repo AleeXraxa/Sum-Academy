@@ -6,6 +6,7 @@ import 'package:sum_academy/core/services/secure_screen_service.dart';
 import 'package:sum_academy/modules/student/controllers/student_course_progress_controller.dart';
 import 'package:sum_academy/modules/student/models/student_course_progress.dart';
 import 'package:sum_academy/modules/student/services/student_course_progress_service.dart';
+import 'package:sum_academy/modules/student/views/student_course_video_view.dart';
 
 class StudentCourseDetailView extends StatefulWidget {
   final String courseId;
@@ -120,7 +121,11 @@ class _StudentCourseDetailViewState extends State<StudentCourseDetailView>
                   else if (progress.isEmpty)
                     const _EmptyContentState()
                   else
-                    _ChaptersList(chapters: progress.chapters),
+                    _ChaptersList(
+                      chapters: progress.chapters,
+                      courseId: widget.courseId,
+                      onRefresh: controller.refresh,
+                    ),
                 ],
               ),
             );
@@ -311,8 +316,14 @@ class _InfoPill extends StatelessWidget {
 
 class _ChaptersList extends StatelessWidget {
   final List<StudentCourseChapter> chapters;
+  final String courseId;
+  final VoidCallback onRefresh;
 
-  const _ChaptersList({required this.chapters});
+  const _ChaptersList({
+    required this.chapters,
+    required this.courseId,
+    required this.onRefresh,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -326,6 +337,8 @@ class _ChaptersList extends StatelessWidget {
               child: _ChapterCard(
                 index: entry.key + 1,
                 chapter: entry.value,
+                courseId: courseId,
+                onRefresh: onRefresh,
               ),
             ),
           )
@@ -337,10 +350,14 @@ class _ChaptersList extends StatelessWidget {
 class _ChapterCard extends StatelessWidget {
   final int index;
   final StudentCourseChapter chapter;
+  final String courseId;
+  final VoidCallback onRefresh;
 
   const _ChapterCard({
     required this.index,
     required this.chapter,
+    required this.courseId,
+    required this.onRefresh,
   });
 
   @override
@@ -379,7 +396,20 @@ class _ChapterCard extends StatelessWidget {
               .map(
                 (lecture) => Padding(
                   padding: EdgeInsets.only(bottom: 10.h),
-                  child: _LectureCard(lecture: lecture),
+                  child: _LectureCard(
+                    lecture: lecture,
+                    onPlay: lecture.videoUrl.isEmpty
+                        ? null
+                        : () {
+                            Get.to(
+                              () => StudentCourseVideoView(
+                                courseId: courseId,
+                                lecture: lecture,
+                                onCompleted: onRefresh,
+                              ),
+                            );
+                          },
+                  ),
                 ),
               )
               .toList(),
@@ -391,8 +421,12 @@ class _ChapterCard extends StatelessWidget {
 
 class _LectureCard extends StatelessWidget {
   final StudentCourseLecture lecture;
+  final VoidCallback? onPlay;
 
-  const _LectureCard({required this.lecture});
+  const _LectureCard({
+    required this.lecture,
+    this.onPlay,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -403,95 +437,105 @@ class _LectureCard extends StatelessWidget {
         ? lecture.progress
         : (lecture.isCompleted ? 1.0 : 0.0);
     final progressPercent = (progressValue * 100).clamp(0, 100).round();
+    final isLocked = lecture.isCompleted || progressValue >= 1;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: Container(
-            padding: EdgeInsets.all(14.r),
-            decoration: BoxDecoration(
-              color: SumAcademyTheme.white,
-              borderRadius: BorderRadius.circular(16.r),
-              border: Border.all(color: SumAcademyTheme.brandBluePale),
-              boxShadow: [
-                BoxShadow(
-                  color: SumAcademyTheme.darkBase.withOpacityFloat(0.05),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 44.r,
-                  height: 44.r,
-                  decoration: BoxDecoration(
-                    color: iconColor.withOpacityFloat(0.15),
-                    borderRadius: BorderRadius.circular(14.r),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16.r),
+            onTap: isLocked ? null : onPlay,
+            child: Container(
+              padding: EdgeInsets.all(14.r),
+              decoration: BoxDecoration(
+                color: SumAcademyTheme.white,
+                borderRadius: BorderRadius.circular(16.r),
+                border: Border.all(color: SumAcademyTheme.brandBluePale),
+                boxShadow: [
+                  BoxShadow(
+                    color: SumAcademyTheme.darkBase.withOpacityFloat(0.05),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
                   ),
-                  alignment: Alignment.center,
-                  child: Icon(
-                    lecture.isCompleted
-                        ? Icons.check_circle_rounded
-                        : Icons.play_arrow_rounded,
-                    color: iconColor,
-                    size: 22.sp,
+                ],
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 44.r,
+                    height: 44.r,
+                    decoration: BoxDecoration(
+                      color: iconColor.withOpacityFloat(0.15),
+                      borderRadius: BorderRadius.circular(14.r),
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      isLocked
+                          ? Icons.lock_rounded
+                          : lecture.isCompleted
+                              ? Icons.check_circle_rounded
+                              : Icons.play_arrow_rounded,
+                      color: iconColor,
+                      size: 22.sp,
+                    ),
                   ),
-                ),
-                SizedBox(width: 12.w),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        lecture.title,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: SumAcademyTheme.darkBase,
-                              fontWeight: FontWeight.w600,
-                            ),
-                      ),
-                      SizedBox(height: 6.h),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(10.r),
-                              child: LinearProgressIndicator(
-                                value: progressValue,
-                                minHeight: 6.h,
-                                backgroundColor:
-                                    SumAcademyTheme.brandBluePale,
-                                valueColor: AlwaysStoppedAnimation(iconColor),
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          lecture.title,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: SumAcademyTheme.darkBase,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                        SizedBox(height: 6.h),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(10.r),
+                                child: LinearProgressIndicator(
+                                  value: progressValue,
+                                  minHeight: 6.h,
+                                  backgroundColor:
+                                      SumAcademyTheme.brandBluePale,
+                                  valueColor: AlwaysStoppedAnimation(iconColor),
+                                ),
                               ),
                             ),
-                          ),
-                          SizedBox(width: 10.w),
+                            SizedBox(width: 10.w),
+                            Text(
+                              '$progressPercent%',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: SumAcademyTheme.darkBase
+                                        .withOpacityFloat(0.7),
+                                  ),
+                            ),
+                          ],
+                        ),
+                        if (lecture.duration.isNotEmpty) ...[
+                          SizedBox(height: 6.h),
                           Text(
-                            '$progressPercent%',
+                            isLocked ? 'Completed' : lecture.duration,
                             style:
                                 Theme.of(context).textTheme.bodySmall?.copyWith(
                                       color: SumAcademyTheme.darkBase
-                                          .withOpacityFloat(0.7),
+                                          .withOpacityFloat(0.6),
                                     ),
                           ),
                         ],
-                      ),
-                      if (lecture.duration.isNotEmpty) ...[
-                        SizedBox(height: 6.h),
-                        Text(
-                          lecture.duration,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: SumAcademyTheme.darkBase
-                                    .withOpacityFloat(0.6),
-                              ),
-                        ),
                       ],
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

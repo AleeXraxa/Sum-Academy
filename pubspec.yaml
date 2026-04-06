@@ -47,6 +47,11 @@ dependencies:
   curved_navigation_bar: ^1.0.6
   animated_custom_dropdown: ^3.1.1
   file_picker: ^8.0.6
+  better_player: ^0.0.83
+
+dependency_overrides:
+  better_player:
+    path: third_party/better_player
 
 dev_dependencies:
   flutter_test:

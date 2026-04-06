@@ -118,16 +118,24 @@ class StudentCourseChapter {
 }
 
 class StudentCourseLecture {
+  final String id;
   final String title;
   final String duration;
   final bool isCompleted;
   final double progress;
+  final String videoUrl;
+  final String videoMode;
+  final bool isLiveSession;
 
   const StudentCourseLecture({
+    required this.id,
     required this.title,
     required this.duration,
     required this.isCompleted,
     required this.progress,
+    required this.videoUrl,
+    required this.videoMode,
+    required this.isLiveSession,
   });
 }
 
@@ -204,6 +212,14 @@ List<StudentCourseLecture> _parseLectures(
         'lessonTitle',
       ]);
       if (title.isEmpty) continue;
+      final id = _readString(lectureMap, const [
+        'lectureId',
+        'lecture_id',
+        'contentId',
+        'content_id',
+        'id',
+        '_id',
+      ]);
       final duration = _readString(lectureMap, const [
         'duration',
         'length',
@@ -224,12 +240,34 @@ List<StudentCourseLecture> _parseLectures(
           'watchedPercent',
         ]),
       );
+      final videoUrl = _readString(lectureMap, const [
+        'videoUrl',
+        'videoURL',
+        'url',
+        'video',
+        'streamUrl',
+      ]);
+      final videoMode = _readString(lectureMap, const [
+        'videoMode',
+        'mode',
+        'type',
+      ]);
+      final isLiveSession = _readBool(lectureMap, const [
+            'isLiveSession',
+            'isLive',
+            'live',
+          ]) ??
+          false;
       lectures.add(
         StudentCourseLecture(
+          id: id,
           title: title,
           duration: duration,
           isCompleted: isCompleted,
           progress: progress,
+          videoUrl: videoUrl,
+          videoMode: videoMode,
+          isLiveSession: isLiveSession,
         ),
       );
       continue;
@@ -239,10 +277,14 @@ List<StudentCourseLecture> _parseLectures(
       if (title.isEmpty) continue;
       lectures.add(
         StudentCourseLecture(
+          id: '',
           title: title,
           duration: '',
           isCompleted: false,
           progress: 0,
+          videoUrl: '',
+          videoMode: '',
+          isLiveSession: false,
         ),
       );
     }

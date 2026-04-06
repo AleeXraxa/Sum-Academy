@@ -1,3 +1,5 @@
+import com.android.build.gradle.LibraryExtension
+
 allprojects {
     repositories {
         google()
@@ -17,6 +19,13 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(":app")
+    plugins.withId("com.android.library") {
+        if (name == "better_player") {
+            extensions.configure<LibraryExtension> {
+                namespace = "com.jhomlala.better_player"
+            }
+        }
+    }
 }
 
 tasks.register<Delete>("clean") {
