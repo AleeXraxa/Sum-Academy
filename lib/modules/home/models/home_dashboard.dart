@@ -7,6 +7,7 @@ import 'package:sum_academy/modules/student/models/student_course.dart';
 class HomeDashboard {
   final String learnerName;
   final int enrolledCourses;
+  final int enrolledClasses;
   final int completedCourses;
   final int certificatesEarned;
   final double attendancePercent;
@@ -27,6 +28,7 @@ class HomeDashboard {
   const HomeDashboard({
     required this.learnerName,
     required this.enrolledCourses,
+    required this.enrolledClasses,
     required this.completedCourses,
     required this.certificatesEarned,
     required this.attendancePercent,
@@ -49,6 +51,7 @@ class HomeDashboard {
     return HomeDashboard(
       learnerName: '',
       enrolledCourses: 0,
+      enrolledClasses: 0,
       completedCourses: 0,
       certificatesEarned: 0,
       attendancePercent: 0,
@@ -131,6 +134,12 @@ class HomeDashboard {
           'courses',
           'enrolled',
         ]),
+        enrolledClasses: _readInt(data, const [
+          'enrolledClasses',
+          'classesEnrolled',
+          'totalClasses',
+          'classes',
+        ]),
         completedCourses: _readInt(data, const [
           'completedCourses',
           'coursesCompleted',
@@ -191,16 +200,17 @@ class HomeDashboard {
     List<dynamic> certificates = const [],
     Map<String, dynamic> attendance = const {},
   }) {
-    final merged = <String, dynamic>{
-      ...dashboard,
-      'courses': courses,
-    };
+    final merged = <String, dynamic>{...dashboard, 'courses': courses};
 
     final base = HomeDashboard.fromAny(merged);
     final snapshots = _parseCourseSnapshots(courses);
 
-    final enrolledCount =
-        snapshots.isNotEmpty ? snapshots.length : base.enrolledCourses;
+    final enrolledCount = snapshots.isNotEmpty
+        ? snapshots.length
+        : base.enrolledCourses;
+    final enrolledClassesCount = snapshots.isNotEmpty
+        ? _countUniqueClasses(snapshots)
+        : base.enrolledClasses;
     final completedCount = snapshots.isNotEmpty
         ? snapshots.where((snap) => snap.isCompleted).length
         : base.completedCourses;
@@ -214,8 +224,9 @@ class HomeDashboard {
     );
 
     final activeCourse = _resolveActiveCourse(snapshots, base.activeCourse);
-    final recentCourses =
-        snapshots.isNotEmpty ? _buildRecentCourses(snapshots) : base.recentCourses;
+    final recentCourses = snapshots.isNotEmpty
+        ? _buildRecentCourses(snapshots)
+        : base.recentCourses;
 
     final resolvedName = base.learnerName.isNotEmpty
         ? base.learnerName
@@ -229,6 +240,7 @@ class HomeDashboard {
     return HomeDashboard(
       learnerName: resolvedName,
       enrolledCourses: enrolledCount,
+      enrolledClasses: enrolledClassesCount,
       completedCourses: completedCount,
       certificatesEarned: certCount,
       attendancePercent: attendancePercent,
@@ -272,6 +284,8 @@ class _CourseSnapshot {
   final String title;
   final String teacher;
   final String category;
+  final String classId;
+  final String className;
   final double progress;
   final String status;
   final String nextLecture;
@@ -281,6 +295,8 @@ class _CourseSnapshot {
     required this.title,
     required this.teacher,
     required this.category,
+    required this.classId,
+    required this.className,
     required this.progress,
     required this.status,
     required this.nextLecture,
@@ -496,8 +512,12 @@ List<Course> _parseCourseList(List<dynamic> items) {
       );
       colorIndex += 1;
     } else if (raw is Map<String, dynamic>) {
-      var title =
-          _readString(raw, const ['title', 'name', 'courseTitle', 'courseName']);
+      var title = _readString(raw, const [
+        'title',
+        'name',
+        'courseTitle',
+        'courseName',
+      ]);
       final id = _readString(raw, const ['courseId', 'course_id', 'id', '_id']);
       if (title.isEmpty && id.isNotEmpty) {
         title = 'Course $id';
@@ -553,30 +573,55 @@ List<_CourseSnapshot> _parseCourseSnapshots(List<dynamic> items) {
           title: raw.title,
           teacher: raw.teacher,
           category: raw.category,
+          classId: raw.classId,
+          className: raw.className,
           progress: raw.progress,
           status: raw.status,
           nextLecture: raw.nextLecture,
         ),
       );
     } else if (raw is Map<String, dynamic>) {
-      var title =
-          _readString(raw, const ['title', 'name', 'courseTitle', 'courseName']);
+      var title = _readString(raw, const [
+        'title',
+        'name',
+        'courseTitle',
+        'courseName',
+      ]);
       final id = _readString(raw, const ['courseId', 'course_id', 'id', '_id']);
       if (title.isEmpty && id.isNotEmpty) {
         title = 'Course $id';
       }
       if (title.isEmpty) continue;
-      final teacher = _readString(
-        raw,
-        const ['teacher', 'teacherName', 'instructor', 'mentor'],
-      );
-      final category =
-          _readString(raw, const ['category', 'subject', 'track']);
-      final status = _readString(raw, const ['status', 'state', 'courseStatus']);
-      final nextLecture = _readString(
-        raw,
-        const ['nextLecture', 'nextLesson', 'nextActivity', 'nextContent'],
-      );
+      final teacher = _readString(raw, const [
+        'teacher',
+        'teacherName',
+        'instructor',
+        'mentor',
+      ]);
+      final category = _readString(raw, const ['category', 'subject', 'track']);
+      final status = _readString(raw, const [
+        'status',
+        'state',
+        'courseStatus',
+      ]);
+      final nextLecture = _readString(raw, const [
+        'nextLecture',
+        'nextLesson',
+        'nextActivity',
+        'nextContent',
+      ]);
+      final classId = _readString(raw, const [
+        'classId',
+        'class_id',
+        'batchId',
+        'cohortId',
+      ]);
+      final className = _readString(raw, const [
+        'className',
+        'classTitle',
+        'batchName',
+        'cohortName',
+      ]);
       final progress = _normalizeProgress(
         _readDouble(raw, const [
           'progress',
@@ -591,6 +636,8 @@ List<_CourseSnapshot> _parseCourseSnapshots(List<dynamic> items) {
           title: title,
           teacher: teacher,
           category: category,
+          classId: classId,
+          className: className,
           progress: progress,
           status: status,
           nextLecture: nextLecture,
@@ -599,6 +646,24 @@ List<_CourseSnapshot> _parseCourseSnapshots(List<dynamic> items) {
     }
   }
   return snapshots;
+}
+
+int _countUniqueClasses(List<_CourseSnapshot> snapshots) {
+  final ids = <String>{};
+  final names = <String>{};
+  for (final snap in snapshots) {
+    final id = snap.classId.trim();
+    if (id.isNotEmpty) {
+      ids.add(id);
+      continue;
+    }
+    final name = snap.className.trim().toLowerCase();
+    if (name.isNotEmpty) {
+      names.add(name);
+    }
+  }
+  if (ids.isNotEmpty) return ids.length;
+  return names.length;
 }
 
 ActiveCourseInfo? _resolveActiveCourse(

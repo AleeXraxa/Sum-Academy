@@ -126,6 +126,9 @@ class StudentCourseLecture {
   final String videoUrl;
   final String videoMode;
   final bool isLiveSession;
+  final bool isLocked;
+  final bool canRewatch;
+  final String lockReason;
 
   const StudentCourseLecture({
     required this.id,
@@ -136,6 +139,9 @@ class StudentCourseLecture {
     required this.videoUrl,
     required this.videoMode,
     required this.isLiveSession,
+    required this.isLocked,
+    required this.canRewatch,
+    required this.lockReason,
   });
 }
 
@@ -240,6 +246,20 @@ List<StudentCourseLecture> _parseLectures(
           'watchedPercent',
         ]),
       );
+      final currentTimeSec = _readDouble(lectureMap, const [
+        'currentTimeSec',
+        'current_time_sec',
+        'currentTime',
+      ]);
+      final durationSec = _readDouble(lectureMap, const [
+        'durationSec',
+        'duration_sec',
+        'totalTimeSec',
+        'totalDurationSec',
+      ]);
+      final computedProgress = (progress > 0 || durationSec <= 0)
+          ? progress
+          : _normalizeProgress(currentTimeSec / durationSec);
       final videoUrl = _readString(lectureMap, const [
         'videoUrl',
         'videoURL',
@@ -258,16 +278,54 @@ List<StudentCourseLecture> _parseLectures(
             'live',
           ]) ??
           false;
+      final lockReason = _readString(lectureMap, const [
+        'lockReason',
+        'lockedReason',
+        'lockMessage',
+        'reason',
+      ]);
+      final accessFlag = _readBool(lectureMap, const [
+        'hasAccess',
+        'canAccess',
+        'isAccessible',
+      ]);
+      final unlockFlag = _readBool(lectureMap, const [
+        'unlocked',
+        'isUnlocked',
+        'canRewatch',
+        'rewatchAllowed',
+        'allowRewatch',
+      ]);
+      var isLocked = _readBool(lectureMap, const [
+            'isLocked',
+            'locked',
+            'isAccessLocked',
+            'accessLocked',
+            'isBlocked',
+            'blocked',
+          ]) ??
+          false;
+      final canRewatch = unlockFlag ?? false;
+      if (accessFlag != null) {
+        if (!accessFlag) {
+          isLocked = true;
+        } else if (accessFlag && !isLocked) {
+          isLocked = false;
+        }
+      }
       lectures.add(
         StudentCourseLecture(
           id: id,
           title: title,
           duration: duration,
           isCompleted: isCompleted,
-          progress: progress,
+          progress: computedProgress,
           videoUrl: videoUrl,
           videoMode: videoMode,
           isLiveSession: isLiveSession,
+          isLocked: isLocked,
+          canRewatch: canRewatch,
+          lockReason: lockReason,
         ),
       );
       continue;
@@ -285,6 +343,9 @@ List<StudentCourseLecture> _parseLectures(
           videoUrl: '',
           videoMode: '',
           isLiveSession: false,
+          isLocked: false,
+          canRewatch: false,
+          lockReason: '',
         ),
       );
     }

@@ -90,7 +90,10 @@ class StudentCheckoutShift {
       days: _readStringList(json, const ['days', 'weekDays']),
       startTime: _readString(json, const ['startTime', 'start', 'from']),
       endTime: _readString(json, const ['endTime', 'end', 'to']),
-      courseId: _readString(json, const ['courseId', 'course']),
+      courseId: _readString(
+        json,
+        const ['courseId', 'subjectId', 'course', 'subject'],
+      ),
       teacherName:
           _readString(json, const ['teacherName', 'teacher', 'instructor']),
     );
@@ -133,8 +136,12 @@ class StudentPaymentConfig {
     final derived = _deriveMethodsFromFlags(root);
     final resolvedMethods =
         methods.isNotEmpty ? methods : (hasFlags ? derived : const <String>[]);
-    final finalMethods = resolvedMethods.isNotEmpty
-        ? resolvedMethods
+    final combinedMethods = <String>[
+      ...resolvedMethods,
+      ...derived.where((item) => !resolvedMethods.contains(item)),
+    ];
+    final finalMethods = combinedMethods.isNotEmpty
+        ? combinedMethods
         : (hasFlags ? const <String>[] : const ['JazzCash', 'EasyPaisa', 'Bank Transfer']);
 
     return StudentPaymentConfig(
@@ -216,10 +223,35 @@ bool _isEnabled(Map<String, dynamic> json, List<String> keys) {
     if (value is bool) {
       return value;
     }
+    if (value is num) {
+      return value != 0;
+    }
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      if (normalized == 'true' || normalized == 'yes' || normalized == '1') {
+        return true;
+      }
+      if (normalized == 'false' || normalized == 'no' || normalized == '0') {
+        return false;
+      }
+    }
     if (value is Map<String, dynamic>) {
       final enabled = value['enabled'];
-      if (enabled is bool) {
-        return enabled;
+      if (enabled is bool) return enabled;
+      if (enabled is num) return enabled != 0;
+      if (enabled is String) {
+        final normalized = enabled.trim().toLowerCase();
+        if (normalized == 'true' || normalized == 'yes' || normalized == '1') {
+          return true;
+        }
+        if (normalized == 'false' ||
+            normalized == 'no' ||
+            normalized == '0') {
+          return false;
+        }
+      }
+      if (value.isNotEmpty) {
+        return true;
       }
     }
   }

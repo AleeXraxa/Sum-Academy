@@ -15,12 +15,14 @@ class StudentCheckoutService {
   final ApiClient _client;
 
   Future<List<StudentCheckoutClass>> fetchAvailableClasses({
-    required String courseId,
+    String? classId,
   }) async {
     final response = await _client.get(
       '/classes/available',
-      auth: false,
-      query: {'courseId': courseId},
+      auth: true,
+      query: classId != null && classId.trim().isNotEmpty
+          ? {'classId': classId.trim()}
+          : null,
     );
     final data = response['data'] ?? response;
     final list = _extractList(data);
@@ -69,25 +71,28 @@ class StudentCheckoutService {
   }
 
   Future<Map<String, dynamic>> initiatePayment({
-    required String courseId,
     required String classId,
     required String shiftId,
     required String method,
+    required String enrollmentType,
+    String? courseId,
     String? promoCode,
     int? installmentCount,
   }) async {
     final body = <String, dynamic>{
-      'courseId': courseId,
       'classId': classId,
       'shiftId': shiftId,
       'method': method,
+      'enrollmentType': enrollmentType,
     };
+    if (courseId != null && courseId.trim().isNotEmpty) {
+      body['courseId'] = courseId.trim();
+    }
     if (promoCode != null && promoCode.trim().isNotEmpty) {
       body['promoCode'] = promoCode.trim();
     }
     if (installmentCount != null && installmentCount > 1) {
       body['installments'] = installmentCount;
-      body['installmentCount'] = installmentCount;
     }
 
     final response = await _client.post(

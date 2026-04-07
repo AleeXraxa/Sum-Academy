@@ -8,7 +8,7 @@ class StudentExploreCoursesService {
   final ApiClient _client;
 
   Future<List<StudentExploreCourse>> fetchCourses() async {
-    final response = await _client.get('/courses/explore', auth: false);
+    final response = await _client.get('/classes/available', auth: true);
     final data = response['data'] ?? response;
     return parseExploreCourses(data);
   }

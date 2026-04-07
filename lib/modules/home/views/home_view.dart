@@ -97,7 +97,7 @@ class _DashboardContent extends StatelessWidget {
         ],
         SizedBox(height: 16.h),
         _StudentStatsGrid(
-          enrolled: dashboard.enrolledCourses,
+          enrolled: dashboard.enrolledClasses,
           completed: dashboard.completedCourses,
           certificates: dashboard.certificatesEarned,
           learningDays: dashboard.learningDays,
@@ -110,13 +110,13 @@ class _DashboardContent extends StatelessWidget {
           const _ActiveCourseEmptyState(),
         SizedBox(height: 18.h),
         _SectionHeaderRow(
-          title: 'My Courses',
+          title: 'My Classes',
           onViewAll: () {
             final shell = Get.isRegistered<StudentShellController>()
                 ? Get.find<StudentShellController>()
                 : null;
             if (shell != null) {
-              shell.setActiveLabel('My Courses');
+              shell.setActiveLabel('My Classes');
             }
           },
         ),
@@ -350,7 +350,7 @@ class _StudentStatsGrid extends StatelessWidget {
           children: [
             Expanded(
               child: _StatCard(
-                label: 'Enrolled Courses',
+                label: 'Enrolled Classes',
                 value: enrolled.toString(),
                 accent: SumAcademyTheme.brandBlue,
                 tone: SumAcademyTheme.brandBluePale,
@@ -564,7 +564,7 @@ class _ActiveCourseCard extends StatelessWidget {
                             ? Get.find<StudentShellController>()
                             : null;
                         if (shell != null) {
-                          shell.setActiveLabel('My Courses');
+                          shell.setActiveLabel('My Classes');
                         }
                       },
                       style: ElevatedButton.styleFrom(

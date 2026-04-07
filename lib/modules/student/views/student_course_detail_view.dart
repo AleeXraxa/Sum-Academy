@@ -437,7 +437,8 @@ class _LectureCard extends StatelessWidget {
         ? lecture.progress
         : (lecture.isCompleted ? 1.0 : 0.0);
     final progressPercent = (progressValue * 100).clamp(0, 100).round();
-    final isLocked = lecture.isCompleted || progressValue >= 1;
+    final isLocked = lecture.isLocked ||
+        (lecture.isCompleted && !lecture.canRewatch);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -520,7 +521,7 @@ class _LectureCard extends StatelessWidget {
                             ),
                           ],
                         ),
-                        if (lecture.duration.isNotEmpty) ...[
+                        if (lecture.duration.isNotEmpty && !isLocked) ...[
                           SizedBox(height: 6.h),
                           Text(
                             isLocked ? 'Completed' : lecture.duration,
@@ -528,6 +529,17 @@ class _LectureCard extends StatelessWidget {
                                 Theme.of(context).textTheme.bodySmall?.copyWith(
                                       color: SumAcademyTheme.darkBase
                                           .withOpacityFloat(0.6),
+                                  ),
+                          ),
+                        ],
+                        if (isLocked && lecture.lockReason.isNotEmpty) ...[
+                          SizedBox(height: 6.h),
+                          Text(
+                            lecture.lockReason,
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: SumAcademyTheme.error
+                                          .withOpacityFloat(0.7),
                                     ),
                           ),
                         ],

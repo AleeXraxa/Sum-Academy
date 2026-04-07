@@ -13,10 +13,12 @@ import 'package:sum_academy/modules/student/services/student_checkout_service.da
 class StudentCheckoutController extends GetxController {
   StudentCheckoutController({
     required this.course,
+    this.subject,
     StudentCheckoutService? service,
   }) : _service = service ?? StudentCheckoutService();
 
   final StudentExploreCourse course;
+  final StudentExploreSubject? subject;
   final StudentCheckoutService _service;
 
   final isLoading = true.obs;
@@ -65,15 +67,23 @@ class StudentCheckoutController extends GetxController {
     isLoading.value = true;
     try {
       final results = await Future.wait([
-        _service.fetchAvailableClasses(courseId: course.id),
+        _service.fetchAvailableClasses(),
         _service.fetchPaymentConfig(),
       ]);
       classes.assignAll(results[0] as List<StudentCheckoutClass>);
       paymentConfig.value = results[1] as StudentPaymentConfig;
 
       if (classes.isNotEmpty) {
-        selectedClass.value = classes.first;
-        _syncShiftFromClass(classes.first);
+        StudentCheckoutClass? match;
+        for (final item in classes) {
+          if (item.id == course.id || item.code == course.code) {
+            match = item;
+            break;
+          }
+        }
+        final initial = match ?? classes.first;
+        selectedClass.value = initial;
+        _syncShiftFromClass(initial);
       }
 
       final methods = paymentConfig.value?.methods ??
@@ -113,16 +123,38 @@ class StudentCheckoutController extends GetxController {
   List<StudentCheckoutShift> get availableShifts {
     final current = selectedClass.value;
     if (current == null) return const [];
+    if (!isSingleSubject) {
+      return current.shifts;
+    }
+    final targetCourseId = subject?.id ?? course.id;
     return current.shifts
-        .where((shift) => shift.courseId.isEmpty || shift.courseId == course.id)
+        .where(
+          (shift) =>
+              shift.courseId.isEmpty ||
+              shift.courseId == targetCourseId,
+        )
         .toList();
   }
 
-  double get originalPrice => course.price;
+  double get originalPrice {
+    if (subject != null) {
+      return subject!.price;
+    }
+    if (course.remainingPrice > 0) return course.remainingPrice;
+    if (course.totalPrice > 0) return course.totalPrice;
+    return course.price;
+  }
+
+  double get _discountPercent {
+    if (subject != null) {
+      return subject!.discountPercent;
+    }
+    return course.discount;
+  }
 
   double get courseDiscount {
-    if (course.discount <= 0) return 0;
-    return originalPrice * (course.discount / 100);
+    if (_discountPercent <= 0) return 0;
+    return originalPrice * (_discountPercent / 100);
   }
 
   double get totalBeforePromo {
@@ -143,6 +175,18 @@ class StudentCheckoutController extends GetxController {
     if (count <= 1) return totalAmount;
     return totalAmount / count;
   }
+
+  bool get isSingleSubject => subject != null;
+
+  String get enrollmentType => isSingleSubject ? 'single_course' : 'full_class';
+
+  String get summaryTitle => subject?.title ?? course.title;
+
+  String get summarySubtitle =>
+      isSingleSubject ? 'Individual subject enrollment' : 'Full class enrollment';
+
+  String get discountLabel =>
+      isSingleSubject ? 'Subject Discount' : 'Class Discount';
 
   void selectClassByLabel(String? label) {
     if (label == null) return;
@@ -190,6 +234,13 @@ class StudentCheckoutController extends GetxController {
   }
 
   Future<void> validatePromo() async {
+    if (!isSingleSubject) {
+      await showAppErrorDialog(
+        title: 'Promo code',
+        message: 'Promo codes apply to individual subjects only.',
+      );
+      return;
+    }
     final code = promoController.text.trim();
     if (code.isEmpty) {
       await showAppErrorDialog(
@@ -201,8 +252,10 @@ class StudentCheckoutController extends GetxController {
     isValidatingPromo.value = true;
     promoMessage.value = '';
     try {
-      final data =
-          await _service.validatePromo(code: code, courseId: course.id);
+      final data = await _service.validatePromo(
+        code: code,
+        courseId: subject?.id ?? course.id,
+      );
       promoDiscount.value =
           _readDouble(data, ['discountAmount', 'discount', 'amount']);
       promoFinalAmount.value =
@@ -252,10 +305,11 @@ class StudentCheckoutController extends GetxController {
     }
     try {
       final data = await _service.initiatePayment(
-        courseId: course.id,
         classId: currentClass.id,
         shiftId: currentShift.id,
         method: _methodKey(method),
+        enrollmentType: enrollmentType,
+        courseId: isSingleSubject ? subject?.id ?? course.id : null,
         promoCode: promoController.text.trim(),
         installmentCount: isInstallment.value
             ? selectedInstallmentCount.value
@@ -434,9 +488,19 @@ class StudentCheckoutController extends GetxController {
   }
 
   void _syncShiftFromClass(StudentCheckoutClass value) {
-    final shifts = value.shifts
-        .where((shift) => shift.courseId.isEmpty || shift.courseId == course.id)
-        .toList();
+    List<StudentCheckoutShift> shifts;
+    if (!isSingleSubject) {
+      shifts = value.shifts;
+    } else {
+      final targetCourseId = subject?.id ?? course.id;
+      shifts = value.shifts
+          .where(
+            (shift) =>
+                shift.courseId.isEmpty ||
+                shift.courseId == targetCourseId,
+          )
+          .toList();
+    }
     selectedShift.value = shifts.isNotEmpty ? shifts.first : null;
   }
 

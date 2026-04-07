@@ -110,8 +110,8 @@ List<_SidebarSection> _buildSections() {
   const learning = _SidebarSection(
     title: 'Learning',
     items: [
-      _SidebarItem(label: 'My Courses', icon: Icons.menu_book_rounded),
-      _SidebarItem(label: 'Explore Courses', icon: Icons.explore_rounded),
+      _SidebarItem(label: 'My Classes', icon: Icons.menu_book_rounded),
+      _SidebarItem(label: 'Explore Classes', icon: Icons.explore_rounded),
       _SidebarItem(label: 'My Certificates', icon: Icons.verified_rounded),
       _SidebarItem(label: 'Quizzes', icon: Icons.quiz_rounded),
     ],

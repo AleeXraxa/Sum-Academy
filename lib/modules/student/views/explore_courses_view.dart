@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
+import 'package:sum_academy/core/utils/network_error.dart';
 import 'package:sum_academy/modules/student/controllers/student_explore_courses_controller.dart';
 import 'package:sum_academy/modules/student/controllers/student_shell_controller.dart';
+import 'package:sum_academy/modules/student/models/student_explore_course.dart';
 import 'package:sum_academy/modules/student/widgets/explore_course_card.dart';
 import 'package:sum_academy/modules/student/views/student_checkout_view.dart';
 
@@ -44,18 +46,21 @@ class ExploreCoursesView extends GetView<StudentExploreCoursesController> {
                         padding: EdgeInsets.only(bottom: 12.h),
                         child: ExploreCourseCard(
                           course: course,
-                          onEnroll: () async {
-                            if (course.isEnrolled) {
+                          onEnrollClass: () async {
+                            if (course.isFullyEnrolled) {
                               final shell =
                                   Get.isRegistered<StudentShellController>()
                                       ? Get.find<StudentShellController>()
                                       : null;
                               if (shell != null) {
-                                shell.setActiveLabel('My Courses');
+                                shell.setActiveLabel('My Classes');
                               }
                               return;
                             }
                             Get.to(() => StudentCheckoutView(course: course));
+                          },
+                          onChooseSubject: () {
+                            _showSubjectPicker(context, course);
                           },
                         ),
                       ),
@@ -97,7 +102,7 @@ class _HeaderRow extends StatelessWidget {
         if (showMenu) SizedBox(width: 6.w),
         Expanded(
           child: Text(
-            'Explore Courses',
+            'Explore Classes',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   color: textColor,
                   fontWeight: FontWeight.w700,
@@ -119,11 +124,108 @@ class _SearchField extends StatelessWidget {
     return TextField(
       controller: controller.searchController,
       decoration: InputDecoration(
-        hintText: 'Search courses to explore',
+        hintText: 'Search class, batch, teacher, or subject...',
         prefixIcon: Icon(Icons.search, size: 20.sp),
       ),
     );
   }
+}
+
+void _showSubjectPicker(BuildContext context, StudentExploreCourse course) {
+  final subjects =
+      course.subjects.where((subject) => !subject.alreadyPurchased).toList();
+  if (subjects.isEmpty) {
+    showAppErrorDialog(
+      title: 'Subjects',
+      message: 'No individual subjects are available for this class right now.',
+    );
+    return;
+  }
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: SumAcademyTheme.white,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(22.r)),
+    ),
+    builder: (context) {
+      return Padding(
+        padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 28.h),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Choose Individual Subject',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: SumAcademyTheme.darkBase,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            SizedBox(height: 12.h),
+            ...subjects.map((subject) {
+              final price = subject.discountedPrice > 0
+                  ? subject.discountedPrice
+                  : subject.price;
+              return Container(
+                margin: EdgeInsets.only(bottom: 10.h),
+                padding: EdgeInsets.all(12.r),
+                decoration: BoxDecoration(
+                  color: SumAcademyTheme.surfaceSecondary,
+                  borderRadius: BorderRadius.circular(16.r),
+                  border: Border.all(color: SumAcademyTheme.brandBluePale),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            subject.title,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: SumAcademyTheme.darkBase,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                          if (price > 0) ...[
+                            SizedBox(height: 4.h),
+                            Text(
+                              _formatPkr(price),
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color:
+                                        SumAcademyTheme.darkBase.withOpacityFloat(0.6),
+                                  ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        Get.to(() => StudentCheckoutView(
+                              course: course,
+                              subject: subject,
+                            ));
+                      },
+                      child: const Text('Enroll'),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+String _formatPkr(double value) {
+  final rounded = value.isNaN ? 0 : value.round();
+  return 'PKR $rounded';
 }
 
 class _FilterChips extends StatelessWidget {
@@ -193,7 +295,7 @@ class _EmptyState extends StatelessWidget {
           SizedBox(width: 12.w),
           Expanded(
             child: Text(
-              'No courses available yet. Please check back soon.',
+              'No classes available yet. Please check back soon.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: textColor.withOpacityFloat(0.7),
                   ),

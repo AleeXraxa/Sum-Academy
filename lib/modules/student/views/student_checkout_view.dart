@@ -9,8 +9,13 @@ import 'package:sum_academy/modules/student/models/student_explore_course.dart';
 
 class StudentCheckoutView extends StatefulWidget {
   final StudentExploreCourse course;
+  final StudentExploreSubject? subject;
 
-  const StudentCheckoutView({super.key, required this.course});
+  const StudentCheckoutView({
+    super.key,
+    required this.course,
+    this.subject,
+  });
 
   @override
   State<StudentCheckoutView> createState() => _StudentCheckoutViewState();
@@ -23,14 +28,16 @@ class _StudentCheckoutViewState extends State<StudentCheckoutView> {
   void initState() {
     super.initState();
     _controller = Get.put(
-      StudentCheckoutController(course: widget.course),
-      tag: widget.course.id,
+      StudentCheckoutController(course: widget.course, subject: widget.subject),
+      tag: _controllerTag(widget.course.id, widget.subject?.id),
     );
   }
 
   @override
   void dispose() {
-    Get.delete<StudentCheckoutController>(tag: widget.course.id);
+    Get.delete<StudentCheckoutController>(
+      tag: _controllerTag(widget.course.id, widget.subject?.id),
+    );
     super.dispose();
   }
 
@@ -282,19 +289,28 @@ class _SummaryBox extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              controller.course.title,
+              controller.summaryTitle,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: SumAcademyTheme.darkBase,
                     fontWeight: FontWeight.w600,
                   ),
             ),
+            if (controller.summarySubtitle.isNotEmpty) ...[
+              SizedBox(height: 4.h),
+              Text(
+                controller.summarySubtitle,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: SumAcademyTheme.darkBase.withOpacityFloat(0.6),
+                    ),
+              ),
+            ],
             SizedBox(height: 8.h),
             _SummaryRow(
               label: 'Original Price',
               value: _formatPkr(controller.originalPrice),
             ),
             _SummaryRow(
-              label: 'Course Discount',
+              label: controller.discountLabel,
               value: '-${_formatPkr(controller.courseDiscount)}',
             ),
             _SummaryRow(
@@ -860,12 +876,21 @@ class _ConfirmSummary extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              controller.course.title,
+              controller.summaryTitle,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: SumAcademyTheme.darkBase,
                     fontWeight: FontWeight.w700,
                   ),
             ),
+            if (controller.summarySubtitle.isNotEmpty) ...[
+              SizedBox(height: 4.h),
+              Text(
+                controller.summarySubtitle,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: SumAcademyTheme.darkBase.withOpacityFloat(0.6),
+                    ),
+              ),
+            ],
             SizedBox(height: 6.h),
             Text(
               'Class: $className - Shift: $shiftName',
@@ -1169,4 +1194,9 @@ Color _methodTone(String label) {
     return SumAcademyTheme.brandBlueLight;
   }
   return SumAcademyTheme.brandBlue;
+}
+
+String _controllerTag(String courseId, String? subjectId) {
+  final suffix = subjectId == null || subjectId.isEmpty ? 'full' : subjectId;
+  return '$courseId-$suffix';
 }

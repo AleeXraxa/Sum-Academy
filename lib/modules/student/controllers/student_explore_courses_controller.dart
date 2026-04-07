@@ -29,27 +29,35 @@ class StudentExploreCoursesController extends GetxController {
   }
 
   List<String> get filterOptions {
-    final levels = courses
-        .map((course) => course.level.trim())
-        .where((level) => level.isNotEmpty)
+    final buckets = courses
+        .map((course) =>
+            (course.level.isNotEmpty ? course.level : course.category).trim())
+        .where((value) => value.isNotEmpty)
         .toSet()
         .toList();
-    levels.sort();
-    return ['All', ...levels];
+    buckets.sort();
+    return ['All', ...buckets];
   }
 
   List<StudentExploreCourse> get filteredCourses {
     final query = searchQuery.value.trim().toLowerCase();
     final filter = activeFilter.value;
     return courses.where((course) {
-      if (filter != 'All' && course.level != filter) {
+      final bucket =
+          course.level.isNotEmpty ? course.level : course.category;
+      if (filter != 'All' && bucket != filter) {
         return false;
       }
       if (query.isEmpty) {
         return true;
       }
+      final subjects = course.subjects
+          .map((subject) => subject.title)
+          .join(' ')
+          .toLowerCase();
       final haystack =
-          '${course.title} ${course.category} ${course.level}'.toLowerCase();
+          '${course.title} ${course.category} ${course.level} ${course.code} ${course.teacher} $subjects'
+              .toLowerCase();
       return haystack.contains(query);
     }).toList();
   }
@@ -117,18 +125,32 @@ class StudentExploreCoursesController extends GetxController {
         .map((course) => course.id.trim())
         .where((id) => id.isNotEmpty)
         .toSet();
+    final enrolledClassIds = enrolledCourses
+        .map((course) => course.classId.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet();
+    final enrolledClassNames = enrolledCourses
+        .map((course) => course.className.trim().toLowerCase())
+        .where((name) => name.isNotEmpty)
+        .toSet();
     final enrolledTitles = enrolledCourses
         .map((course) => course.title.trim().toLowerCase())
         .where((title) => title.isNotEmpty)
         .toSet();
 
     final updated = courses.map((course) {
-      if (course.isEnrolled) return course;
+      if (course.isEnrolled || course.isFullyEnrolled || course.isPartiallyEnrolled) {
+        return course;
+      }
       final idMatch =
           course.id.isNotEmpty && enrolledIds.contains(course.id.trim());
+      final classIdMatch =
+          course.id.isNotEmpty && enrolledClassIds.contains(course.id.trim());
       final titleMatch = course.title.isNotEmpty &&
           enrolledTitles.contains(course.title.trim().toLowerCase());
-      final shouldMark = idMatch || titleMatch;
+      final classNameMatch = course.title.isNotEmpty &&
+          enrolledClassNames.contains(course.title.trim().toLowerCase());
+      final shouldMark = idMatch || classIdMatch || titleMatch || classNameMatch;
       return shouldMark ? course.copyWith(isEnrolled: true) : course;
     }).toList();
 

@@ -280,13 +280,6 @@ class ClassActionResult {
   final String message;
   final AdminClass? classItem;
 
-  ClassActionResult._(
-    this.isSuccess,
-    this.message, {
-    this.isNetworkError = false,
-    this.classItem,
-  });
-
   ClassActionResult.success(
     this.message, {
     this.classItem,
