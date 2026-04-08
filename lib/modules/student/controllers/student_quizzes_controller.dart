@@ -55,7 +55,7 @@ class StudentQuizzesController extends GetxController {
       .where((quiz) => quiz.isAttempted || !quiz.isAvailable)
       .toList();
 
-  void markAttempted(String quizId) {
+  void markAttempted(String quizId, {double? scorePercent}) {
     final index = quizzes.indexWhere((q) => q.id == quizId);
     if (index < 0) return;
     final quiz = quizzes[index];
@@ -68,6 +68,7 @@ class StudentQuizzesController extends GetxController {
       assigned: false,
       questionCount: quiz.questionCount,
       totalMarks: quiz.totalMarks,
+      scorePercent: scorePercent ?? quiz.scorePercent,
     );
     quizzes.refresh();
   }

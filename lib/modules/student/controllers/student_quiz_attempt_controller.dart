@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/core/services/api_exception.dart';
@@ -20,6 +22,12 @@ class StudentQuizAttemptController extends GetxController {
   final isLoading = true.obs;
   final questions = <StudentQuizQuestion>[].obs;
   final answers = <String, String>{}.obs;
+  final currentIndex = 0.obs;
+  final isSubmitting = false.obs;
+  final resultPercent = RxnDouble();
+  final elapsedSeconds = 0.obs;
+
+  Timer? _quizTimer;
 
   final _textControllers = <String, TextEditingController>{};
 
@@ -31,6 +39,7 @@ class StudentQuizAttemptController extends GetxController {
 
   @override
   void onClose() {
+    _stopTimer();
     for (final controller in _textControllers.values) {
       controller.dispose();
     }
@@ -42,6 +51,8 @@ class StudentQuizAttemptController extends GetxController {
     try {
       final detail = await _service.fetchQuiz(quizId);
       questions.assignAll(detail.questions);
+      currentIndex.value = 0;
+      _startTimer();
     } on ApiException catch (e) {
       final handled = await handleNetworkError(e);
       if (!handled) {
@@ -78,6 +89,21 @@ class StudentQuizAttemptController extends GetxController {
     return answers[questionId] ?? '';
   }
 
+  bool get canGoNext => currentIndex.value < questions.length - 1;
+  bool get canGoPrevious => currentIndex.value > 0;
+
+  void goNext() {
+    if (canGoNext) {
+      currentIndex.value += 1;
+    }
+  }
+
+  void goPrevious() {
+    if (canGoPrevious) {
+      currentIndex.value -= 1;
+    }
+  }
+
   Future<void> submit() async {
     final missing = questions
         .where((question) => answerFor(question.id).trim().isEmpty)
@@ -99,20 +125,22 @@ class StudentQuizAttemptController extends GetxController {
         )
         .toList();
 
+    if (isSubmitting.value) return;
+    isSubmitting.value = true;
     try {
       final result = await _service.submitQuiz(
         quizId: quizId,
         answers: payload,
       );
-      final score = result['score']?.toString() ?? '';
-      await showAppSuccessDialog(
-        title: 'Quiz Submitted',
-        message: score.isNotEmpty ? 'Score: $score' : 'Your quiz was submitted.',
-      );
+      final percent = _computePercent(result);
+      resultPercent.value = percent;
+      _stopTimer();
       if (Get.isRegistered<StudentQuizzesController>()) {
-        Get.find<StudentQuizzesController>().markAttempted(quizId);
+        Get.find<StudentQuizzesController>().markAttempted(
+          quizId,
+          scorePercent: percent,
+        );
       }
-      Get.back();
     } on ApiException catch (e) {
       final handled = await handleNetworkError(e);
       if (!handled) {
@@ -126,6 +154,93 @@ class StudentQuizAttemptController extends GetxController {
         title: 'Submit failed',
         message: 'Please try again.',
       );
+    } finally {
+      isSubmitting.value = false;
     }
+  }
+
+  void _startTimer() {
+    _quizTimer?.cancel();
+    elapsedSeconds.value = 0;
+    _quizTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      elapsedSeconds.value += 1;
+    });
+  }
+
+  void _stopTimer() {
+    _quizTimer?.cancel();
+    _quizTimer = null;
+  }
+
+  double _computePercent(Map<String, dynamic> result) {
+    final percent = _readDouble(
+      result,
+      const [
+        'scorePercent',
+        'percentage',
+        'percent',
+        'scorePercentage',
+        'resultPercent',
+      ],
+    );
+    if (percent > 0) return percent.clamp(0, 100);
+
+    final nested = result['result'] ?? result['attempt'] ?? result['submission'];
+    if (nested is Map) {
+      final nestedMap = Map<String, dynamic>.from(nested);
+      final nestedPercent = _readDouble(
+        nestedMap,
+        const [
+          'scorePercent',
+          'percentage',
+          'percent',
+          'scorePercentage',
+          'resultPercent',
+        ],
+      );
+      if (nestedPercent > 0) return nestedPercent.clamp(0, 100);
+    }
+
+    final score = _readDouble(
+      result,
+      const ['score', 'marksObtained', 'obtainedMarks', 'points', 'result'],
+    );
+    final total = _readDouble(
+      result,
+      const ['total', 'totalMarks', 'maxMarks', 'totalScore', 'outOf'],
+    );
+    if (score > 0 && total > 0) {
+      return ((score / total) * 100).clamp(0, 100);
+    }
+
+    final computedTotal = _totalMarks();
+    if (score > 0 && computedTotal > 0) {
+      return ((score / computedTotal) * 100).clamp(0, 100);
+    }
+
+    if (score > 0 && score <= 100) {
+      return score;
+    }
+    return 0;
+  }
+
+  int _totalMarks() {
+    if (questions.isEmpty) return 0;
+    final total = questions.fold<int>(
+      0,
+      (sum, question) => sum + (question.marks > 0 ? question.marks : 1),
+    );
+    return total > 0 ? total : questions.length;
+  }
+
+  double _readDouble(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value == null) continue;
+      if (value is num) return value.toDouble();
+      final parsed = double.tryParse(value.toString());
+      if (parsed != null) return parsed;
+    }
+    return 0;
   }
 }

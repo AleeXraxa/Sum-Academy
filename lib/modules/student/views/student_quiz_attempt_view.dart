@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/core/services/secure_screen_service.dart';
 import 'package:sum_academy/core/utils/network_error.dart';
+import 'package:sum_academy/core/widgets/app_bootstrap_loader.dart';
 import 'package:sum_academy/modules/student/controllers/student_quiz_attempt_controller.dart';
 import 'package:sum_academy/modules/student/models/student_quiz.dart';
 
@@ -69,7 +70,7 @@ class _StudentQuizAttemptViewState extends State<StudentQuizAttemptView>
   }
 
   Future<void> _showFocusWarning() async {
-    if (_warningVisible) return;
+    if (_warningVisible || (_controller.resultPercent.value != null)) return;
     _warningVisible = true;
     await showAppErrorDialog(
       title: 'Quiz Warning',
@@ -83,6 +84,9 @@ class _StudentQuizAttemptViewState extends State<StudentQuizAttemptView>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return WillPopScope(
       onWillPop: () async {
+        if (_controller.resultPercent.value != null) {
+          return true;
+        }
         await _showFocusWarning();
         return false;
       },
@@ -106,47 +110,68 @@ class _StudentQuizAttemptViewState extends State<StudentQuizAttemptView>
           child: SafeArea(
             child: Obx(() {
               if (_controller.isLoading.value) {
-                return const Center(child: CircularProgressIndicator());
+                return const AppBootstrapLoader(
+                  message: 'Loading quiz...',
+                );
+              }
+              if (_controller.resultPercent.value != null) {
+                return ListView(
+                  padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 28.h),
+                  children: [
+                    _AttemptHeader(
+                      title: widget.quizTitle,
+                      controller: _controller,
+                      onExit: () => Get.back(),
+                    ),
+                    SizedBox(height: 16.h),
+                    _ResultCard(
+                      percent: _controller.resultPercent.value ?? 0,
+                    ),
+                    SizedBox(height: 18.h),
+                    SizedBox(
+                      height: 48.h,
+                      child: ElevatedButton(
+                        onPressed: () => Get.back(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: SumAcademyTheme.brandBlue,
+                          foregroundColor: SumAcademyTheme.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18.r),
+                          ),
+                        ),
+                        child: const Text('Back to Quizzes'),
+                      ),
+                    ),
+                  ],
+                );
               }
               return ListView(
                 padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 28.h),
                 children: [
-                  _AttemptHeader(title: widget.quizTitle),
+                  _AttemptHeader(
+                    title: widget.quizTitle,
+                    controller: _controller,
+                    onExit: _showFocusWarning,
+                  ),
                   SizedBox(height: 16.h),
                   _ProgressCard(
                     total: _controller.questions.length,
                     answered: _controller.answers.length,
+                    currentIndex: _controller.currentIndex.value,
                   ),
                   SizedBox(height: 16.h),
-                  ..._controller.questions
-                      .asMap()
-                      .entries
-                      .map(
-                        (entry) => Padding(
-                          padding: EdgeInsets.only(bottom: 12.h),
-                          child: _QuestionCard(
-                            index: entry.key + 1,
-                            question: entry.value,
-                            controller: _controller,
-                          ),
-                        ),
-                      )
-                      .toList(),
-                  SizedBox(height: 18.h),
-                  SizedBox(
-                    height: 48.h,
-                    child: ElevatedButton(
-                      onPressed: _controller.submit,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: SumAcademyTheme.brandBlue,
-                        foregroundColor: SumAcademyTheme.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18.r),
-                        ),
-                      ),
-                      child: const Text('Submit Quiz'),
+                  if (_controller.questions.isEmpty)
+                    const _EmptyQuestionState()
+                  else ...[
+                    _QuestionCard(
+                      index: _controller.currentIndex.value + 1,
+                      question: _controller
+                          .questions[_controller.currentIndex.value],
+                      controller: _controller,
                     ),
-                  ),
+                    SizedBox(height: 18.h),
+                    _NavigationRow(controller: _controller),
+                  ],
                 ],
               );
             }),
@@ -159,14 +184,20 @@ class _StudentQuizAttemptViewState extends State<StudentQuizAttemptView>
 
 class _AttemptHeader extends StatelessWidget {
   final String title;
+  final StudentQuizAttemptController controller;
+  final VoidCallback onExit;
 
-  const _AttemptHeader({required this.title});
+  const _AttemptHeader({
+    required this.title,
+    required this.controller,
+    required this.onExit,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        SizedBox(width: 6.w),
+        SizedBox(width: 4.w),
         Expanded(
           child: Text(
             title.isNotEmpty ? title : 'Quiz',
@@ -174,6 +205,44 @@ class _AttemptHeader extends StatelessWidget {
                   color: SumAcademyTheme.darkBase,
                   fontWeight: FontWeight.w700,
                 ),
+          ),
+        ),
+        Obx(() {
+          final timeLabel = _formatDuration(controller.elapsedSeconds.value);
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                'Quiz Timer',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: SumAcademyTheme.darkBase.withOpacityFloat(0.6),
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+              SizedBox(height: 4.h),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                decoration: BoxDecoration(
+                  color: SumAcademyTheme.brandBluePale,
+                  borderRadius: BorderRadius.circular(14.r),
+                ),
+                child: Text(
+                  timeLabel,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: SumAcademyTheme.brandBlue,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+              ),
+            ],
+          );
+        }),
+        SizedBox(width: 8.w),
+        IconButton(
+          onPressed: onExit,
+          icon: Icon(
+            Icons.close_rounded,
+            color: SumAcademyTheme.darkBase.withOpacityFloat(0.7),
           ),
         ),
       ],
@@ -184,8 +253,13 @@ class _AttemptHeader extends StatelessWidget {
 class _ProgressCard extends StatelessWidget {
   final int total;
   final int answered;
+  final int currentIndex;
 
-  const _ProgressCard({required this.total, required this.answered});
+  const _ProgressCard({
+    required this.total,
+    required this.answered,
+    required this.currentIndex,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -220,10 +294,211 @@ class _ProgressCard extends StatelessWidget {
           ),
           SizedBox(height: 6.h),
           Text(
-            '$answered of $total answered',
+            'Question ${total == 0 ? 0 : currentIndex + 1} of $total · '
+            '$answered answered',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: SumAcademyTheme.darkBase.withOpacityFloat(0.6),
                 ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyQuestionState extends StatelessWidget {
+  const _EmptyQuestionState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(16.r),
+      decoration: BoxDecoration(
+        color: SumAcademyTheme.white,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: SumAcademyTheme.brandBluePale),
+      ),
+      child: Text(
+        'No questions available for this quiz.',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: SumAcademyTheme.darkBase.withOpacityFloat(0.7),
+            ),
+      ),
+    );
+  }
+}
+
+class _NavigationRow extends StatelessWidget {
+  final StudentQuizAttemptController controller;
+
+  const _NavigationRow({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final isLast = controller.currentIndex.value ==
+          controller.questions.length - 1;
+      final isSubmitting = controller.isSubmitting.value;
+      return Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: (controller.canGoPrevious && !isSubmitting)
+                  ? controller.goPrevious
+                  : null,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: SumAcademyTheme.brandBlue,
+                side: const BorderSide(color: SumAcademyTheme.brandBluePale),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18.r),
+                ),
+                padding: EdgeInsets.symmetric(vertical: 14.h),
+              ),
+              child: const Text('Previous'),
+            ),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: ElevatedButton(
+              onPressed: isSubmitting
+                  ? null
+                  : (isLast ? controller.submit : controller.goNext),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: SumAcademyTheme.brandBlue,
+                foregroundColor: SumAcademyTheme.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18.r),
+                ),
+                padding: EdgeInsets.symmetric(vertical: 14.h),
+              ),
+              child: isSubmitting
+                  ? SizedBox(
+                      width: 20.r,
+                      height: 20.r,
+                      child: const CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(
+                          SumAcademyTheme.white,
+                        ),
+                      ),
+                    )
+                  : Text(isLast ? 'Submit Quiz' : 'Next'),
+            ),
+          ),
+        ],
+      );
+    });
+  }
+}
+
+class _ResultCard extends StatelessWidget {
+  final double percent;
+
+  const _ResultCard({required this.percent});
+
+  @override
+  Widget build(BuildContext context) {
+    final clamped = percent.clamp(0, 100).toDouble();
+    final tone = _resultTone(clamped);
+    return Container(
+      padding: EdgeInsets.all(18.r),
+      decoration: BoxDecoration(
+        color: SumAcademyTheme.white,
+        borderRadius: BorderRadius.circular(18.r),
+        border: Border.all(color: tone.withOpacityFloat(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: SumAcademyTheme.darkBase.withOpacityFloat(0.08),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Quiz Result',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: SumAcademyTheme.darkBase,
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+              const Spacer(),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                decoration: BoxDecoration(
+                  color: tone.withOpacityFloat(0.12),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  _resultLabel(clamped),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: tone,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 16.h),
+          Row(
+            children: [
+              Container(
+                width: 78.r,
+                height: 78.r,
+                decoration: BoxDecoration(
+                  color: tone.withOpacityFloat(0.12),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: tone.withOpacityFloat(0.3)),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '${clamped.toStringAsFixed(0)}%',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: tone,
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+              ),
+              SizedBox(width: 14.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Score Percentage',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                            color:
+                                SumAcademyTheme.darkBase.withOpacityFloat(0.6),
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    SizedBox(height: 6.h),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: clamped / 100,
+                        minHeight: 6.h,
+                        backgroundColor: SumAcademyTheme.brandBluePale,
+                        valueColor: AlwaysStoppedAnimation(tone),
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    Text(
+                      'You completed the quiz. Review your results anytime from the quizzes tab.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color:
+                                SumAcademyTheme.darkBase.withOpacityFloat(0.7),
+                            height: 1.5,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -318,4 +593,32 @@ class _QuestionCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _formatDuration(int totalSeconds) {
+  if (totalSeconds < 0) totalSeconds = 0;
+  final hours = totalSeconds ~/ 3600;
+  final minutes = (totalSeconds % 3600) ~/ 60;
+  final seconds = totalSeconds % 60;
+  if (hours > 0) {
+    return '${hours.toString().padLeft(2, '0')}:'
+        '${minutes.toString().padLeft(2, '0')}:'
+        '${seconds.toString().padLeft(2, '0')}';
+  }
+  return '${minutes.toString().padLeft(2, '0')}:'
+      '${seconds.toString().padLeft(2, '0')}';
+}
+
+String _resultLabel(double percent) {
+  if (percent >= 85) return 'Excellent';
+  if (percent >= 70) return 'Great Job';
+  if (percent >= 50) return 'Good Effort';
+  return 'Keep Going';
+}
+
+Color _resultTone(double percent) {
+  if (percent >= 85) return SumAcademyTheme.success;
+  if (percent >= 70) return SumAcademyTheme.brandBlue;
+  if (percent >= 50) return SumAcademyTheme.accentOrange;
+  return SumAcademyTheme.warning;
 }

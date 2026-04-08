@@ -242,7 +242,11 @@ class _QuizCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusLabel = quiz.isAvailable ? 'Available' : 'Attempted';
+    final isAttempted = quiz.isAttempted;
+    final statusLabel = isAttempted
+        ? 'Attempted'
+        : (quiz.isAvailable ? 'Available' : 'Attempted');
+    final canStart = quiz.isAvailable && !isAttempted;
     return Container(
       padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
@@ -303,15 +307,18 @@ class _QuizCard extends StatelessWidget {
               ),
             ],
           ),
+          if (isAttempted && quiz.scorePercent >= 0) ...[
+            SizedBox(height: 12.h),
+            _ScorePill(scorePercent: quiz.scorePercent),
+          ],
           SizedBox(height: 14.h),
           Align(
             alignment: Alignment.centerLeft,
             child: SizedBox(
               height: 40.h,
               child: ElevatedButton(
-                onPressed: quiz.isAvailable
-                    ? () => _showStartDialog(context, quiz)
-                    : null,
+                onPressed:
+                    canStart ? () => _showStartDialog(context, quiz) : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: SumAcademyTheme.brandBlue,
                   foregroundColor: SumAcademyTheme.white,
@@ -321,7 +328,7 @@ class _QuizCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(18.r),
                   ),
                 ),
-                child: Text(quiz.isAvailable ? 'Start Quiz' : 'Attempted'),
+                child: Text(canStart ? 'Start Quiz' : 'Attempted'),
               ),
             ),
           ),
@@ -463,6 +470,32 @@ class _Tag extends StatelessWidget {
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: SumAcademyTheme.darkBase.withOpacityFloat(0.7),
               fontWeight: FontWeight.w600,
+            ),
+      ),
+    );
+  }
+}
+
+class _ScorePill extends StatelessWidget {
+  final double scorePercent;
+
+  const _ScorePill({required this.scorePercent});
+
+  @override
+  Widget build(BuildContext context) {
+    final clamped = scorePercent.clamp(0, 100).toDouble();
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: SumAcademyTheme.brandBluePale,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: SumAcademyTheme.brandBlue),
+      ),
+      child: Text(
+        '${clamped.toStringAsFixed(0)}%',
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: SumAcademyTheme.brandBlue,
+              fontWeight: FontWeight.w700,
             ),
       ),
     );
