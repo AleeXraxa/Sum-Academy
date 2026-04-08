@@ -38,6 +38,7 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
   bool _isMarkedComplete = false;
   double _lastReportedProgress = 0;
   bool _isReportingProgress = false;
+  bool _finishHandled = false;
   late final double _resumeFraction;
   bool _initialSeekApplied = false;
   late final void Function(BetterPlayerEvent event) _eventListener;
@@ -50,7 +51,9 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
       SecureScreenService.enable();
     });
     final rawProgress = widget.lecture.progress.clamp(0.0, 1.0);
-    if (widget.lecture.isCompleted && widget.lecture.canRewatch) {
+    final canReplay =
+        widget.lecture.canRewatch || !widget.lecture.lockAfterCompletion;
+    if (widget.lecture.isCompleted && canReplay) {
       _resumeFraction = 0.0;
     } else if (widget.lecture.isCompleted) {
       _resumeFraction = rawProgress.clamp(0.0, 0.98);
@@ -113,6 +116,10 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
   }
 
   void _handlePlayerEvent(BetterPlayerEvent event) {
+    if (event.betterPlayerEventType == BetterPlayerEventType.finished) {
+      _handleFinishedPlayback();
+      return;
+    }
     final controller = _playerController.videoPlayerController;
     if (controller == null) return;
     final value = controller.value;
@@ -138,7 +145,7 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
     }
     if (progress >= 0.98 && !_autoMarked && !widget.lecture.isCompleted) {
       _autoMarked = true;
-      _markComplete(silent: true);
+      unawaited(_markComplete(silent: true));
     }
   }
 
@@ -190,8 +197,8 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
     );
   }
 
-  Future<void> _markComplete({bool silent = false}) async {
-    if (_isCompleting) return;
+  Future<bool> _markComplete({bool silent = false}) async {
+    if (_isCompleting) return false;
     if (widget.lecture.id.trim().isEmpty) {
       if (!silent) {
         await showAppErrorDialog(
@@ -199,7 +206,7 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
           message: 'Unable to mark this lecture complete.',
         );
       }
-      return;
+      return false;
     }
     setState(() => _isCompleting = true);
     try {
@@ -226,10 +233,12 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
           message: 'Lecture marked as complete.',
         );
       }
+      return true;
     } on ApiException catch (e) {
       if (mounted && !silent) {
         await showAppErrorDialog(title: 'Lecture', message: e.message);
       }
+      return false;
     } catch (_) {
       if (mounted && !silent) {
         await showAppErrorDialog(
@@ -237,10 +246,29 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
           message: 'Unable to mark as complete. Please try again.',
         );
       }
+      return false;
     } finally {
       if (mounted) {
         setState(() => _isCompleting = false);
       }
+    }
+  }
+
+  Future<void> _handleFinishedPlayback() async {
+    if (_finishHandled) return;
+    _finishHandled = true;
+    _playerController.pause();
+    final wasComplete = _isMarkedComplete || widget.lecture.isCompleted;
+    if (!wasComplete) {
+      await _markComplete(silent: true);
+    }
+    if (!mounted) return;
+    await showAppSuccessDialog(
+      title: 'Lecture Completed',
+      message: 'You have completely watched this lecture.',
+    );
+    if (mounted) {
+      Get.back();
     }
   }
 

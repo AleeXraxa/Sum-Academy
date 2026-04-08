@@ -128,6 +128,7 @@ class StudentCourseLecture {
   final bool isLiveSession;
   final bool isLocked;
   final bool canRewatch;
+  final bool lockAfterCompletion;
   final String lockReason;
 
   const StudentCourseLecture({
@@ -141,6 +142,7 @@ class StudentCourseLecture {
     required this.isLiveSession,
     required this.isLocked,
     required this.canRewatch,
+    required this.lockAfterCompletion,
     required this.lockReason,
   });
 }
@@ -196,6 +198,75 @@ List<StudentCourseLecture> _parseLectures(
   Map<String, dynamic> root,
   Map<String, dynamic> source,
 ) {
+  const accessMapKeys = [
+    'access',
+    'videoAccess',
+    'rewatchAccess',
+    'rewatch',
+    'unlock',
+    'unlockAccess',
+    'enrollment',
+    'courseAccess',
+    'studentAccess',
+  ];
+  const accessValueKeys = [
+    'unlocked',
+    'isUnlocked',
+    'canRewatch',
+    'rewatchAllowed',
+    'allowRewatch',
+    'rewatchUnlocked',
+    'unlockedForRewatch',
+    'lockAfterCompletion',
+    'lock_after_completion',
+    'lockAfterComplete',
+    'lockOnComplete',
+    'lockAfter',
+    'isLocked',
+    'locked',
+    'isAccessLocked',
+    'accessLocked',
+    'isBlocked',
+    'blocked',
+    'hasAccess',
+    'canAccess',
+    'isAccessible',
+  ];
+  final rootAccessMap =
+      _readMap(root, accessMapKeys) ?? _readNestedMap(root, accessValueKeys);
+  final rootUnlockFlag = _readBool(root, const [
+    'unlocked',
+    'isUnlocked',
+    'canRewatch',
+    'rewatchAllowed',
+    'allowRewatch',
+    'rewatchAccess',
+    'rewatchUnlocked',
+    'unlockedForRewatch',
+  ]) ??
+      _readBool(rootAccessMap, const [
+        'unlocked',
+        'isUnlocked',
+        'canRewatch',
+        'rewatchAllowed',
+        'allowRewatch',
+        'rewatchUnlocked',
+        'unlockedForRewatch',
+      ]);
+  final rootLockAfterCompletion = _readBool(root, const [
+    'lockAfterCompletion',
+    'lock_after_completion',
+    'lockAfterComplete',
+    'lockOnComplete',
+    'lockAfter',
+  ]) ??
+      _readBool(rootAccessMap, const [
+        'lockAfterCompletion',
+        'lock_after_completion',
+        'lockAfterComplete',
+        'lockOnComplete',
+        'lockAfter',
+      ]);
   final rawLectures = _readList(source, const [
     'lectures',
     'lessons',
@@ -210,6 +281,8 @@ List<StudentCourseLecture> _parseLectures(
   for (final raw in rawLectures) {
     if (raw is Map) {
       final lectureMap = Map<String, dynamic>.from(raw);
+      final lectureAccessMap = _readMap(lectureMap, accessMapKeys) ??
+          _readNestedMap(lectureMap, accessValueKeys);
       final title = _readString(lectureMap, const [
         'title',
         'name',
@@ -284,18 +357,54 @@ List<StudentCourseLecture> _parseLectures(
         'lockMessage',
         'reason',
       ]);
+      final lockAfterCompletion = _readBool(lectureMap, const [
+            'lockAfterCompletion',
+            'lock_after_completion',
+            'lockAfterComplete',
+            'lockOnComplete',
+            'lockAfter',
+          ]) ??
+          _readBool(lectureAccessMap, const [
+            'lockAfterCompletion',
+            'lock_after_completion',
+            'lockAfterComplete',
+            'lockOnComplete',
+            'lockAfter',
+          ]) ??
+          rootLockAfterCompletion ??
+          true;
       final accessFlag = _readBool(lectureMap, const [
         'hasAccess',
         'canAccess',
         'isAccessible',
-      ]);
+      ]) ??
+          _readBool(lectureAccessMap, const [
+            'hasAccess',
+            'canAccess',
+            'isAccessible',
+          ]) ??
+          _readBool(rootAccessMap, const [
+            'hasAccess',
+            'canAccess',
+            'isAccessible',
+          ]);
       final unlockFlag = _readBool(lectureMap, const [
         'unlocked',
         'isUnlocked',
         'canRewatch',
         'rewatchAllowed',
         'allowRewatch',
-      ]);
+      ]) ??
+          _readBool(lectureAccessMap, const [
+            'unlocked',
+            'isUnlocked',
+            'canRewatch',
+            'rewatchAllowed',
+            'allowRewatch',
+            'rewatchUnlocked',
+            'unlockedForRewatch',
+          ]) ??
+          rootUnlockFlag;
       var isLocked = _readBool(lectureMap, const [
             'isLocked',
             'locked',
@@ -304,14 +413,36 @@ List<StudentCourseLecture> _parseLectures(
             'isBlocked',
             'blocked',
           ]) ??
+          _readBool(lectureAccessMap, const [
+            'isLocked',
+            'locked',
+            'isAccessLocked',
+            'accessLocked',
+            'isBlocked',
+            'blocked',
+          ]) ??
+          _readBool(rootAccessMap, const [
+            'isLocked',
+            'locked',
+            'isAccessLocked',
+            'accessLocked',
+            'isBlocked',
+            'blocked',
+          ]) ??
           false;
-      final canRewatch = unlockFlag ?? false;
+      final canRewatch = unlockFlag ?? !lockAfterCompletion;
       if (accessFlag != null) {
         if (!accessFlag) {
           isLocked = true;
         } else if (accessFlag && !isLocked) {
           isLocked = false;
         }
+      }
+      if (unlockFlag == true) {
+        isLocked = false;
+      }
+      if (!lockAfterCompletion && isCompleted && accessFlag != false) {
+        isLocked = false;
       }
       lectures.add(
         StudentCourseLecture(
@@ -325,6 +456,7 @@ List<StudentCourseLecture> _parseLectures(
           isLiveSession: isLiveSession,
           isLocked: isLocked,
           canRewatch: canRewatch,
+          lockAfterCompletion: lockAfterCompletion,
           lockReason: lockReason,
         ),
       );
@@ -345,6 +477,7 @@ List<StudentCourseLecture> _parseLectures(
           isLiveSession: false,
           isLocked: false,
           canRewatch: false,
+          lockAfterCompletion: true,
           lockReason: '',
         ),
       );
@@ -398,7 +531,8 @@ double _readDouble(Map<String, dynamic> map, List<String> keys) {
   return 0;
 }
 
-bool? _readBool(Map<String, dynamic> map, List<String> keys) {
+bool? _readBool(Map<String, dynamic>? map, List<String> keys) {
+  if (map == null) return null;
   for (final key in keys) {
     final value = map[key];
     if (value == null) continue;
@@ -423,6 +557,38 @@ List<dynamic>? _readList(Map<String, dynamic> map, List<String> keys) {
   for (final key in keys) {
     final value = map[key];
     if (value is List) return value;
+  }
+  return null;
+}
+
+Map<String, dynamic>? _readMap(
+  Map<String, dynamic>? map,
+  List<String> keys,
+) {
+  if (map == null) return null;
+  for (final key in keys) {
+    final value = map[key];
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
+    }
+  }
+  return null;
+}
+
+Map<String, dynamic>? _readNestedMap(
+  Map<String, dynamic> map,
+  List<String> valueKeys,
+) {
+  for (final entry in map.entries) {
+    final value = entry.value;
+    if (value is Map) {
+      final nested = Map<String, dynamic>.from(value);
+      for (final key in valueKeys) {
+        if (nested.containsKey(key)) {
+          return nested;
+        }
+      }
+    }
   }
   return null;
 }

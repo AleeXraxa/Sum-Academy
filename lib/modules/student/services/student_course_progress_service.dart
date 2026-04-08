@@ -191,8 +191,12 @@ StudentCourseProgress _mergeProgress(
           videoMode:
               lecture.videoMode.isNotEmpty ? lecture.videoMode : override.videoMode,
           isLiveSession: lecture.isLiveSession || override.isLiveSession,
-          isLocked: override.isLocked || lecture.isLocked,
+          isLocked: (override.canRewatch || lecture.canRewatch)
+              ? false
+              : (override.isLocked || lecture.isLocked),
           canRewatch: override.canRewatch || lecture.canRewatch,
+          lockAfterCompletion:
+              override.lockAfterCompletion && lecture.lockAfterCompletion,
           lockReason:
               lecture.lockReason.isNotEmpty ? lecture.lockReason : override.lockReason,
         );
