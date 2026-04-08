@@ -96,10 +96,7 @@ class AdminController extends GetxController {
     } on ApiException catch (e) {
       final handled = await handleNetworkError(e);
       if (handled) return;
-      await showAppErrorDialog(
-        title: 'Stats',
-        message: _formatApiError(e),
-      );
+      await showAppErrorDialog(title: 'Stats', message: _formatApiError(e));
     } catch (_) {
       await showAppErrorDialog(
         title: 'Stats',
@@ -175,9 +172,7 @@ class AdminController extends GetxController {
           ..addAll(pageRows);
       } else {
         final existing = users.map((item) => item.uid).toSet();
-        users.addAll(
-          pageRows.where((item) => !existing.contains(item.uid)),
-        );
+        users.addAll(pageRows.where((item) => !existing.contains(item.uid)));
       }
       if (pageRows.length < _pageSize) {
         hasMoreUsers.value = false;
@@ -198,10 +193,7 @@ class AdminController extends GetxController {
           return;
         }
       }
-      await showAppErrorDialog(
-        title: 'Users',
-        message: _formatApiError(e),
-      );
+      await showAppErrorDialog(title: 'Users', message: _formatApiError(e));
     } catch (_) {
       if (requestId != _usersRequestId) {
         return;
@@ -276,9 +268,7 @@ class AdminController extends GetxController {
           ..addAll(pageRows);
       } else {
         final existing = users.map((item) => item.uid).toSet();
-        users.addAll(
-          pageRows.where((item) => !existing.contains(item.uid)),
-        );
+        users.addAll(pageRows.where((item) => !existing.contains(item.uid)));
       }
       if (pageRows.length < _pageSize) {
         hasMoreUsers.value = false;
@@ -333,8 +323,7 @@ class AdminController extends GetxController {
       }
     }
     final existingRole = existing?.role ?? role;
-    final roleChanged =
-        existingRole.toLowerCase() != role.toLowerCase();
+    final roleChanged = existingRole.toLowerCase() != role.toLowerCase();
     if (isCurrentUser(uid)) {
       if (roleChanged || (existing != null && existing.isActive != isActive)) {
         return const AdminActionResult.failure(
@@ -374,9 +363,9 @@ class AdminController extends GetxController {
             initials: row.initials,
             name: row.name,
             email: row.email,
-            role: _formatRole(roleResult.role.isNotEmpty
-                ? roleResult.role
-                : role),
+            role: _formatRole(
+              roleResult.role.isNotEmpty ? roleResult.role : role,
+            ),
             phone: row.phone,
             isActive: row.isActive,
             avatarColor: _roleColor(
@@ -872,16 +861,16 @@ class AdminActionResult {
   });
 
   const AdminActionResult.success(this.message)
-      : isSuccess = true,
-        isNetworkError = false;
+    : isSuccess = true,
+      isNetworkError = false;
 
   const AdminActionResult.failure(this.message)
-      : isSuccess = false,
-        isNetworkError = false;
+    : isSuccess = false,
+      isNetworkError = false;
 
   const AdminActionResult.networkFailure(this.message)
-      : isSuccess = false,
-        isNetworkError = true;
+    : isSuccess = false,
+      isNetworkError = true;
 }
 
 class _ActivityStyle {
