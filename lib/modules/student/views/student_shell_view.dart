@@ -11,6 +11,7 @@ import 'package:sum_academy/modules/student/controllers/student_shell_controller
 import 'package:sum_academy/modules/student/views/explore_courses_view.dart';
 import 'package:sum_academy/modules/student/views/help_support_view.dart';
 import 'package:sum_academy/modules/student/views/my_courses_view.dart';
+import 'package:sum_academy/modules/student/views/student_announcements_view.dart';
 import 'package:sum_academy/modules/student/views/student_payments_view.dart';
 import 'package:sum_academy/modules/student/views/student_placeholder_view.dart';
 import 'package:sum_academy/modules/student/views/student_quizzes_view.dart';
@@ -37,10 +38,7 @@ class StudentShellView extends GetView<StudentShellController> {
         ),
         const StudentQuizzesView(),
         const StudentPaymentsView(),
-        const StudentPlaceholderView(
-          title: 'Announcements',
-          icon: Icons.campaign_rounded,
-        ),
+        const StudentAnnouncementsView(),
         const HelpSupportView(),
         const StudentSettingsView(),
       ];

@@ -8,6 +8,7 @@ import 'package:sum_academy/modules/home/models/home_dashboard.dart';
 import 'package:sum_academy/modules/home/widgets/home_dashboard_skeleton.dart';
 import 'package:sum_academy/modules/student/controllers/student_shell_controller.dart';
 import 'package:sum_academy/modules/student/views/student_course_detail_view.dart';
+import 'package:sum_academy/modules/student/widgets/student_notification_bell.dart';
 
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
@@ -177,6 +178,9 @@ class _HeaderRow extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
+        ),
+        StudentNotificationBell(
+          iconColor: textColor.withOpacityFloat(0.75),
         ),
       ],
     );

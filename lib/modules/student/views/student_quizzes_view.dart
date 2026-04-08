@@ -5,6 +5,7 @@ import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/modules/student/controllers/student_quiz_attempt_controller.dart';
 import 'package:sum_academy/modules/student/controllers/student_quizzes_controller.dart';
 import 'package:sum_academy/modules/student/models/student_quiz.dart';
+import 'package:sum_academy/modules/student/widgets/student_notification_bell.dart';
 import 'package:sum_academy/modules/student/views/student_quiz_attempt_view.dart';
 
 class StudentQuizzesView extends GetView<StudentQuizzesController> {
@@ -72,6 +73,9 @@ class _HeaderRow extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
           ),
+        ),
+        StudentNotificationBell(
+          iconColor: textColor.withOpacityFloat(0.75),
         ),
       ],
     );

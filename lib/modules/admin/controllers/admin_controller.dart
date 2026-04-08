@@ -25,6 +25,7 @@ class AdminController extends GetxController {
   final RxString overviewLabel = 'Dashboard'.obs;
   final RxString managementLabel = 'Users'.obs;
   final RxString paymentsLabel = 'Payments'.obs;
+  final RxString settingsLabel = 'Announcements'.obs;
   final RxBool isSearchExpanded = false.obs;
   final TextEditingController searchController = TextEditingController();
   final RxInt userFilterIndex = 0.obs;
@@ -460,6 +461,9 @@ class AdminController extends GetxController {
     if (index == 2 && !_isPaymentsLabel(paymentsLabel.value)) {
       paymentsLabel.value = 'Payments';
     }
+    if (index == 3 && !_isSettingsLabel(settingsLabel.value)) {
+      settingsLabel.value = 'Announcements';
+    }
     if (isSearchExpanded.value) {
       closeSearch();
     }
@@ -480,6 +484,12 @@ class AdminController extends GetxController {
   void setPaymentsLabel(String label) {
     if (_isPaymentsLabel(label)) {
       paymentsLabel.value = label;
+    }
+  }
+
+  void setSettingsLabel(String label) {
+    if (_isSettingsLabel(label)) {
+      settingsLabel.value = label;
     }
   }
 
@@ -1025,5 +1035,10 @@ bool _isOverviewLabel(String label) {
 
 bool _isPaymentsLabel(String label) {
   const labels = ['Payments', 'Installments'];
+  return labels.contains(label);
+}
+
+bool _isSettingsLabel(String label) {
+  const labels = ['Announcements', 'Certificates', 'Site Settings'];
   return labels.contains(label);
 }

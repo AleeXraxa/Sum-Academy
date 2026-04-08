@@ -29,7 +29,7 @@ String activeLabelForIndex(int index) {
     case 2:
       return 'Payments';
     case 3:
-      return 'Site Settings';
+      return 'Announcements';
     default:
       return 'Dashboard';
   }

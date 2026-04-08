@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/core/utils/network_error.dart';
 import 'package:sum_academy/modules/student/controllers/student_support_controller.dart';
+import 'package:sum_academy/modules/student/widgets/student_notification_bell.dart';
 
 class HelpSupportView extends GetView<StudentSupportController> {
   const HelpSupportView({super.key});
@@ -116,6 +117,9 @@ class _HeaderRow extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
           ),
+        ),
+        StudentNotificationBell(
+          iconColor: textColor.withOpacityFloat(0.75),
         ),
       ],
     );

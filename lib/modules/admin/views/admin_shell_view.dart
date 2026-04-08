@@ -5,6 +5,7 @@ import 'package:sum_academy/core/widgets/app_bootstrap_loader.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_controller.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_class_controller.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_course_controller.dart';
+import 'package:sum_academy/modules/admin/controllers/admin_announcement_controller.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_payments_controller.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_student_controller.dart';
 import 'package:sum_academy/modules/admin/controllers/admin_teacher_controller.dart';
@@ -15,6 +16,7 @@ import 'package:sum_academy/modules/admin/views/courses/admin_courses_view.dart'
 import 'package:sum_academy/modules/admin/views/dashboard/admin_dashboard_view.dart';
 import 'package:sum_academy/modules/admin/views/payments/admin_installments_view.dart';
 import 'package:sum_academy/modules/admin/views/payments/admin_payments_view.dart';
+import 'package:sum_academy/modules/admin/views/announcements/admin_announcements_view.dart';
 import 'package:sum_academy/modules/admin/views/students/admin_students_view.dart';
 import 'package:sum_academy/modules/admin/views/teachers/admin_teachers_view.dart';
 import 'package:sum_academy/modules/admin/views/users/admin_users_view.dart';
@@ -49,7 +51,7 @@ class AdminShellView extends GetView<AdminController> {
               ? controller.managementLabel.value
               : controller.navIndex.value == 2
                   ? controller.paymentsLabel.value
-                  : activeLabelForIndex(controller.navIndex.value);
+                  : controller.settingsLabel.value;
       final isBootLoading = !controller.isUsersInitialized.value ||
           !controller.isStatsInitialized.value ||
           !controller.isActivitiesInitialized.value ||
@@ -78,6 +80,8 @@ class AdminShellView extends GetView<AdminController> {
                 controller.setManagementLabel(label);
               } else if (targetIndex == 2) {
                 controller.setPaymentsLabel(label);
+              } else if (targetIndex == 3) {
+                controller.setSettingsLabel(label);
               }
               Get.back();
               controller.setNavIndex(targetIndex);
@@ -130,15 +134,12 @@ class AdminShellView extends GetView<AdminController> {
                       isDark: isDark,
                       userName: name,
                     ),
-                    AdminPlaceholderView(
+                    _SettingsShell(
                       controller: controller,
                       textColor: textColor,
                       surface: surface,
                       isDark: isDark,
                       userName: name,
-                      title: 'Settings',
-                      icon: Icons.settings_rounded,
-                      isSearchExpanded: isSearchExpanded,
                     ),
                   ],
                 ),
@@ -281,6 +282,48 @@ class _PaymentsShell extends StatelessWidget {
           surface: surface,
           isDark: isDark,
           userName: userName,
+        );
+    }
+  }
+}
+
+class _SettingsShell extends StatelessWidget {
+  final AdminController controller;
+  final Color textColor;
+  final Color surface;
+  final bool isDark;
+  final String userName;
+
+  const _SettingsShell({
+    required this.controller,
+    required this.textColor,
+    required this.surface,
+    required this.isDark,
+    required this.userName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final label = controller.settingsLabel.value;
+    switch (label) {
+      case 'Announcements':
+        return AdminAnnouncementsView(
+          controller: Get.find<AdminAnnouncementController>(),
+          textColor: textColor,
+          surface: surface,
+          isDark: isDark,
+          userName: userName,
+        );
+      default:
+        return AdminPlaceholderView(
+          controller: controller,
+          textColor: textColor,
+          surface: surface,
+          isDark: isDark,
+          userName: userName,
+          title: label,
+          icon: Icons.settings_rounded,
+          isSearchExpanded: controller.isSearchExpanded.value,
         );
     }
   }

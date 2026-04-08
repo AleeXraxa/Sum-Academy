@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/modules/admin/widgets/users/user_dialog_fields.dart';
 import 'package:sum_academy/modules/student/controllers/student_settings_controller.dart';
+import 'package:sum_academy/modules/student/widgets/student_notification_bell.dart';
 
 class StudentSettingsView extends GetView<StudentSettingsController> {
   const StudentSettingsView({super.key});
@@ -79,6 +80,10 @@ class _HeaderRow extends StatelessWidget {
                 ),
           ),
         ),
+        StudentNotificationBell(
+          iconColor: textColor.withOpacityFloat(0.75),
+        ),
+        SizedBox(width: 8.w),
         _ProfileStatus(isComplete: controller.isComplete),
       ],
     );
