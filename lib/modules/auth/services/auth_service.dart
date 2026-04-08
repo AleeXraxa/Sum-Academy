@@ -6,12 +6,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
+import 'package:sum_academy/core/services/api_client.dart';
+import 'package:sum_academy/core/services/api_exception.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
   final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final ApiClient _apiClient = ApiClient();
 
   Future<void> signIn({required String email, required String password}) async {
     final credential = await _auth.signInWithEmailAndPassword(
@@ -142,7 +145,35 @@ class AuthService {
   }
 
   Future<void> verifyOtp({required String code}) async {
-    await Future<void>.delayed(const Duration(milliseconds: 700));
+    await verifyRegisterOtp(code: code);
+  }
+
+  Future<void> sendRegisterOtp({required String email}) async {
+    if (email.trim().isEmpty) {
+      throw ApiException('Email is required.');
+    }
+    await _apiClient.post(
+      '/auth/register/send-otp',
+      body: {'email': email.trim()},
+    );
+  }
+
+  Future<void> verifyRegisterOtp({
+    required String code,
+    String? email,
+  }) async {
+    if (code.trim().isEmpty) {
+      throw ApiException('OTP code is required.');
+    }
+    final payload = {
+      'code': code.trim(),
+      'otp': code.trim(),
+      if (email != null && email.trim().isNotEmpty) 'email': email.trim(),
+    };
+    await _apiClient.post(
+      '/auth/register/verify-otp',
+      body: payload,
+    );
   }
 
   Future<void> logout() async {

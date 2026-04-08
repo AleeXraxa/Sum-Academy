@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:sum_academy/app/routes/app_routes.dart';
+import 'package:sum_academy/core/services/api_exception.dart';
 import 'package:sum_academy/core/utils/network_error.dart';
 import 'package:sum_academy/modules/admin/bindings/admin_binding.dart';
 import 'package:sum_academy/modules/admin/views/admin_shell_view.dart';
@@ -40,8 +42,25 @@ class RegisterController extends GetxController {
 
     isLoading.value = true;
     try {
-      await _authService.register(name: name, email: email, password: password);
-      await _routeByRole();
+      await _authService.sendRegisterOtp(email: email);
+      Get.toNamed(
+        AppRoutes.otp,
+        arguments: {
+          'flow': 'register',
+          'name': name,
+          'email': email,
+          'password': password,
+        },
+      );
+    } on ApiException catch (e) {
+      if (e.statusCode == 0) {
+        await _showNoInternetDialog();
+        return;
+      }
+      await showAppErrorDialog(
+        title: 'Unable to send code',
+        message: e.message,
+      );
     } on FirebaseAuthException catch (e) {
       if (e.code == 'network-request-failed') {
         await _showNoInternetDialog();
@@ -53,7 +72,7 @@ class RegisterController extends GetxController {
       );
     } catch (_) {
       await showAppErrorDialog(
-        title: 'Register failed',
+        title: 'Unable to send code',
         message: 'Please try again.',
       );
     } finally {

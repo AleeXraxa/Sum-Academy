@@ -4,9 +4,11 @@ import 'package:sum_academy/modules/admin/bindings/admin_binding.dart';
 import 'package:sum_academy/modules/admin/views/admin_shell_view.dart';
 import 'package:sum_academy/modules/auth/bindings/forgot_password_binding.dart';
 import 'package:sum_academy/modules/auth/bindings/login_binding.dart';
+import 'package:sum_academy/modules/auth/bindings/otp_binding.dart';
 import 'package:sum_academy/modules/auth/bindings/register_binding.dart';
 import 'package:sum_academy/modules/auth/views/forgot_password_view.dart';
 import 'package:sum_academy/modules/auth/views/login_view.dart';
+import 'package:sum_academy/modules/auth/views/otp_verification_view.dart';
 import 'package:sum_academy/modules/auth/views/register_view.dart';
 import 'package:sum_academy/modules/onboarding/bindings/onboarding_binding.dart';
 import 'package:sum_academy/modules/onboarding/views/onboarding_view.dart';
@@ -36,6 +38,11 @@ class AppPages {
       name: AppRoutes.register,
       page: () => const RegisterView(),
       binding: RegisterBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.otp,
+      page: () => const OtpVerificationView(),
+      binding: OtpBinding(),
     ),
     GetPage(
       name: AppRoutes.forgotPassword,

@@ -32,10 +32,9 @@ class OtpVerificationView extends GetView<OtpController> {
             ],
           ),
           SizedBox(height: 16.h),
-          const AuthHeader(
+          AuthHeader(
             title: 'Verify your code',
-            subtitle:
-                'Enter the 6-digit code we sent to your email to continue.',
+            subtitle: controller.subtitleText,
           ),
           SizedBox(height: 20.h),
           AuthCard(
@@ -90,7 +89,7 @@ class OtpVerificationView extends GetView<OtpController> {
                 Divider(color: SumAcademyTheme.brandBluePale, height: 24.h),
                 Obx(() {
                   return AuthActionButton(
-                    label: 'Verify & Continue',
+                    label: controller.actionLabel,
                     isLoading: controller.isLoading.value,
                     onPressed: controller.verify,
                     icon: Icons.verified_rounded,
@@ -101,10 +100,10 @@ class OtpVerificationView extends GetView<OtpController> {
           ),
           SizedBox(height: 12.h),
           Text(
-            'After verification, you will be taken back to sign in.',
+            controller.footerText,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: baseColor.withOpacityFloat(0.55),
-                ),
+              color: baseColor.withOpacityFloat(0.55),
+            ),
           ),
         ],
       ),
