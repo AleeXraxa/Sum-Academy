@@ -42,6 +42,7 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
   late final double _resumeFraction;
   bool _initialSeekApplied = false;
   late final void Function(BetterPlayerEvent event) _eventListener;
+  late final bool _isReplayLocked;
 
   @override
   void initState() {
@@ -50,9 +51,10 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       SecureScreenService.enable();
     });
+    _isReplayLocked =
+        widget.lecture.isCompleted && !widget.lecture.canRewatch;
     final rawProgress = widget.lecture.progress.clamp(0.0, 1.0);
-    final canReplay =
-        widget.lecture.canRewatch || !widget.lecture.lockAfterCompletion;
+    final canReplay = widget.lecture.canRewatch;
     if (widget.lecture.isCompleted && canReplay) {
       _resumeFraction = 0.0;
     } else if (widget.lecture.isCompleted) {
@@ -64,7 +66,7 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
     _lastReportedProgress = _resumeFraction * 100;
     _playerController = BetterPlayerController(
       BetterPlayerConfiguration(
-        autoPlay: true,
+        autoPlay: !_isReplayLocked,
         fit: BoxFit.contain,
         aspectRatio: 16 / 9,
         allowedScreenSleep: false,
@@ -93,6 +95,18 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
     _eventListener = _handlePlayerEvent;
     _playerController.addEventsListener(_eventListener);
     _isMarkedComplete = widget.lecture.isCompleted;
+    if (_isReplayLocked) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await showAppErrorDialog(
+          title: 'Lecture Locked',
+          message:
+              'This lecture is locked after completion. Ask admin to unlock for rewatch.',
+        );
+        if (mounted) {
+          Get.back();
+        }
+      });
+    }
   }
 
   @override
@@ -116,6 +130,7 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
   }
 
   void _handlePlayerEvent(BetterPlayerEvent event) {
+    if (_isReplayLocked) return;
     if (event.betterPlayerEventType == BetterPlayerEventType.finished) {
       _handleFinishedPlayback();
       return;
@@ -185,11 +200,18 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
     }
     final duration = value.duration ?? Duration.zero;
     final position = value.position ?? Duration.zero;
-    final durationMs = duration.inMilliseconds <= 0
-        ? 0
-        : duration.inMilliseconds;
+    final durationMs =
+        duration.inMilliseconds <= 0 ? 0 : duration.inMilliseconds;
     final positionMs = position.inMilliseconds.clamp(0, durationMs);
+    final fallbackPercent = (_playbackProgress * 100).clamp(0.0, 100.0);
     final fraction = durationMs == 0 ? 0 : positionMs / durationMs;
+    if (durationMs == 0) {
+      return (
+        percent: fallbackPercent.toDouble(),
+        currentTimeSec: 0,
+        durationSec: 0,
+      );
+    }
     return (
       percent: (fraction * 100).clamp(0.0, 100.0).toDouble(),
       currentTimeSec: positionMs / 1000,
@@ -211,13 +233,25 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
     setState(() => _isCompleting = true);
     try {
       final snapshot = _snapshot();
-      final percent = snapshot.percent;
+      var percent = snapshot.percent;
+      if (percent <= 0 && _playbackProgress > 0) {
+        percent = (_playbackProgress * 100).clamp(0.0, 100.0).toDouble();
+      }
+      if (_playbackProgress >= 0.98) {
+        percent = 100;
+      }
+      var durationSec = snapshot.durationSec;
+      var currentTimeSec = snapshot.currentTimeSec;
+      if (durationSec <= 0 && percent > 0) {
+        durationSec = 1;
+        currentTimeSec = (percent / 100).clamp(0.0, 1.0);
+      }
       await _service.markLectureComplete(
         courseId: widget.courseId,
         lectureId: widget.lecture.id,
         watchedPercent: percent,
-        currentTimeSec: snapshot.currentTimeSec,
-        durationSec: snapshot.durationSec,
+        currentTimeSec: currentTimeSec,
+        durationSec: durationSec,
       );
       if (mounted) {
         setState(() {
@@ -276,9 +310,15 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
     if (_isReportingProgress) return;
     if (_isMarkedComplete || widget.lecture.isCompleted) return;
     final snapshot = _snapshot();
-    final percent = snapshot.percent;
+    var percent = snapshot.percent;
     if (percent <= 0) return;
     if (percent <= _lastReportedProgress + 1) return;
+    var durationSec = snapshot.durationSec;
+    var currentTimeSec = snapshot.currentTimeSec;
+    if (durationSec <= 0 && percent > 0) {
+      durationSec = 1;
+      currentTimeSec = (percent / 100).clamp(0.0, 1.0);
+    }
     _isReportingProgress = true;
     _lastReportedProgress = percent;
     try {
@@ -286,8 +326,8 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
         courseId: widget.courseId,
         lectureId: widget.lecture.id,
         watchedPercent: percent,
-        currentTimeSec: snapshot.currentTimeSec,
-        durationSec: snapshot.durationSec,
+        currentTimeSec: currentTimeSec,
+        durationSec: durationSec,
       );
       widget.onCompleted?.call();
     } catch (_) {

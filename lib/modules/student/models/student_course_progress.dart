@@ -43,7 +43,7 @@ class StudentCourseProgress {
       'id',
       '_id',
     ]);
-    final progress = _normalizeProgress(
+    var progress = _normalizeProgress(
       _readDouble(source, const [
         'progress',
         'completion',
@@ -94,6 +94,9 @@ class StudentCourseProgress {
       }
       if (completedLectures == 0) {
         completedLectures = computedCompleted;
+      }
+      if (progress == 0 && totalLectures > 0 && completedLectures > 0) {
+        progress = (completedLectures / totalLectures).clamp(0.0, 1.0);
       }
     }
 
@@ -430,7 +433,10 @@ List<StudentCourseLecture> _parseLectures(
             'blocked',
           ]) ??
           false;
-      final canRewatch = unlockFlag ?? !lockAfterCompletion;
+      final canRewatch = unlockFlag ?? false;
+      if (isCompleted && lockAfterCompletion && !canRewatch) {
+        isLocked = true;
+      }
       if (accessFlag != null) {
         if (!accessFlag) {
           isLocked = true;

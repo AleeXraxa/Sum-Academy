@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:sum_academy/core/services/api_client.dart';
 import 'package:sum_academy/core/services/api_exception.dart';
 import 'package:sum_academy/modules/student/models/student_course_progress.dart';
@@ -47,6 +48,12 @@ class StudentCourseProgressService {
       'duration': durationSec,
       'durationSec': durationSec,
     };
+    if (kDebugMode) {
+      debugPrint(
+        'Lecture complete payload -> courseId=$courseId lectureId=$lectureId '
+        'body=$body',
+      );
+    }
     await _postWithFallback(
       subjectPath:
           '/student/subjects/$courseId/lectures/$lectureId/complete',
@@ -72,6 +79,12 @@ class StudentCourseProgressService {
       'duration': durationSec,
       'durationSec': durationSec,
     };
+    if (kDebugMode) {
+      debugPrint(
+        'Lecture progress payload -> courseId=$courseId lectureId=$lectureId '
+        'body=$body',
+      );
+    }
     await _patchWithFallback(
       subjectPath:
           '/student/subjects/$courseId/lectures/$lectureId/progress',

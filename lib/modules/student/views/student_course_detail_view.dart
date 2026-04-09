@@ -437,12 +437,8 @@ class _LectureCard extends StatelessWidget {
         ? lecture.progress
         : (lecture.isCompleted ? 1.0 : 0.0);
     final progressPercent = (progressValue * 100).clamp(0, 100).round();
-    final canReplay = lecture.canRewatch || !lecture.lockAfterCompletion;
-    final completionLocked =
-        lecture.isCompleted && lecture.lockAfterCompletion && !lecture.canRewatch;
-    final isLocked = lecture.isCompleted && canReplay
-        ? false
-        : (lecture.isLocked || completionLocked);
+    final completionLocked = lecture.isCompleted && !lecture.canRewatch;
+    final isLocked = lecture.isLocked || completionLocked;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
