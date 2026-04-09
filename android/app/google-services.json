@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "459097675748-ksmpf27n4tdubguv64dphbm6am224mrd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.sum_academy",
+            "certificate_hash": "a37c4cec5f08687c3d646e92bb79ca2642d4c872"
+          }
+        },
+        {
           "client_id": "459097675748-sl0n7agrpjeccmpms1fg6ondef2dmhtk.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
