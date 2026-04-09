@@ -3,6 +3,7 @@ import 'package:sum_academy/modules/auth/services/auth_service.dart';
 import 'package:sum_academy/modules/home/controllers/home_controller.dart';
 import 'package:sum_academy/modules/home/services/home_service.dart';
 import 'package:sum_academy/modules/student/controllers/student_courses_controller.dart';
+import 'package:sum_academy/modules/student/controllers/student_certificates_controller.dart';
 import 'package:sum_academy/modules/student/controllers/student_announcements_controller.dart';
 import 'package:sum_academy/modules/student/controllers/student_explore_courses_controller.dart';
 import 'package:sum_academy/modules/student/controllers/student_payments_controller.dart';
@@ -11,6 +12,7 @@ import 'package:sum_academy/modules/student/controllers/student_shell_controller
 import 'package:sum_academy/modules/student/controllers/student_settings_controller.dart';
 import 'package:sum_academy/modules/student/controllers/student_support_controller.dart';
 import 'package:sum_academy/modules/student/services/student_announcements_service.dart';
+import 'package:sum_academy/modules/student/services/student_certificates_service.dart';
 import 'package:sum_academy/modules/student/services/student_courses_service.dart';
 import 'package:sum_academy/modules/student/services/student_explore_courses_service.dart';
 import 'package:sum_academy/modules/student/services/student_payments_service.dart';
@@ -43,6 +45,17 @@ class StudentBinding extends Bindings {
     if (!Get.isRegistered<StudentCoursesController>()) {
       Get.lazyPut<StudentCoursesController>(
         () => StudentCoursesController(Get.find<StudentCoursesService>()),
+      );
+    }
+    if (!Get.isRegistered<StudentCertificatesService>()) {
+      Get.lazyPut<StudentCertificatesService>(
+        StudentCertificatesService.new,
+        fenix: true,
+      );
+    }
+    if (!Get.isRegistered<StudentCertificatesController>()) {
+      Get.lazyPut<StudentCertificatesController>(
+        () => StudentCertificatesController(Get.find<StudentCertificatesService>()),
       );
     }
     if (!Get.isRegistered<StudentAnnouncementsService>()) {
