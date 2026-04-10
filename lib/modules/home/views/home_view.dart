@@ -78,9 +78,8 @@ class _DashboardContent extends StatelessWidget {
       children: [
         _GreetingCard(
           learnerName: dashboard.learnerName,
-          learningStreakDays: dashboard.learningStreakDays,
-          learningDays: dashboard.learningDays,
           lastLoginAt: dashboard.lastLoginAt,
+          activeCourse: dashboard.activeCourse,
         ),
         if (!dashboard.isProfileComplete) ...[
           SizedBox(height: 14.h),
@@ -189,15 +188,13 @@ class _HeaderRow extends StatelessWidget {
 
 class _GreetingCard extends StatelessWidget {
   final String learnerName;
-  final int learningStreakDays;
-  final int learningDays;
   final DateTime? lastLoginAt;
+  final ActiveCourseInfo? activeCourse;
 
   const _GreetingCard({
     required this.learnerName,
-    required this.learningStreakDays,
-    required this.learningDays,
     required this.lastLoginAt,
+    required this.activeCourse,
   });
 
   @override
@@ -213,9 +210,11 @@ class _GreetingCard extends StatelessWidget {
     final greeting = _greetingForHour(now.hour);
     final name = learnerName.trim().isEmpty ? 'Learner' : learnerName.trim();
     final longDate = _formatLongDate(now);
+    final course = activeCourse;
+    final hasActiveCourse = course != null && !course.isEmpty;
 
     return Container(
-      padding: EdgeInsets.all(18.r),
+      padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 20.h),
       decoration: BoxDecoration(
         color: surface,
         borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
@@ -229,7 +228,9 @@ class _GreetingCard extends StatelessWidget {
             ),
         ],
       ),
-      child: Column(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: 132.h),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
@@ -246,25 +247,35 @@ class _GreetingCard extends StatelessWidget {
                   color: textColor.withOpacityFloat(0.65),
                 ),
           ),
-          SizedBox(height: 14.h),
-          Wrap(
-            spacing: 10.w,
-            runSpacing: 8.h,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              _InfoChip(
-                label: '$learningStreakDays day learning streak',
-                background: SumAcademyTheme.brandBluePale,
-                textColor: SumAcademyTheme.brandBlue,
-              ),
-              _InfoChip(
-                label: 'Learning days: $learningDays',
-                background: SumAcademyTheme.successLight,
-                textColor: SumAcademyTheme.success,
-              ),
-            ],
+          SizedBox(height: 12.h),
+          _HeroActionChip(
+            label: hasActiveCourse ? 'Continue Learning' : 'Explore Classes',
+            icon: hasActiveCourse
+                ? Icons.play_arrow_rounded
+                : Icons.explore_rounded,
+            onTap: () {
+              if (hasActiveCourse) {
+                Get.to(
+                  () => StudentCourseDetailView(
+                    courseId: course.courseId,
+                    title: course.title,
+                    teacher: course.teacher,
+                    progress: course.progress,
+                    nextLecture: course.nextLecture,
+                  ),
+                );
+              } else {
+                final shell = Get.isRegistered<StudentShellController>()
+                    ? Get.find<StudentShellController>()
+                    : null;
+                if (shell != null) {
+                  shell.setActiveLabel('Explore Classes');
+                }
+              }
+            },
           ),
         ],
+        ),
       ),
     );
   }
@@ -358,6 +369,7 @@ class _StudentStatsGrid extends StatelessWidget {
                 value: enrolled.toString(),
                 accent: SumAcademyTheme.brandBlue,
                 tone: SumAcademyTheme.brandBluePale,
+                icon: Icons.class_rounded,
               ),
             ),
             SizedBox(width: 12.w),
@@ -367,6 +379,7 @@ class _StudentStatsGrid extends StatelessWidget {
                 value: completed.toString(),
                 accent: SumAcademyTheme.success,
                 tone: SumAcademyTheme.successLight,
+                icon: Icons.check_circle_rounded,
               ),
             ),
           ],
@@ -380,6 +393,7 @@ class _StudentStatsGrid extends StatelessWidget {
                 value: certificates.toString(),
                 accent: SumAcademyTheme.brandBlueDark,
                 tone: SumAcademyTheme.brandBluePale,
+                icon: Icons.verified_rounded,
               ),
             ),
             SizedBox(width: 12.w),
@@ -389,6 +403,7 @@ class _StudentStatsGrid extends StatelessWidget {
                 value: learningDays.toString(),
                 accent: SumAcademyTheme.brandBlueDark,
                 tone: SumAcademyTheme.brandBluePale,
+                icon: Icons.calendar_today_rounded,
               ),
             ),
           ],
@@ -403,12 +418,14 @@ class _StatCard extends StatelessWidget {
   final String value;
   final Color accent;
   final Color tone;
+  final IconData icon;
 
   const _StatCard({
     required this.label,
     required this.value,
     required this.accent,
     required this.tone,
+    required this.icon,
   });
 
   @override
@@ -420,33 +437,55 @@ class _StatCard extends StatelessWidget {
         : SumAcademyTheme.brandBluePale;
 
     return Container(
-      padding: EdgeInsets.all(14.r),
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 16.h),
       decoration: BoxDecoration(
         color: surface,
         borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
         border: Border.all(color: border),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: SumAcademyTheme.darkBase.withOpacityFloat(0.05),
+              blurRadius: 16.r,
+              offset: Offset(0, 10.h),
+            ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-            decoration: BoxDecoration(
-              color: tone,
-              borderRadius: BorderRadius.circular(12.r),
-            ),
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: accent,
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 36.r,
+                height: 36.r,
+                decoration: BoxDecoration(
+                  color: tone,
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                alignment: Alignment.center,
+                child: Icon(icon, size: 18.sp, color: accent),
+              ),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: accent.withOpacityFloat(0.85),
+                        fontWeight: FontWeight.w600,
+                        height: 1.3,
+                      ),
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: 12.h),
+          SizedBox(height: 14.h),
           Text(
             value,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                   color: accent,
                   fontWeight: FontWeight.w700,
                 ),
@@ -536,16 +575,18 @@ class _ActiveCourseCard extends StatelessWidget {
                       ?.copyWith(
                         color: textColor,
                         fontWeight: FontWeight.w700,
+                        height: 1.25,
                       ),
                 ),
-                SizedBox(height: 6.h),
+                SizedBox(height: 10.h),
                 Text(
                   course.teacher.isEmpty ? 'Teacher' : course.teacher,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: textColor.withOpacityFloat(0.62),
+                        height: 1.35,
                       ),
                 ),
-                SizedBox(height: 14.h),
+                SizedBox(height: 18.h),
                 Row(
                   children: [
                     Expanded(
@@ -561,15 +602,17 @@ class _ActiveCourseCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    SizedBox(width: 10.w),
+                    SizedBox(width: 12.w),
                     Container(
                       padding: EdgeInsets.symmetric(
-                        horizontal: 10.w,
-                        vertical: 4.h,
+                        horizontal: 12.w,
+                        vertical: 6.h,
                       ),
                       decoration: BoxDecoration(
                         color: SumAcademyTheme.brandBluePale,
-                        borderRadius: BorderRadius.circular(12.r),
+                        borderRadius: BorderRadius.circular(
+                          SumAcademyTheme.radiusButton.r,
+                        ),
                       ),
                       child: Text(
                         '$progressPercent%',
@@ -581,7 +624,7 @@ class _ActiveCourseCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                SizedBox(height: 12.h),
+                SizedBox(height: 16.h),
                 Row(
                   children: [
                     Icon(
@@ -597,12 +640,13 @@ class _ActiveCourseCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: textColor.withOpacityFloat(0.7),
+                              height: 1.4,
                             ),
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: 14.h),
+                SizedBox(height: 18.h),
                 Align(
                   alignment: Alignment.center,
                   child: ConstrainedBox(
@@ -633,10 +677,12 @@ class _ActiveCourseCard extends StatelessWidget {
                         foregroundColor: SumAcademyTheme.white,
                         padding: EdgeInsets.symmetric(
                           horizontal: 18.w,
-                          vertical: 10.h,
+                          vertical: 12.h,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(22.r),
+                          borderRadius: BorderRadius.circular(
+                            SumAcademyTheme.radiusButton.r,
+                          ),
                         ),
                         elevation: 0,
                       ),
@@ -673,11 +719,19 @@ class _ActiveCourseEmptyState extends StatelessWidget {
         isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
 
     return Container(
-      padding: EdgeInsets.all(16.r),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 18.h),
       decoration: BoxDecoration(
         color: surface,
         borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
         border: Border.all(color: border),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: SumAcademyTheme.darkBase.withOpacityFloat(0.05),
+              blurRadius: 14.r,
+              offset: Offset(0, 8.h),
+            ),
+        ],
       ),
       child: Row(
         children: [
@@ -778,7 +832,7 @@ class _RecentCourseCard extends StatelessWidget {
     final progressPercent = (course.progress * 100).clamp(0, 100).round();
 
     return Container(
-      padding: EdgeInsets.all(14.r),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         color: surface,
         borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
@@ -787,11 +841,11 @@ class _RecentCourseCard extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 56.r,
-            height: 56.r,
+            width: 60.r,
+            height: 60.r,
             decoration: BoxDecoration(
               color: course.accent.withOpacityFloat(0.16),
-              borderRadius: BorderRadius.circular(16.r),
+              borderRadius: BorderRadius.circular(18.r),
             ),
             alignment: Alignment.center,
             child: Icon(
@@ -799,7 +853,7 @@ class _RecentCourseCard extends StatelessWidget {
               color: course.accent,
             ),
           ),
-          SizedBox(width: 12.w),
+          SizedBox(width: 14.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -811,16 +865,18 @@ class _RecentCourseCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         color: textColor,
                         fontWeight: FontWeight.w600,
+                        height: 1.25,
                       ),
                 ),
-                SizedBox(height: 4.h),
+                SizedBox(height: 8.h),
                 Text(
                   course.subtitle.isEmpty ? 'In progress' : course.subtitle,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: textColor.withOpacityFloat(0.6),
+                        height: 1.4,
                       ),
                 ),
-                SizedBox(height: 8.h),
+                SizedBox(height: 12.h),
                 Row(
                   children: [
                     Expanded(
@@ -834,12 +890,25 @@ class _RecentCourseCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    SizedBox(width: 8.w),
-                    Text(
-                      '$progressPercent%',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: textColor.withOpacityFloat(0.7),
-                          ),
+                    SizedBox(width: 10.w),
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10.w,
+                        vertical: 5.h,
+                      ),
+                      decoration: BoxDecoration(
+                        color: course.accent.withOpacityFloat(0.12),
+                        borderRadius: BorderRadius.circular(
+                          SumAcademyTheme.radiusButton.r,
+                        ),
+                      ),
+                      child: Text(
+                        '$progressPercent%',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: course.accent,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
                     ),
                   ],
                 ),
@@ -866,25 +935,89 @@ class _EmptyCoursesCard extends StatelessWidget {
         isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
 
     return Container(
-      padding: EdgeInsets.all(16.r),
+      padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 20.h),
       decoration: BoxDecoration(
         color: surface,
         borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
         border: Border.all(color: border),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: SumAcademyTheme.darkBase.withOpacityFloat(0.05),
+              blurRadius: 16.r,
+              offset: Offset(0, 10.h),
+            ),
+        ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.menu_book_rounded,
-            color: SumAcademyTheme.brandBlue,
-          ),
-          SizedBox(width: 10.w),
-          Expanded(
-            child: Text(
-              'No courses yet. Enroll to see your progress here.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: textColor.withOpacityFloat(0.7),
+          Row(
+            children: [
+              Container(
+                width: 58.r,
+                height: 58.r,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      SumAcademyTheme.brandBluePale,
+                      SumAcademyTheme.brandBlueLight.withOpacityFloat(0.45),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
+                  borderRadius: BorderRadius.circular(20.r),
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  Icons.school_rounded,
+                  color: SumAcademyTheme.brandBlue,
+                  size: 28.sp,
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Text(
+                  'No classes enrolled yet.',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: textColor,
+                        fontWeight: FontWeight.w600,
+                        height: 1.25,
+                      ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 10.h),
+          Text(
+            'Explore classes to start learning and track your progress here.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: textColor.withOpacityFloat(0.7),
+                  height: 1.45,
+                ),
+          ),
+          SizedBox(height: 16.h),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                final shell = Get.isRegistered<StudentShellController>()
+                    ? Get.find<StudentShellController>()
+                    : null;
+                if (shell != null) {
+                  shell.setActiveLabel('Explore Classes');
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: SumAcademyTheme.brandBlue,
+                foregroundColor: SumAcademyTheme.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius:
+                      BorderRadius.circular(SumAcademyTheme.radiusButton.r),
+                ),
+                padding: EdgeInsets.symmetric(vertical: 12.h),
+              ),
+              child: const Text('Explore Classes'),
             ),
           ),
         ],
@@ -907,10 +1040,11 @@ class _InfoChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      constraints: BoxConstraints(minHeight: 32.h),
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(24.r),
+        borderRadius: BorderRadius.circular(SumAcademyTheme.radiusButton.r),
       ),
       child: Text(
         label,
@@ -918,6 +1052,53 @@ class _InfoChip extends StatelessWidget {
               color: textColor,
               fontWeight: FontWeight.w600,
             ),
+      ),
+    );
+  }
+}
+
+class _HeroActionChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _HeroActionChip({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(SumAcademyTheme.radiusButton.r),
+        child: Container(
+          constraints: BoxConstraints(minHeight: 32.h),
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
+          decoration: BoxDecoration(
+            color: SumAcademyTheme.brandBluePale,
+            borderRadius:
+                BorderRadius.circular(SumAcademyTheme.radiusButton.r),
+            border: Border.all(color: SumAcademyTheme.brandBlueLight),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: SumAcademyTheme.brandBlue, size: 16.sp),
+              SizedBox(width: 6.w),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: SumAcademyTheme.brandBlue,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

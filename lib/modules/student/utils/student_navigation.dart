@@ -1,9 +1,11 @@
 const List<String> studentNavItems = [
   'Dashboard',
+  'Live Session',
   'My Classes',
   'Explore Classes',
   'My Certificates',
   'Quizzes',
+  'Tests',
   'Payments',
   'Announcements',
   'Help and Support',

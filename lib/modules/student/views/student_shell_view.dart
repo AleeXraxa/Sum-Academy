@@ -31,10 +31,20 @@ class StudentShellView extends GetView<StudentShellController> {
       final isBootLoading = homeController.isLoading.value;
       final pages = <Widget>[
         const HomeDashboardContent(),
+        const StudentPlaceholderView(
+          title: 'Live Session',
+          icon: Icons.videocam_rounded,
+          subtitle: 'Your live classes will appear here.',
+        ),
         const MyCoursesView(),
         const ExploreCoursesView(),
         const StudentCertificatesView(),
         const StudentQuizzesView(),
+        const StudentPlaceholderView(
+          title: 'Tests',
+          icon: Icons.fact_check_rounded,
+          subtitle: 'Practice tests and assignments will appear here.',
+        ),
         const StudentPaymentsView(),
         const StudentAnnouncementsView(),
         const HelpSupportView(),

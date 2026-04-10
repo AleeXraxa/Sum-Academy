@@ -7,8 +7,20 @@ class StudentSupportService {
   final ApiClient _client;
 
   Future<StudentSupportInfo> fetchSupportInfo() async {
-    final response = await _client.get('/student/settings', auth: true);
-    final data = response['data'] ?? response;
-    return StudentSupportInfo.fromAny(data);
+    try {
+      final response = await _client.get('/settings');
+      final data = response['data'] ?? response;
+      final scoped = data is Map<String, dynamic>
+          ? (data['contact'] ?? data['support'] ?? data)
+          : data;
+      return StudentSupportInfo.fromAny(scoped);
+    } catch (_) {
+      final response = await _client.get('/student/settings', auth: true);
+      final data = response['data'] ?? response;
+      final scoped = data is Map<String, dynamic>
+          ? (data['contact'] ?? data['support'] ?? data)
+          : data;
+      return StudentSupportInfo.fromAny(scoped);
+    }
   }
 }

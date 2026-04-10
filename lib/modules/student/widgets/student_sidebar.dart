@@ -59,10 +59,12 @@ class StudentSidebar extends StatelessWidget {
                     SizedBox(height: 6.h),
                     ...section.items.map((item) {
                       final isActive = item.label == activeItem;
+                      final isHighlighted = item.label == 'Live Session';
                       return _SidebarItemTile(
                         item: item,
                         color: textColor,
                         isActive: isActive,
+                        isHighlighted: isHighlighted,
                         onTap: () => onItemSelected?.call(item.label),
                       );
                     }),
@@ -110,10 +112,12 @@ List<_SidebarSection> _buildSections() {
   const learning = _SidebarSection(
     title: 'Learning',
     items: [
+      _SidebarItem(label: 'Live Session', icon: Icons.videocam_rounded),
       _SidebarItem(label: 'My Classes', icon: Icons.menu_book_rounded),
       _SidebarItem(label: 'Explore Classes', icon: Icons.explore_rounded),
       _SidebarItem(label: 'My Certificates', icon: Icons.verified_rounded),
       _SidebarItem(label: 'Quizzes', icon: Icons.quiz_rounded),
+      _SidebarItem(label: 'Tests', icon: Icons.fact_check_rounded),
     ],
   );
 
@@ -166,11 +170,13 @@ class _SidebarItemTile extends StatelessWidget {
   final Color color;
   final bool isActive;
   final VoidCallback? onTap;
+  final bool isHighlighted;
 
   const _SidebarItemTile({
     required this.item,
     required this.color,
     this.isActive = false,
+    this.isHighlighted = false,
     this.onTap,
   });
 
@@ -180,6 +186,14 @@ class _SidebarItemTile extends StatelessWidget {
     final activeBorder = SumAcademyTheme.brandBlueLight.withOpacityFloat(0.35);
     final activeText = SumAcademyTheme.white;
     final activeIcon = SumAcademyTheme.brandBlueLight;
+    final highlightBg =
+        SumAcademyTheme.brandBlue.withOpacityFloat(isActive ? 0.26 : 0.18);
+    final highlightBorder =
+        SumAcademyTheme.brandBlueLight.withOpacityFloat(0.6);
+    final highlightIcon =
+        isActive ? SumAcademyTheme.white : SumAcademyTheme.brandBlueLight;
+    final highlightText =
+        isActive ? SumAcademyTheme.white : SumAcademyTheme.white;
 
     return InkWell(
       borderRadius: BorderRadius.circular(14.r),
@@ -187,23 +201,33 @@ class _SidebarItemTile extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
         decoration: BoxDecoration(
-          color: isActive ? activeBg : Colors.transparent,
+          color: isHighlighted
+              ? highlightBg
+              : (isActive ? activeBg : Colors.transparent),
           borderRadius: BorderRadius.circular(14.r),
-          border: isActive ? Border.all(color: activeBorder) : null,
+          border: isHighlighted
+              ? Border.all(color: highlightBorder)
+              : (isActive ? Border.all(color: activeBorder) : null),
         ),
         child: Row(
           children: [
             Icon(
               item.icon,
-              color: isActive ? activeIcon : color,
+              color: isHighlighted
+                  ? highlightIcon
+                  : (isActive ? activeIcon : color),
               size: 20.sp,
             ),
             SizedBox(width: 12.w),
             Text(
               item.label,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: isActive ? activeText : color,
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                    color: isHighlighted
+                        ? highlightText
+                        : (isActive ? activeText : color),
+                    fontWeight: (isActive || isHighlighted)
+                        ? FontWeight.w600
+                        : FontWeight.w500,
                   ),
             ),
           ],

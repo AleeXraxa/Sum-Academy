@@ -22,12 +22,19 @@ class StudentSupportInfo {
     if (data is Map<String, dynamic>) {
       final email = _readString(data, const [
         'supportEmail',
+        'contactEmail',
+        'contact_email',
         'email',
         'contactEmail',
         'support_email',
       ]);
       final whatsapp = _readString(data, const [
         'whatsapp',
+        'whatsApp',
+        'whatsappNumber',
+        'whatsappNo',
+        'contactWhatsapp',
+        'contact_whatsapp',
         'whatsappNumber',
         'supportWhatsapp',
         'support_whatsapp',
@@ -35,6 +42,9 @@ class StudentSupportInfo {
       final phone = _readString(data, const [
         'phone',
         'phoneNumber',
+        'contactPhone',
+        'contactNumber',
+        'supportNumber',
         'supportPhone',
         'support_phone',
       ]);
@@ -42,6 +52,8 @@ class StudentSupportInfo {
         'officeHours',
         'workingHours',
         'supportHours',
+        'hours',
+        'office_hours',
         'office_hours',
       ]);
 

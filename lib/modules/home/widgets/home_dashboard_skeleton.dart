@@ -18,13 +18,11 @@ class HomeDashboardSkeleton extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SkeletonLine(width: 160.w, height: 16.h, color: base),
-        SizedBox(height: 14.h),
         _SkeletonCard(
           base: base,
           cardColor: cardColor,
           borderColor: borderColor,
-          height: 120.h,
+          height: 132.h,
         ),
         SizedBox(height: 16.h),
         GridView.builder(
@@ -93,7 +91,7 @@ class _SkeletonCard extends StatelessWidget {
       padding: EdgeInsets.all(14.r),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(18.r),
+        borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
         border: Border.all(color: borderColor),
       ),
       child: Column(
