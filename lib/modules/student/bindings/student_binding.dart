@@ -6,6 +6,7 @@ import 'package:sum_academy/modules/student/controllers/student_courses_controll
 import 'package:sum_academy/modules/student/controllers/student_certificates_controller.dart';
 import 'package:sum_academy/modules/student/controllers/student_announcements_controller.dart';
 import 'package:sum_academy/modules/student/controllers/student_explore_courses_controller.dart';
+import 'package:sum_academy/modules/student/controllers/student_live_sessions_controller.dart';
 import 'package:sum_academy/modules/student/controllers/student_payments_controller.dart';
 import 'package:sum_academy/modules/student/controllers/student_quizzes_controller.dart';
 import 'package:sum_academy/modules/student/controllers/student_shell_controller.dart';
@@ -45,6 +46,11 @@ class StudentBinding extends Bindings {
     if (!Get.isRegistered<StudentCoursesController>()) {
       Get.lazyPut<StudentCoursesController>(
         () => StudentCoursesController(Get.find<StudentCoursesService>()),
+      );
+    }
+    if (!Get.isRegistered<StudentLiveSessionsController>()) {
+      Get.lazyPut<StudentLiveSessionsController>(
+        StudentLiveSessionsController.new,
       );
     }
     if (!Get.isRegistered<StudentCertificatesService>()) {

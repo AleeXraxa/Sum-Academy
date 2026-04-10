@@ -129,6 +129,9 @@ class StudentCourseLecture {
   final String videoUrl;
   final String videoMode;
   final bool isLiveSession;
+  final DateTime? joinOpensAt;
+  final DateTime? startsAt;
+  final DateTime? endsAt;
   final bool isLocked;
   final bool canRewatch;
   final bool lockAfterCompletion;
@@ -143,11 +146,30 @@ class StudentCourseLecture {
     required this.videoUrl,
     required this.videoMode,
     required this.isLiveSession,
+    this.joinOpensAt,
+    this.startsAt,
+    this.endsAt,
     required this.isLocked,
     required this.canRewatch,
     required this.lockAfterCompletion,
     required this.lockReason,
   });
+
+  bool get shouldShowInLiveSessionsTab {
+    if (!isLiveSession) return false;
+    final end = endsAt;
+    if (end == null) return true;
+    return end.isAfter(DateTime.now());
+  }
+
+  bool get isCurrentlyLive {
+    if (!isLiveSession) return false;
+    final now = DateTime.now();
+    final start = startsAt;
+    final end = endsAt;
+    if (start == null || end == null) return false;
+    return now.isAfter(start) && now.isBefore(end);
+  }
 }
 
 List<StudentCourseChapter> _parseChapters(Map<String, dynamic> source) {
@@ -354,6 +376,48 @@ List<StudentCourseLecture> _parseLectures(
             'live',
           ]) ??
           false;
+      final scheduleMap = _readMap(lectureMap, const [
+        'liveSession',
+        'schedule',
+        'session',
+        'live',
+      ]);
+      final joinOpensAt = _readDateTime(lectureMap, const [
+            'joinOpensAt',
+            'joinOpenAt',
+            'joinOpens',
+          ]) ??
+          (scheduleMap == null
+              ? null
+              : _readDateTime(scheduleMap, const [
+                  'joinOpensAt',
+                  'joinOpenAt',
+                  'joinOpens',
+                ]));
+      final startsAt = _readDateTime(lectureMap, const [
+            'startsAt',
+            'startAt',
+            'startTime',
+          ]) ??
+          (scheduleMap == null
+              ? null
+              : _readDateTime(scheduleMap, const [
+                  'startsAt',
+                  'startAt',
+                  'startTime',
+                ]));
+      final endsAt = _readDateTime(lectureMap, const [
+            'endsAt',
+            'endAt',
+            'endTime',
+          ]) ??
+          (scheduleMap == null
+              ? null
+              : _readDateTime(scheduleMap, const [
+                  'endsAt',
+                  'endAt',
+                  'endTime',
+                ]));
       final lockReason = _readString(lectureMap, const [
         'lockReason',
         'lockedReason',
@@ -460,6 +524,9 @@ List<StudentCourseLecture> _parseLectures(
           videoUrl: videoUrl,
           videoMode: videoMode,
           isLiveSession: isLiveSession,
+          joinOpensAt: joinOpensAt,
+          startsAt: startsAt,
+          endsAt: endsAt,
           isLocked: isLocked,
           canRewatch: canRewatch,
           lockAfterCompletion: lockAfterCompletion,
@@ -481,6 +548,9 @@ List<StudentCourseLecture> _parseLectures(
           videoUrl: '',
           videoMode: '',
           isLiveSession: false,
+          joinOpensAt: null,
+          startsAt: null,
+          endsAt: null,
           isLocked: false,
           canRewatch: false,
           lockAfterCompletion: true,
@@ -535,6 +605,36 @@ double _readDouble(Map<String, dynamic> map, List<String> keys) {
     }
   }
   return 0;
+}
+
+DateTime? _readDateTime(Map<String, dynamic> map, List<String> keys) {
+  for (final key in keys) {
+    final value = map[key];
+    if (value == null) continue;
+    if (value is DateTime) return value;
+    if (value is String) {
+      final parsed = DateTime.tryParse(value.trim());
+      if (parsed != null) return parsed;
+    }
+    if (value is int) {
+      if (value > 100000000000) {
+        return DateTime.fromMillisecondsSinceEpoch(value);
+      }
+      if (value > 1000000000) {
+        return DateTime.fromMillisecondsSinceEpoch(value * 1000);
+      }
+    }
+    if (value is num) {
+      final intValue = value.toInt();
+      if (intValue > 100000000000) {
+        return DateTime.fromMillisecondsSinceEpoch(intValue);
+      }
+      if (intValue > 1000000000) {
+        return DateTime.fromMillisecondsSinceEpoch(intValue * 1000);
+      }
+    }
+  }
+  return null;
 }
 
 bool? _readBool(Map<String, dynamic>? map, List<String> keys) {

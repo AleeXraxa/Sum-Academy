@@ -435,6 +435,10 @@ class _ChapterCard extends StatelessWidget {
     final surface = isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white;
     final border =
         isDark ? SumAcademyTheme.darkBorder : SumAcademyTheme.brandBluePale;
+    final visibleLectures = chapter.lectures
+        .where((lecture) => !lecture.shouldShowInLiveSessionsTab)
+        .toList();
+
     return Container(
       decoration: BoxDecoration(
         color: surface,
@@ -476,7 +480,7 @@ class _ChapterCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14.r),
                 ),
                 child: Text(
-                  '${chapter.lectures.length} lectures',
+                  '${visibleLectures.length} lectures',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: SumAcademyTheme.brandBlue,
                         fontWeight: FontWeight.w600,
@@ -485,27 +489,50 @@ class _ChapterCard extends StatelessWidget {
               ),
             ],
           ),
-          children: chapter.lectures
-              .map(
-                (lecture) => Padding(
-                  padding: EdgeInsets.only(bottom: 10.h),
-                  child: _LectureCard(
-                    lecture: lecture,
-                    onPlay: lecture.videoUrl.isEmpty
-                        ? null
-                        : () {
-                            Get.to(
-                              () => StudentCourseVideoView(
-                                courseId: courseId,
-                                lecture: lecture,
-                                onCompleted: onRefresh,
-                              ),
-                            );
-                          },
+          children: visibleLectures.isEmpty
+              ? [
+                  Padding(
+                    padding: EdgeInsets.only(bottom: 8.h),
+                    child: Container(
+                      width: double.infinity,
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+                      decoration: BoxDecoration(
+                        color: SumAcademyTheme.brandBluePale,
+                        borderRadius: BorderRadius.circular(16.r),
+                      ),
+                      child: Text(
+                        'Live sessions for this chapter appear in the Live Session tab.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: SumAcademyTheme.brandBlue,
+                              fontWeight: FontWeight.w600,
+                              height: 1.3,
+                            ),
+                      ),
+                    ),
                   ),
-                ),
-              )
-              .toList(),
+                ]
+              : visibleLectures
+                  .map(
+                    (lecture) => Padding(
+                      padding: EdgeInsets.only(bottom: 10.h),
+                      child: _LectureCard(
+                        lecture: lecture,
+                        onPlay: lecture.videoUrl.isEmpty
+                            ? null
+                            : () {
+                                Get.to(
+                                  () => StudentCourseVideoView(
+                                    courseId: courseId,
+                                    lecture: lecture,
+                                    onCompleted: onRefresh,
+                                  ),
+                                );
+                              },
+                      ),
+                    ),
+                  )
+                  .toList(),
         ),
       ),
     );
@@ -873,6 +900,9 @@ class _ContentSkeleton extends StatelessWidget {
 StudentCourseLecture? _findNextLecture(StudentCourseProgress progress) {
   for (final chapter in progress.chapters) {
     for (final lecture in chapter.lectures) {
+      if (lecture.shouldShowInLiveSessionsTab) {
+        continue;
+      }
       if (!lecture.isCompleted) {
         return lecture;
       }

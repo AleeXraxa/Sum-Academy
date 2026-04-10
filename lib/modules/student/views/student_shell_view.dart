@@ -13,6 +13,7 @@ import 'package:sum_academy/modules/student/views/help_support_view.dart';
 import 'package:sum_academy/modules/student/views/my_courses_view.dart';
 import 'package:sum_academy/modules/student/views/student_announcements_view.dart';
 import 'package:sum_academy/modules/student/views/student_certificates_view.dart';
+import 'package:sum_academy/modules/student/views/student_live_sessions_view.dart';
 import 'package:sum_academy/modules/student/views/student_payments_view.dart';
 import 'package:sum_academy/modules/student/views/student_placeholder_view.dart';
 import 'package:sum_academy/modules/student/views/student_quizzes_view.dart';
@@ -31,11 +32,7 @@ class StudentShellView extends GetView<StudentShellController> {
       final isBootLoading = homeController.isLoading.value;
       final pages = <Widget>[
         const HomeDashboardContent(),
-        const StudentPlaceholderView(
-          title: 'Live Session',
-          icon: Icons.videocam_rounded,
-          subtitle: 'Your live classes will appear here.',
-        ),
+        const StudentLiveSessionsView(),
         const MyCoursesView(),
         const ExploreCoursesView(),
         const StudentCertificatesView(),
