@@ -30,7 +30,9 @@ class ExploreCoursesView extends GetView<StudentExploreCoursesController> {
           ),
           children: [
             _HeaderRow(textColor: textColor),
-            SizedBox(height: 18.h),
+            SizedBox(height: 6.h),
+            _HeaderSubtitle(textColor: textColor),
+            SizedBox(height: 16.h),
             _SearchField(controller: controller),
             SizedBox(height: 14.h),
             _FilterChips(controller: controller),
@@ -118,6 +120,23 @@ class _HeaderRow extends StatelessWidget {
   }
 }
 
+class _HeaderSubtitle extends StatelessWidget {
+  final Color textColor;
+
+  const _HeaderSubtitle({required this.textColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      'Pick a class or subject to start learning.',
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: textColor.withOpacityFloat(0.65),
+            height: 1.4,
+          ),
+    );
+  }
+}
+
 class _SearchField extends StatelessWidget {
   final StudentExploreCoursesController controller;
 
@@ -125,11 +144,17 @@ class _SearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return TextField(
       controller: controller.searchController,
       decoration: InputDecoration(
         hintText: 'Search class, batch, teacher, or subject...',
         prefixIcon: Icon(Icons.search, size: 20.sp),
+        filled: true,
+        fillColor: isDark
+            ? SumAcademyTheme.darkSurface
+            : SumAcademyTheme.white,
+        contentPadding: EdgeInsets.symmetric(vertical: 14.h),
       ),
     );
   }
@@ -146,14 +171,25 @@ void _showSubjectPicker(BuildContext context, StudentExploreCourse course) {
     return;
   }
 
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final sheetColor =
+      isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white;
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    backgroundColor: SumAcademyTheme.white,
+    backgroundColor: sheetColor,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(22.r)),
     ),
     builder: (context) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      final textColor =
+          isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
+      final cardColor = isDark
+          ? SumAcademyTheme.darkBase.withOpacityFloat(0.25)
+          : SumAcademyTheme.surfaceSecondary;
+      final borderColor =
+          isDark ? SumAcademyTheme.darkBorder : SumAcademyTheme.brandBluePale;
       return Padding(
         padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 28.h),
         child: Column(
@@ -163,7 +199,7 @@ void _showSubjectPicker(BuildContext context, StudentExploreCourse course) {
             Text(
               'Choose Individual Subject',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: SumAcademyTheme.darkBase,
+                    color: textColor,
                     fontWeight: FontWeight.w700,
                   ),
             ),
@@ -176,9 +212,9 @@ void _showSubjectPicker(BuildContext context, StudentExploreCourse course) {
                 margin: EdgeInsets.only(bottom: 10.h),
                 padding: EdgeInsets.all(12.r),
                 decoration: BoxDecoration(
-                  color: SumAcademyTheme.surfaceSecondary,
+                  color: cardColor,
                   borderRadius: BorderRadius.circular(16.r),
-                  border: Border.all(color: SumAcademyTheme.brandBluePale),
+                  border: Border.all(color: borderColor),
                 ),
                 child: Row(
                   children: [
@@ -189,7 +225,7 @@ void _showSubjectPicker(BuildContext context, StudentExploreCourse course) {
                           Text(
                             subject.title,
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: SumAcademyTheme.darkBase,
+                                  color: textColor,
                                   fontWeight: FontWeight.w600,
                                 ),
                           ),
@@ -198,8 +234,7 @@ void _showSubjectPicker(BuildContext context, StudentExploreCourse course) {
                             Text(
                               _formatPkr(price),
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color:
-                                        SumAcademyTheme.darkBase.withOpacityFloat(0.6),
+                                    color: textColor.withOpacityFloat(0.6),
                                   ),
                             ),
                           ],
@@ -283,7 +318,7 @@ class _EmptyState extends StatelessWidget {
         isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
 
     return Container(
-      padding: EdgeInsets.all(16.r),
+      padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 18.h),
       decoration: BoxDecoration(
         color: isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white,
         borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
@@ -292,17 +327,52 @@ class _EmptyState extends StatelessWidget {
               ? SumAcademyTheme.darkBorder
               : SumAcademyTheme.brandBluePale,
         ),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: SumAcademyTheme.darkBase.withOpacityFloat(0.05),
+              blurRadius: 16.r,
+              offset: Offset(0, 10.h),
+            ),
+        ],
       ),
       child: Row(
         children: [
-          Icon(Icons.menu_book_rounded, color: SumAcademyTheme.brandBlue),
+          Container(
+            width: 52.r,
+            height: 52.r,
+            decoration: BoxDecoration(
+              color: SumAcademyTheme.brandBluePale,
+              borderRadius: BorderRadius.circular(16.r),
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              Icons.menu_book_rounded,
+              color: SumAcademyTheme.brandBlue,
+              size: 26.sp,
+            ),
+          ),
           SizedBox(width: 12.w),
           Expanded(
-            child: Text(
-              'No classes available yet. Please check back soon.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: textColor.withOpacityFloat(0.7),
-                  ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'No classes available',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: textColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  'Try adjusting your search or filters and check back soon.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: textColor.withOpacityFloat(0.7),
+                        height: 1.4,
+                      ),
+                ),
+              ],
             ),
           ),
         ],
