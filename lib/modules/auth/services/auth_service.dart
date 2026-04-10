@@ -329,51 +329,112 @@ class AuthService {
       return;
     }
 
-    final storedDevice = _readField(
+    final storedDeviceId = _readField(
       data,
-      ['assignedMobileDevice', 'assignedDevice', 'lastDevice'],
+      [
+        'assignedDeviceId',
+        'assignedMobileDeviceId',
+        'lastDeviceId',
+        'deviceId',
+      ],
     );
-    final storedIp = _readField(
-      data,
-      ['lastKnownMobileIp', 'assignedMobileIp', 'lastKnownIP'],
-    );
-    if (storedDevice.isEmpty || storedIp.isEmpty) {
+    if (storedDeviceId.isEmpty) {
       return;
     }
 
-    final currentDevice = await _resolveDeviceLabel();
-    final currentIp = await _fetchPublicIp();
-    if (currentIp.isEmpty) {
-      throw FirebaseAuthException(
-        code: 'ip-check-failed',
-        message: 'Unable to verify your network. Please try again.',
-      );
+    final currentDeviceId = await _resolveDeviceId();
+    if (currentDeviceId.isEmpty) {
+      return;
     }
 
-    final deviceMatches =
-        _normalizeDevice(storedDevice) == _normalizeDevice(currentDevice);
-    final ipMatches = storedIp.trim() == currentIp.trim();
-    if (!deviceMatches || !ipMatches) {
+    final deviceMatches = _normalizeDevice(storedDeviceId) ==
+        _normalizeDevice(currentDeviceId);
+    if (!deviceMatches) {
       await logout();
       throw FirebaseAuthException(
-        code: 'device-ip-mismatch',
-        message: 'DEVICE_IP_MISMATCH',
+        code: 'device-mismatch',
+        message: 'DEVICE_MISMATCH',
       );
     }
   }
 
   Future<Map<String, dynamic>> _buildLastSeenPayload() async {
     final deviceLabel = await _resolveDeviceLabel();
-    final ipAddress = await _fetchPublicIp();
-    final lastKnownMobileIp = kIsWeb ? '' : ipAddress;
-    final lastKnownWebIp = kIsWeb ? ipAddress : '';
+    final deviceId = await _resolveDeviceId();
 
     return {
       'assignedMobileDevice': deviceLabel,
-      'lastKnownMobileIp': lastKnownMobileIp,
-      'lastKnownWebIp': lastKnownWebIp,
+      'assignedDeviceId': deviceId,
+      'lastDeviceId': deviceId,
       'lastLoginAt': FieldValue.serverTimestamp(),
     };
+  }
+
+  Future<String> _resolveDeviceId() async {
+    if (kIsWeb) {
+      return '';
+    }
+
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        try {
+          final android = await _deviceInfo.androidInfo;
+          final fingerprint = android.fingerprint.trim();
+          if (fingerprint.isNotEmpty) {
+            return fingerprint;
+          }
+          final serial = android.serialNumber.trim();
+          if (serial.isNotEmpty && serial.toLowerCase() != 'unknown') {
+            return serial;
+          }
+          final buildId = android.id.trim();
+          if (buildId.isNotEmpty) {
+            return buildId;
+          }
+          final fallback = _joinNonEmpty([android.manufacturer, android.model]);
+          return fallback;
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('Device id (android) failed: $e');
+          }
+          return '';
+        }
+      case TargetPlatform.iOS:
+        try {
+          final ios = await _deviceInfo.iosInfo;
+          final vendorId = ios.identifierForVendor ?? '';
+          return vendorId.trim();
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('Device id (ios) failed: $e');
+          }
+          return '';
+        }
+      case TargetPlatform.windows:
+        try {
+          final windows = await _deviceInfo.windowsInfo;
+          return windows.deviceId.trim();
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('Device id (windows) failed: $e');
+          }
+          return '';
+        }
+      case TargetPlatform.macOS:
+        try {
+          final mac = await _deviceInfo.macOsInfo;
+          return mac.systemGUID?.trim() ?? '';
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('Device id (mac) failed: $e');
+          }
+          return '';
+        }
+      case TargetPlatform.linux:
+        return '';
+      default:
+        return '';
+    }
   }
 
   Future<String> _resolveDeviceLabel() async {

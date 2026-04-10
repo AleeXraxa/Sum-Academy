@@ -46,7 +46,7 @@ class LoginController extends GetxController {
         await _showNoInternetDialog();
         return;
       }
-      if (e.code == 'device-ip-mismatch') {
+      if (e.code == 'device-ip-mismatch' || e.code == 'device-mismatch') {
         final dialogContext = Get.context ?? Get.key.currentContext;
         if (dialogContext != null) {
           await showDeviceBlockedDialog(dialogContext);
@@ -82,7 +82,7 @@ class LoginController extends GetxController {
         await _showNoInternetDialog();
         return;
       }
-      if (e.code == 'device-ip-mismatch') {
+      if (e.code == 'device-ip-mismatch' || e.code == 'device-mismatch') {
         final dialogContext = Get.context ?? Get.key.currentContext;
         if (dialogContext != null) {
           await showDeviceBlockedDialog(dialogContext);
@@ -116,9 +116,10 @@ class LoginController extends GetxController {
       case 'credential-already-in-use':
         return 'This email is linked to a different sign-in method.';
       case 'device-ip-mismatch':
-        return 'Access denied. Your device or IP does not match the registered device.';
+      case 'device-mismatch':
+        return 'Access denied. This account is locked to another device.';
       case 'ip-check-failed':
-        return 'Unable to verify your network. Please try again.';
+        return 'Unable to verify your device. Please try again.';
       case 'too-many-requests':
         return 'Too many attempts. Please try again later.';
       default:
