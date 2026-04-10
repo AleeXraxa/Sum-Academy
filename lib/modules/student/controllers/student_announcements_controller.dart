@@ -22,6 +22,7 @@ class StudentAnnouncementsController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxString errorMessage = ''.obs;
   final RxInt filterIndex = 0.obs;
+  final Rxn<DateTime> lastUpdatedAt = Rxn<DateTime>();
 
   final searchController = TextEditingController();
   final RxString searchQuery = ''.obs;
@@ -36,6 +37,7 @@ class StudentAnnouncementsController extends GetxController {
     StudentAnnouncementFilter(label: 'Course Announcements', type: 'course'),
     StudentAnnouncementFilter(label: 'Class Announcements', type: 'class'),
     StudentAnnouncementFilter(label: 'System', type: 'system'),
+    StudentAnnouncementFilter(label: 'Direct', type: 'direct'),
   ];
 
   @override
@@ -68,7 +70,11 @@ class StudentAnnouncementsController extends GetxController {
     try {
       final result = await _service.fetchAnnouncements();
       final sorted = _sortAnnouncements(result);
-      announcements.assignAll(_applyTargetNameOverrides(sorted));
+      final updated = _applyTargetNameOverrides(sorted);
+      announcements.assignAll(
+        silent ? _mergeAnnouncements(announcements.toList(), updated) : updated,
+      );
+      lastUpdatedAt.value = DateTime.now();
       if (!silent) {
         errorMessage.value = '';
       }
@@ -144,6 +150,42 @@ class StudentAnnouncementsController extends GetxController {
         announcements[index] = announcements[index].copyWith(isRead: true);
       }
     } catch (_) {}
+  }
+
+  Future<void> markAllRead() async {
+    final unread = unreadAnnouncements;
+    if (unread.isEmpty) return;
+
+    for (final item in unread) {
+      await markRead(item);
+    }
+  }
+
+  List<StudentAnnouncement> _mergeAnnouncements(
+    List<StudentAnnouncement> existing,
+    List<StudentAnnouncement> incoming,
+  ) {
+    if (existing.isEmpty) return incoming;
+    if (incoming.isEmpty) return existing;
+
+    final existingById = <String, StudentAnnouncement>{};
+    for (final item in existing) {
+      if (item.id.isNotEmpty) {
+        existingById[item.id] = item;
+      }
+    }
+
+    return incoming.map((next) {
+      final previous = existingById[next.id];
+      if (previous == null) return next;
+      return previous.copyWith(
+        title: next.title,
+        message: next.message,
+        targetName: next.targetName,
+        isPinned: next.isPinned,
+        isRead: previous.isRead || next.isRead,
+      );
+    }).toList();
   }
 
   void _onSearchChanged() {

@@ -207,19 +207,11 @@ class StudentCertificate {
 }
 
 List<StudentCertificate> parseCertificates(dynamic data) {
-  if (data is List) {
-    return data
-        .whereType<Map>()
-        .map((item) => StudentCertificate.fromJson(Map<String, dynamic>.from(item)))
-        .toList();
-  }
-  if (data is Map<String, dynamic>) {
-    final list = data['data'] ?? data['items'] ?? data['certificates'];
-    if (list is List) {
-      return parseCertificates(list);
-    }
-  }
-  return const [];
+  final list = _findCertificateList(data);
+  if (list == null || list.isEmpty) return const [];
+  return list
+      .map((item) => StudentCertificate.fromJson(item))
+      .toList();
 }
 
 String _readString(Map<String, dynamic> map, List<String> keys) {
@@ -271,4 +263,72 @@ DateTime? _readDate(Map<String, dynamic> map, List<String> keys) {
     } catch (_) {}
   }
   return null;
+}
+
+List<Map<String, dynamic>>? _findCertificateList(dynamic data, {int depth = 0}) {
+  if (depth > 6 || data == null) return null;
+
+  if (data is List) {
+    final mapped = data
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
+    if (mapped.isNotEmpty && _looksLikeCertificateList(mapped)) {
+      return mapped;
+    }
+    for (final item in data) {
+      final found = _findCertificateList(item, depth: depth + 1);
+      if (found != null && found.isNotEmpty) return found;
+    }
+    return null;
+  }
+
+  if (data is Map) {
+    final map = Map<String, dynamic>.from(data);
+    final directList = map['data'] ??
+        map['items'] ??
+        map['certificates'] ??
+        map['results'] ??
+        map['rows'] ??
+        map['payload'];
+    if (directList is List) {
+      final found = _findCertificateList(directList, depth: depth + 1);
+      if (found != null && found.isNotEmpty) return found;
+    }
+    for (final value in map.values) {
+      final found = _findCertificateList(value, depth: depth + 1);
+      if (found != null && found.isNotEmpty) return found;
+    }
+  }
+
+  return null;
+}
+
+bool _looksLikeCertificateList(List<Map<String, dynamic>> list) {
+  for (final item in list) {
+    if (_looksLikeCertificate(item)) return true;
+  }
+  return false;
+}
+
+bool _looksLikeCertificate(Map<String, dynamic> map) {
+  final keys = map.keys.map((k) => k.toString()).toSet();
+  const certKeys = [
+    'certId',
+    'certificateId',
+    'verificationUrl',
+    'pdfUrl',
+    'downloadUrl',
+    'completionTitle',
+    'studentName',
+    'issuedAt',
+    'courseName',
+    'className',
+    'subjectName',
+  ];
+  var hits = 0;
+  for (final key in certKeys) {
+    if (keys.contains(key)) hits++;
+  }
+  return hits >= 2;
 }

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/core/utils/network_error.dart';
+import 'package:sum_academy/core/widgets/status_dialogs.dart';
 import 'package:sum_academy/modules/student/controllers/student_certificates_controller.dart';
 import 'package:sum_academy/modules/student/models/student_certificate.dart';
 import 'package:sum_academy/modules/student/widgets/student_notification_bell.dart';
@@ -45,10 +47,7 @@ class StudentCertificatesView extends GetView<StudentCertificatesController> {
                   padding: EdgeInsets.only(bottom: 16.h),
                   child: _CertificateCard(
                     certificate: cert,
-                    onDownload: () => _openLink(
-                      cert.pdfUrl,
-                      title: 'Opening certificate',
-                    ),
+                    onDownload: () => _downloadCertificate(context, cert),
                     onShare: () => _copyLink(
                       cert.pdfUrl.isNotEmpty ? cert.pdfUrl : cert.certificateId,
                       title: 'Share link copied',
@@ -81,6 +80,45 @@ class StudentCertificatesView extends GetView<StudentCertificatesController> {
       title: title,
       message: 'Copied to clipboard.',
     );
+  }
+
+  Future<void> _downloadCertificate(
+    BuildContext context,
+    StudentCertificate certificate,
+  ) async {
+    if (certificate.pdfUrl.trim().isEmpty) {
+      await showAppErrorDialog(
+        title: 'Unavailable',
+        message: 'No link is available for this certificate yet.',
+      );
+      return;
+    }
+
+    showLoadingDialog(context, message: 'Downloading certificate...');
+    try {
+      final file = await controller.downloadCertificate(certificate);
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+      final result = await OpenFilex.open(file.path);
+      if (result.type != ResultType.done) {
+        await showAppErrorDialog(
+          title: 'Unable to open',
+          message: result.message.isNotEmpty
+              ? result.message
+              : 'Could not open the certificate file.',
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+      final message = e is Exception ? e.toString() : 'Unknown error';
+      await showAppErrorDialog(
+        title: 'Download failed',
+        message: message.replaceFirst('Exception: ', ''),
+      );
+    }
   }
 
   Future<void> _openLink(

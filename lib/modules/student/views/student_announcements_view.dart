@@ -25,8 +25,10 @@ class StudentAnnouncementsView extends GetView<StudentAnnouncementsController> {
             parent: BouncingScrollPhysics(),
           ),
           children: [
-            _HeaderRow(textColor: textColor),
-            SizedBox(height: 16.h),
+            _HeaderRow(textColor: textColor, controller: controller),
+            SizedBox(height: 6.h),
+            _HeaderMeta(controller: controller),
+            SizedBox(height: 14.h),
             _FilterRow(controller: controller),
             SizedBox(height: 12.h),
             TextField(
@@ -69,8 +71,12 @@ class StudentAnnouncementsView extends GetView<StudentAnnouncementsController> {
 
 class _HeaderRow extends StatelessWidget {
   final Color textColor;
+  final StudentAnnouncementsController controller;
 
-  const _HeaderRow({required this.textColor});
+  const _HeaderRow({
+    required this.textColor,
+    required this.controller,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -105,8 +111,66 @@ class _HeaderRow extends StatelessWidget {
         StudentNotificationBell(
           iconColor: textColor.withOpacityFloat(0.75),
         ),
+        if (controller.unreadCount > 0) ...[
+          SizedBox(width: 4.w),
+          IconButton(
+            tooltip: 'Mark all as read',
+            onPressed: controller.markAllRead,
+            icon: Icon(
+              Icons.done_all_rounded,
+              size: 20.sp,
+              color: textColor.withOpacityFloat(0.75),
+            ),
+          ),
+        ],
       ],
     );
+  }
+}
+
+class _HeaderMeta extends StatelessWidget {
+  final StudentAnnouncementsController controller;
+
+  const _HeaderMeta({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor =
+        isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
+
+    final updated = controller.lastUpdatedAt.value;
+    final updatedLabel = _updatedLabel(updated);
+
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            'Course, class, system, and direct announcements.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: textColor.withOpacityFloat(0.65),
+                ),
+          ),
+        ),
+        if (updatedLabel.isNotEmpty)
+          Text(
+            updatedLabel,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: textColor.withOpacityFloat(0.55),
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+      ],
+    );
+  }
+
+  String _updatedLabel(DateTime? date) {
+    if (date == null) return '';
+    final diff = DateTime.now().difference(date);
+    if (diff.inSeconds < 5) return 'Updated just now';
+    if (diff.inSeconds < 60) return 'Updated ${diff.inSeconds}s ago';
+    if (diff.inMinutes < 60) return 'Updated ${diff.inMinutes}m ago';
+    return 'Updated ${diff.inHours}h ago';
   }
 }
 
@@ -220,6 +284,11 @@ class _AnnouncementCard extends StatelessWidget {
     final initials = _initialsFor(announcement.senderName);
     final dateLabel = _formatDate(announcement.createdAt);
     final relativeLabel = _relativeLabel(announcement.createdAt);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF101828) : SumAcademyTheme.white;
+    final borderColor = isDark
+        ? SumAcademyTheme.white.withOpacityFloat(0.08)
+        : SumAcademyTheme.brandBluePale;
 
     return InkWell(
       onTap: onTap,
@@ -227,9 +296,12 @@ class _AnnouncementCard extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.all(16.r),
         decoration: BoxDecoration(
-          color: SumAcademyTheme.white,
+          color: cardColor,
           borderRadius: BorderRadius.circular(18.r),
-          border: Border.all(color: SumAcademyTheme.brandBluePale),
+          border: Border.all(
+            color: announcement.isPinned ? accent.withOpacityFloat(0.35) : borderColor,
+            width: announcement.isPinned ? 1.2 : 1,
+          ),
           boxShadow: [
             BoxShadow(
               color: SumAcademyTheme.darkBase.withOpacityFloat(0.05),
@@ -241,19 +313,51 @@ class _AnnouncementCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-              decoration: BoxDecoration(
-                color: accent.withOpacityFloat(0.12),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                announcement.displayTarget,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: accent,
-                      fontWeight: FontWeight.w600,
+            Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                  decoration: BoxDecoration(
+                    color: accent.withOpacityFloat(0.12),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    announcement.displayTarget,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: accent,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ),
+                if (announcement.isPinned) ...[
+                  SizedBox(width: 8.w),
+                  Container(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                    decoration: BoxDecoration(
+                      color: SumAcademyTheme.accentOrange.withOpacityFloat(0.12),
+                      borderRadius: BorderRadius.circular(999),
                     ),
-              ),
+                    child: Text(
+                      'Pinned',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: SumAcademyTheme.accentOrange,
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                  ),
+                ],
+                const Spacer(),
+                if (!announcement.isRead)
+                  Container(
+                    width: 8.r,
+                    height: 8.r,
+                    decoration: const BoxDecoration(
+                      color: SumAcademyTheme.brandBlue,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+              ],
             ),
             SizedBox(height: 10.h),
             Text(
@@ -261,7 +365,7 @@ class _AnnouncementCard extends StatelessWidget {
                   ? 'Announcement'
                   : announcement.title,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: SumAcademyTheme.darkBase,
+                    color: isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase,
                     fontWeight: FontWeight.w700,
                   ),
             ),
@@ -271,10 +375,24 @@ class _AnnouncementCard extends StatelessWidget {
                   ? 'No announcement message.'
                   : announcement.message,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: SumAcademyTheme.darkBase.withOpacityFloat(0.7),
+                    color: (isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase)
+                        .withOpacityFloat(0.72),
                     height: 1.5,
                   ),
             ),
+            if (announcement.normalizedType == 'direct') ...[
+              SizedBox(height: 10.h),
+              Text(
+                'To: You',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: (isDark
+                              ? SumAcademyTheme.white
+                              : SumAcademyTheme.darkBase)
+                          .withOpacityFloat(0.6),
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ],
             SizedBox(height: 12.h),
             Row(
               children: [
@@ -301,7 +419,10 @@ class _AnnouncementCard extends StatelessWidget {
                         ? 'SUM Academy'
                         : announcement.senderName,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: SumAcademyTheme.darkBase.withOpacityFloat(0.8),
+                          color: (isDark
+                                  ? SumAcademyTheme.white
+                                  : SumAcademyTheme.darkBase)
+                              .withOpacityFloat(0.8),
                           fontWeight: FontWeight.w600,
                         ),
                   ),
@@ -310,7 +431,10 @@ class _AnnouncementCard extends StatelessWidget {
                   Text(
                     dateLabel,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: SumAcademyTheme.darkBase.withOpacityFloat(0.6),
+                          color: (isDark
+                                  ? SumAcademyTheme.white
+                                  : SumAcademyTheme.darkBase)
+                              .withOpacityFloat(0.6),
                         ),
                   ),
                 if (relativeLabel.isNotEmpty) ...[

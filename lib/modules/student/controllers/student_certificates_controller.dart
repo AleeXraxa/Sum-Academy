@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:get/get.dart';
 import 'package:sum_academy/core/services/api_exception.dart';
 import 'package:sum_academy/core/utils/network_error.dart';
@@ -73,6 +75,15 @@ class StudentCertificatesController extends GetxController {
         message: 'Unable to verify this certificate.',
       );
     }
+  }
+
+  Future<File> downloadCertificate(StudentCertificate certificate) async {
+    return _service.downloadCertificate(
+      url: certificate.pdfUrl,
+      fileName: certificate.certificateId.isNotEmpty
+          ? certificate.certificateId
+          : certificate.id,
+    );
   }
 
   void _linkCourses() {
