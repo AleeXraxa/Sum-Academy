@@ -36,6 +36,8 @@ migrate_working_dir/
 # Sensitive config
 lib/firebase_options.dart
 **/api.dart
+android/key.properties
+**/*.jks
 
 # Symbolication related
 app.*.symbols
