@@ -83,6 +83,9 @@ class _StudentCourseDetailViewState extends State<StudentCourseDetailView>
             final progress = controller.progress.value;
             final progressValue =
                 progress.progress > 0 ? progress.progress : widget.progress;
+            final nextLecture = _findNextLecture(progress);
+            final nextLectureTitle =
+                nextLecture?.title ?? widget.nextLecture;
             return RefreshIndicator(
               color: SumAcademyTheme.brandBlue,
               onRefresh: controller.refresh,
@@ -98,7 +101,21 @@ class _StudentCourseDetailViewState extends State<StudentCourseDetailView>
                     title: widget.title,
                     teacher: widget.teacher,
                     progress: progressValue,
-                    nextLecture: widget.nextLecture,
+                    nextLecture: nextLectureTitle,
+                    onResume: nextLecture != null
+                        ? () {
+                            if (nextLecture.videoUrl.isEmpty) {
+                              return;
+                            }
+                            Get.to(
+                              () => StudentCourseVideoView(
+                                courseId: widget.courseId,
+                                lecture: nextLecture,
+                                onCompleted: controller.refresh,
+                              ),
+                            );
+                          }
+                        : null,
                     completedLectures: progress.completedLectures,
                     totalLectures: progress.totalLectures,
                   ),
@@ -177,6 +194,7 @@ class _CourseOverviewCard extends StatelessWidget {
   final String teacher;
   final double progress;
   final String nextLecture;
+  final VoidCallback? onResume;
   final int completedLectures;
   final int totalLectures;
 
@@ -185,36 +203,54 @@ class _CourseOverviewCard extends StatelessWidget {
     required this.teacher,
     required this.progress,
     required this.nextLecture,
+    required this.onResume,
     required this.completedLectures,
     required this.totalLectures,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final progressPercent = (progress * 100).clamp(0, 100).round();
     final hasLectures = totalLectures > 0;
+    final surface = isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white;
+    final border =
+        isDark ? SumAcademyTheme.darkBorder : SumAcademyTheme.brandBluePale;
 
     return Container(
-      padding: EdgeInsets.all(16.r),
+      padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 18.h),
       decoration: BoxDecoration(
-        color: SumAcademyTheme.white,
+        color: surface,
         borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
-        border: Border.all(color: SumAcademyTheme.brandBluePale),
+        border: Border.all(color: border),
         boxShadow: [
-          BoxShadow(
-            color: SumAcademyTheme.darkBase.withOpacityFloat(0.08),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
+          if (!isDark)
+            BoxShadow(
+              color: SumAcademyTheme.darkBase.withOpacityFloat(0.08),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
+            'Course Progress',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: (isDark
+                          ? SumAcademyTheme.white
+                          : SumAcademyTheme.darkBase)
+                      .withOpacityFloat(0.6),
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.0,
+                ),
+          ),
+          SizedBox(height: 6.h),
+          Text(
             title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: SumAcademyTheme.darkBase,
+                  color: isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase,
                   fontWeight: FontWeight.w700,
                 ),
           ),
@@ -222,10 +258,13 @@ class _CourseOverviewCard extends StatelessWidget {
           Text(
             teacher.isEmpty ? 'Instructor' : teacher,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: SumAcademyTheme.darkBase.withOpacityFloat(0.6),
+                  color: (isDark
+                          ? SumAcademyTheme.white
+                          : SumAcademyTheme.darkBase)
+                      .withOpacityFloat(0.6),
                 ),
           ),
-          SizedBox(height: 12.h),
+          SizedBox(height: 14.h),
           Row(
             children: [
               Expanded(
@@ -233,7 +272,7 @@ class _CourseOverviewCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10.r),
                   child: LinearProgressIndicator(
                     value: progress,
-                    minHeight: 6.h,
+                    minHeight: 7.h,
                     backgroundColor: SumAcademyTheme.brandBluePale,
                     valueColor: const AlwaysStoppedAnimation(
                       SumAcademyTheme.brandBlue,
@@ -245,7 +284,10 @@ class _CourseOverviewCard extends StatelessWidget {
               Text(
                 '$progressPercent%',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: SumAcademyTheme.darkBase.withOpacityFloat(0.7),
+                      color: (isDark
+                              ? SumAcademyTheme.white
+                              : SumAcademyTheme.darkBase)
+                          .withOpacityFloat(0.7),
                     ),
               ),
             ],
@@ -270,7 +312,11 @@ class _CourseOverviewCard extends StatelessWidget {
                 child: Text(
                   'Next lecture: ${nextLecture.isEmpty ? 'Resume learning' : nextLecture}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: SumAcademyTheme.darkBase.withOpacityFloat(0.7),
+                        color: (isDark
+                                ? SumAcademyTheme.white
+                                : SumAcademyTheme.darkBase)
+                            .withOpacityFloat(0.7),
+                        height: 1.35,
                       ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -278,6 +324,29 @@ class _CourseOverviewCard extends StatelessWidget {
               ),
             ],
           ),
+          if (onResume != null) ...[
+            SizedBox(height: 12.h),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                onPressed: onResume,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: SumAcademyTheme.brandBlue,
+                  side: BorderSide(color: SumAcademyTheme.brandBluePale),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 14.w,
+                    vertical: 10.h,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.circular(SumAcademyTheme.radiusButton.r),
+                  ),
+                ),
+                icon: Icon(Icons.play_arrow_rounded, size: 18.sp),
+                label: const Text('Resume Last Lecture'),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -362,11 +431,22 @@ class _ChapterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white;
+    final border =
+        isDark ? SumAcademyTheme.darkBorder : SumAcademyTheme.brandBluePale;
     return Container(
       decoration: BoxDecoration(
-        color: SumAcademyTheme.white,
+        color: surface,
         borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
-        border: Border.all(color: SumAcademyTheme.brandBluePale),
+        border: Border.all(color: border),
+        boxShadow: [
+          BoxShadow(
+            color: SumAcademyTheme.darkBase.withOpacityFloat(0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Theme(
         data: Theme.of(context).copyWith(
@@ -386,11 +466,24 @@ class _ChapterCard extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
           ),
-          subtitle: Text(
-            '${chapter.lectures.length} lectures',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: SumAcademyTheme.darkBase.withOpacityFloat(0.6),
+          subtitle: Row(
+            children: [
+              Container(
+                padding:
+                    EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                decoration: BoxDecoration(
+                  color: SumAcademyTheme.brandBluePale,
+                  borderRadius: BorderRadius.circular(14.r),
                 ),
+                child: Text(
+                  '${chapter.lectures.length} lectures',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: SumAcademyTheme.brandBlue,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ),
+            ],
           ),
           children: chapter.lectures
               .map(
@@ -430,6 +523,10 @@ class _LectureCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark
+        ? SumAcademyTheme.darkSurface
+        : SumAcademyTheme.white;
     final iconColor = lecture.isCompleted
         ? SumAcademyTheme.success
         : SumAcademyTheme.brandBlue;
@@ -439,6 +536,12 @@ class _LectureCard extends StatelessWidget {
     final progressPercent = (progressValue * 100).clamp(0, 100).round();
     final completionLocked = lecture.isCompleted && !lecture.canRewatch;
     final isLocked = lecture.isLocked || completionLocked;
+    final overlayColor = isLocked
+        ? (isDark
+            ? SumAcademyTheme.darkSurface.withOpacityFloat(0.6)
+            : SumAcademyTheme.surfaceSecondary)
+        : cardColor;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -449,7 +552,7 @@ class _LectureCard extends StatelessWidget {
             child: Container(
               padding: EdgeInsets.all(14.r),
               decoration: BoxDecoration(
-                color: SumAcademyTheme.white,
+                color: overlayColor,
                 borderRadius: BorderRadius.circular(16.r),
                 border: Border.all(color: SumAcademyTheme.brandBluePale),
                 boxShadow: [
@@ -463,23 +566,45 @@ class _LectureCard extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 44.r,
-                    height: 44.r,
-                    decoration: BoxDecoration(
-                      color: iconColor.withOpacityFloat(0.15),
-                      borderRadius: BorderRadius.circular(14.r),
-                    ),
-                    alignment: Alignment.center,
-                    child: Icon(
-                      isLocked
-                          ? Icons.lock_rounded
-                          : lecture.isCompleted
+                  Stack(
+                    children: [
+                      Container(
+                        width: 50.r,
+                        height: 50.r,
+                        decoration: BoxDecoration(
+                          color: iconColor.withOpacityFloat(0.14),
+                          borderRadius: BorderRadius.circular(16.r),
+                        ),
+                        alignment: Alignment.center,
+                        child: Icon(
+                          lecture.isCompleted
                               ? Icons.check_circle_rounded
                               : Icons.play_arrow_rounded,
-                      color: iconColor,
-                      size: 22.sp,
-                    ),
+                          color: iconColor,
+                          size: 24.sp,
+                        ),
+                      ),
+                      if (isLocked)
+                        Positioned(
+                          right: -2,
+                          top: -2,
+                          child: Container(
+                            padding: EdgeInsets.all(4.r),
+                            decoration: BoxDecoration(
+                              color: SumAcademyTheme.error.withOpacityFloat(0.15),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: SumAcademyTheme.error.withOpacityFloat(0.4),
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.lock_rounded,
+                              size: 12.sp,
+                              color: SumAcademyTheme.error,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                   SizedBox(width: 12.w),
                   Expanded(
@@ -489,7 +614,9 @@ class _LectureCard extends StatelessWidget {
                         Text(
                           lecture.title,
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: SumAcademyTheme.darkBase,
+                                color: isDark
+                                    ? SumAcademyTheme.white
+                                    : SumAcademyTheme.darkBase,
                                 fontWeight: FontWeight.w600,
                               ),
                         ),
@@ -501,7 +628,7 @@ class _LectureCard extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(10.r),
                                 child: LinearProgressIndicator(
                                   value: progressValue,
-                                  minHeight: 6.h,
+                                  minHeight: 7.h,
                                   backgroundColor:
                                       SumAcademyTheme.brandBluePale,
                                   valueColor: AlwaysStoppedAnimation(iconColor),
@@ -509,25 +636,57 @@ class _LectureCard extends StatelessWidget {
                               ),
                             ),
                             SizedBox(width: 10.w),
-                            Text(
-                              '$progressPercent%',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: SumAcademyTheme.darkBase
-                                        .withOpacityFloat(0.7),
-                                  ),
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 8.w,
+                                vertical: 4.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: SumAcademyTheme.brandBluePale,
+                                borderRadius: BorderRadius.circular(10.r),
+                              ),
+                              child: Text(
+                                '$progressPercent%',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .labelSmall
+                                    ?.copyWith(
+                                      color: SumAcademyTheme.brandBlue,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
                             ),
                           ],
                         ),
+                        if (lecture.isCompleted) ...[
+                          SizedBox(height: 6.h),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 8.w,
+                              vertical: 4.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: SumAcademyTheme.successLight,
+                              borderRadius: BorderRadius.circular(10.r),
+                            ),
+                            child: Text(
+                              'Completed',
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: SumAcademyTheme.success,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                          ),
+                        ],
                         if (lecture.duration.isNotEmpty && !isLocked) ...[
                           SizedBox(height: 6.h),
                           Text(
                             isLocked ? 'Completed' : lecture.duration,
                             style:
                                 Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: SumAcademyTheme.darkBase
+                                      color: (isDark
+                                              ? SumAcademyTheme.white
+                                              : SumAcademyTheme.darkBase)
                                           .withOpacityFloat(0.6),
                                   ),
                           ),
@@ -541,6 +700,15 @@ class _LectureCard extends StatelessWidget {
                                       color: SumAcademyTheme.error
                                           .withOpacityFloat(0.7),
                                     ),
+                          ),
+                        ],
+                        if (isLocked && lecture.lockReason.isEmpty) ...[
+                          SizedBox(height: 6.h),
+                          Text(
+                            'Ask admin to unlock for rewatch.',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: SumAcademyTheme.error.withOpacityFloat(0.7),
+                                ),
                           ),
                         ],
                       ],
@@ -561,23 +729,62 @@ class _EmptyContentState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white;
+    final border =
+        isDark ? SumAcademyTheme.darkBorder : SumAcademyTheme.brandBluePale;
     return Container(
-      padding: EdgeInsets.all(16.r),
+      padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 18.h),
       decoration: BoxDecoration(
-        color: SumAcademyTheme.white,
+        color: surface,
         borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
-        border: Border.all(color: SumAcademyTheme.brandBluePale),
+        border: Border.all(color: border),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: SumAcademyTheme.darkBase.withOpacityFloat(0.05),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+        ],
       ),
       child: Row(
         children: [
-          Icon(Icons.menu_book_rounded, color: SumAcademyTheme.brandBlue),
+          Container(
+            width: 52.r,
+            height: 52.r,
+            decoration: BoxDecoration(
+              color: SumAcademyTheme.brandBluePale,
+              borderRadius: BorderRadius.circular(16.r),
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              Icons.menu_book_rounded,
+              color: SumAcademyTheme.brandBlue,
+              size: 26.sp,
+            ),
+          ),
           SizedBox(width: 12.w),
           Expanded(
-            child: Text(
-              'No lectures available yet. Please check back later.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: SumAcademyTheme.darkBase.withOpacityFloat(0.7),
-                  ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'No lectures yet',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: SumAcademyTheme.darkBase,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  'New lectures will appear here once they are published.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: SumAcademyTheme.darkBase.withOpacityFloat(0.7),
+                        height: 1.4,
+                      ),
+                ),
+              ],
             ),
           ),
         ],
@@ -661,4 +868,15 @@ class _ContentSkeleton extends StatelessWidget {
       ),
     );
   }
+}
+
+StudentCourseLecture? _findNextLecture(StudentCourseProgress progress) {
+  for (final chapter in progress.chapters) {
+    for (final lecture in chapter.lectures) {
+      if (!lecture.isCompleted) {
+        return lecture;
+      }
+    }
+  }
+  return null;
 }

@@ -346,7 +346,12 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
 
   @override
   Widget build(BuildContext context) {
-    final textColor = SumAcademyTheme.darkBase;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor =
+        isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
+    final surface = isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white;
+    final border =
+        isDark ? SumAcademyTheme.darkBorder : SumAcademyTheme.brandBluePale;
     final storedProgress = widget.lecture.isCompleted
         ? (widget.lecture.canRewatch ? 0.0 : 1.0)
         : (widget.lecture.progress >= 0.98
@@ -359,6 +364,13 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
     final isCompleted =
         _isMarkedComplete || widget.lecture.isCompleted || progressValue >= 1;
     final canMarkComplete = _playbackProgress >= 0.8;
+    final statusLabel = isCompleted
+        ? 'Completed'
+        : progressPercent > 0
+            ? 'In Progress'
+            : 'Not Started';
+    final statusColor =
+        isCompleted ? SumAcademyTheme.success : SumAcademyTheme.brandBlue;
 
     return WillPopScope(
       onWillPop: () async {
@@ -390,54 +402,158 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
                       ),
                     ),
                   ),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacityFloat(0.15),
+                      borderRadius: BorderRadius.circular(14.r),
+                      border: Border.all(
+                        color: statusColor.withOpacityFloat(0.4),
+                      ),
+                    ),
+                    child: Text(
+                      statusLabel,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: statusColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ),
                 ],
               ),
-              SizedBox(height: 12.h),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16.r),
-                child: BetterPlayer(controller: _playerController),
+              SizedBox(height: 14.h),
+              Container(
+                decoration: BoxDecoration(
+                  color: surface,
+                  borderRadius: BorderRadius.circular(18.r),
+                  border: Border.all(color: border),
+                  boxShadow: [
+                    if (!isDark)
+                      BoxShadow(
+                        color: SumAcademyTheme.darkBase.withOpacityFloat(0.08),
+                        blurRadius: 18,
+                        offset: const Offset(0, 10),
+                      ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(18.r),
+                  child: AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: BetterPlayer(controller: _playerController),
+                  ),
+                ),
               ),
               SizedBox(height: 16.h),
               Container(
-                padding: EdgeInsets.all(14.r),
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
                 decoration: BoxDecoration(
-                  color: SumAcademyTheme.white,
+                  color: surface,
                   borderRadius: BorderRadius.circular(16.r),
-                  border: Border.all(color: SumAcademyTheme.brandBluePale),
+                  border: Border.all(color: border),
+                  boxShadow: [
+                    if (!isDark)
+                      BoxShadow(
+                        color: SumAcademyTheme.darkBase.withOpacityFloat(0.06),
+                        blurRadius: 16,
+                        offset: const Offset(0, 8),
+                      ),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Lecture progress',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: textColor,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Lecture progress',
+                            style:
+                                Theme.of(context).textTheme.labelLarge?.copyWith(
+                                      color: textColor,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                          ),
+                        ),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 10.w,
+                            vertical: 6.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: SumAcademyTheme.brandBluePale,
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          child: Text(
+                            '$progressPercent%',
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  color: SumAcademyTheme.brandBlue,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                        ),
+                      ],
                     ),
-                    SizedBox(height: 10.h),
+                    SizedBox(height: 12.h),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(10.r),
                       child: LinearProgressIndicator(
                         value: progressValue,
-                        minHeight: 6.h,
+                        minHeight: 7.h,
                         backgroundColor: SumAcademyTheme.brandBluePale,
                         valueColor: const AlwaysStoppedAnimation(
                           SumAcademyTheme.brandBlue,
                         ),
                       ),
                     ),
-                    SizedBox(height: 6.h),
-                    Text(
-                      '$progressPercent% completed',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: textColor.withOpacityFloat(0.6),
+                    SizedBox(height: 8.h),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.play_circle_outline_rounded,
+                          size: 16.sp,
+                          color: textColor.withOpacityFloat(0.5),
+                        ),
+                        SizedBox(width: 6.w),
+                        Text(
+                          '$progressPercent% completed',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: textColor.withOpacityFloat(0.6),
+                              ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 14.h),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+                decoration: BoxDecoration(
+                  color: SumAcademyTheme.brandBluePale,
+                  borderRadius: BorderRadius.circular(14.r),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.lock_clock_rounded,
+                      size: 16.sp,
+                      color: SumAcademyTheme.brandBlue,
+                    ),
+                    SizedBox(width: 8.w),
+                    Expanded(
+                      child: Text(
+                        'Watch at least 80% to unlock completion.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: SumAcademyTheme.brandBlue,
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
                     ),
                   ],
                 ),
               ),
-              SizedBox(height: 18.h),
+              SizedBox(height: 14.h),
               SizedBox(
                 height: 48.h,
                 child: ElevatedButton(
@@ -447,8 +563,13 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: SumAcademyTheme.brandBlue,
                     foregroundColor: SumAcademyTheme.white,
+                    disabledBackgroundColor:
+                        SumAcademyTheme.brandBluePale,
+                    disabledForegroundColor:
+                        SumAcademyTheme.brandBlue.withOpacityFloat(0.6),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18.r),
+                      borderRadius:
+                          BorderRadius.circular(SumAcademyTheme.radiusButton.r),
                     ),
                   ),
                   child: Text(
