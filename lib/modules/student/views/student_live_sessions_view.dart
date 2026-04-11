@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
+import 'package:sum_academy/core/utils/network_error.dart';
 import 'package:sum_academy/modules/student/controllers/student_live_sessions_controller.dart';
-import 'package:sum_academy/modules/student/models/student_live_session.dart';
-import 'package:sum_academy/modules/student/views/student_course_video_view.dart';
+import 'package:sum_academy/modules/student/models/student_session.dart';
+import 'package:sum_academy/modules/student/views/student_live_session_player_view.dart';
+import 'package:sum_academy/modules/student/views/student_live_session_waiting_view.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class StudentLiveSessionsView extends StatelessWidget {
   const StudentLiveSessionsView({super.key});
@@ -29,7 +32,7 @@ class StudentLiveSessionsView extends StatelessWidget {
             _HeaderRow(textColor: textColor),
             SizedBox(height: 6.h),
             Text(
-              'Upcoming and live sessions are shown here. After a session ends, the lecture will appear in your course content.',
+              'Upcoming and live sessions are shown here. When a session ends, the recording will remain here until you watch it completely.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: textColor.withOpacityFloat(0.65),
                     height: 1.35,
@@ -99,7 +102,7 @@ class _HeaderRow extends StatelessWidget {
 }
 
 class _LiveSessionCard extends StatelessWidget {
-  final StudentLiveSession session;
+  final StudentSession session;
 
   const _LiveSessionCard({required this.session});
 
@@ -110,10 +113,14 @@ class _LiveSessionCard extends StatelessWidget {
     final border = isDark
         ? SumAcademyTheme.white.withOpacityFloat(0.08)
         : SumAcademyTheme.brandBluePale;
-    final accent = session.isLive
+
+    final badge = _badgeFor(session);
+    final accent = badge == _SessionBadge.live
         ? SumAcademyTheme.success
-        : SumAcademyTheme.brandBlue;
-    final badgeText = session.isLive ? 'live' : 'scheduled';
+        : (badge == _SessionBadge.recording
+            ? SumAcademyTheme.brandBlue
+            : SumAcademyTheme.brandBlue);
+    final badgeText = badge.name;
 
     return InkWell(
       borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
@@ -140,7 +147,7 @@ class _LiveSessionCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    '${session.courseTitle} - ${session.lecture.title}',
+                    session.topic.trim().isEmpty ? 'Live Session' : session.topic,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
@@ -162,7 +169,7 @@ class _LiveSessionCard extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      if (session.isLive)
+                      if (badge == _SessionBadge.live)
                         Container(
                           width: 7.r,
                           height: 7.r,
@@ -171,7 +178,7 @@ class _LiveSessionCard extends StatelessWidget {
                             shape: BoxShape.circle,
                           ),
                         ),
-                      if (session.isLive) SizedBox(width: 6.w),
+                      if (badge == _SessionBadge.live) SizedBox(width: 6.w),
                       Text(
                         badgeText,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -199,12 +206,12 @@ class _LiveSessionCard extends StatelessWidget {
             SizedBox(height: 10.h),
             _TimeRow(
               icon: Icons.calendar_today_rounded,
-              label: _dateLabel(session.startsAt),
+              label: _dateLabel(session.startAt),
             ),
             SizedBox(height: 6.h),
             _TimeRow(
               icon: Icons.access_time_rounded,
-              label: _timeRangeLabel(session.startsAt, session.endsAt),
+              label: _timeRangeLabel(session.startAt, session.endAt),
             ),
           ],
         ),
@@ -212,10 +219,11 @@ class _LiveSessionCard extends StatelessWidget {
     );
   }
 
-  String _classLine(StudentLiveSession session) {
-    final code = session.classCode.trim();
+  String _classLine(StudentSession session) {
     final name = session.className.trim();
-    if (name.isEmpty) return 'Class session';
+    final code = session.batchCode.trim();
+    if (name.isEmpty && code.isEmpty) return 'Class session';
+    if (name.isEmpty) return code;
     if (code.isEmpty) return name;
     return '$name ($code)';
   }
@@ -227,12 +235,25 @@ class _LiveSessionCard extends StatelessWidget {
 
   String _timeRangeLabel(DateTime? start, DateTime? end) {
     if (start == null || end == null) return 'Time: TBA';
-    return 'Time: ${_formatTime(start)} – ${_formatTime(end)}';
+    return 'Time: ${_formatTime(start)} - ${_formatTime(end)}';
   }
 }
 
+enum _SessionBadge { upcoming, live, recording, ended }
+
+_SessionBadge _badgeFor(StudentSession session) {
+  if (session.isLive) return _SessionBadge.live;
+  if (session.hasEnded) {
+    if (session.recordingUrl.trim().isNotEmpty && !session.isLocked) {
+      return _SessionBadge.recording;
+    }
+    return _SessionBadge.ended;
+  }
+  return _SessionBadge.upcoming;
+}
+
 class StudentLiveSessionDetailView extends StatelessWidget {
-  final StudentLiveSession session;
+  final StudentSession session;
 
   const StudentLiveSessionDetailView({super.key, required this.session});
 
@@ -245,10 +266,9 @@ class StudentLiveSessionDetailView extends StatelessWidget {
     final border = isDark
         ? SumAcademyTheme.white.withOpacityFloat(0.08)
         : SumAcademyTheme.brandBluePale;
+    final badge = _badgeFor(session);
     final accent =
-        session.isLive ? SumAcademyTheme.success : SumAcademyTheme.brandBlue;
-    final canJoin = _canJoinNow(session);
-    final buttonLabel = session.isLive ? 'Join Session' : 'Join Session';
+        badge == _SessionBadge.live ? SumAcademyTheme.success : SumAcademyTheme.brandBlue;
 
     return Scaffold(
       body: SafeArea(
@@ -263,12 +283,12 @@ class StudentLiveSessionDetailView extends StatelessWidget {
                 ),
                 Expanded(
                   child: Text(
-                    session.lecture.title.isEmpty
-                        ? 'Live Session'
-                        : session.lecture.title,
+                    session.topic.trim().isEmpty ? 'Live Session' : session.topic,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           color: textColor,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w800,
                         ),
                   ),
                 ),
@@ -282,7 +302,7 @@ class StudentLiveSessionDetailView extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      if (session.isLive)
+                      if (badge == _SessionBadge.live)
                         Container(
                           width: 7.r,
                           height: 7.r,
@@ -291,9 +311,9 @@ class StudentLiveSessionDetailView extends StatelessWidget {
                             shape: BoxShape.circle,
                           ),
                         ),
-                      if (session.isLive) SizedBox(width: 6.w),
+                      if (badge == _SessionBadge.live) SizedBox(width: 6.w),
                       Text(
-                        session.isLive ? 'live' : 'scheduled',
+                        badge.name,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                               color: accent,
                               fontWeight: FontWeight.w700,
@@ -306,9 +326,10 @@ class StudentLiveSessionDetailView extends StatelessWidget {
             ),
             SizedBox(height: 14.h),
             Text(
-              '${session.courseTitle} • ${_classLine(session)}',
+              _classLine(session),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: textColor.withOpacityFloat(0.65),
+                    fontWeight: FontWeight.w600,
                   ),
             ),
             SizedBox(height: 14.h),
@@ -316,37 +337,58 @@ class StudentLiveSessionDetailView extends StatelessWidget {
               padding: EdgeInsets.all(16.r),
               decoration: BoxDecoration(
                 color: surface,
-                borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
+                borderRadius:
+                    BorderRadius.circular(SumAcademyTheme.radiusCard.r),
                 border: Border.all(color: border),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _DetailLine(
-                    label: 'Join opens',
-                    value: _formatFull(session.joinOpensAt),
+                    label: 'TEACHER',
+                    value: session.teacherName.trim().isEmpty
+                        ? '—'
+                        : session.teacherName.trim(),
                   ),
                   SizedBox(height: 10.h),
                   _DetailLine(
-                    label: 'Starts at',
-                    value: _formatFull(session.startsAt),
+                    label: 'DATE',
+                    value: session.startAt == null
+                        ? 'TBA'
+                        : _formatDate(session.startAt!),
                   ),
                   SizedBox(height: 10.h),
                   _DetailLine(
-                    label: 'Ends at',
-                    value: _formatFull(session.endsAt),
+                    label: 'TIME',
+                    value: (session.startAt == null || session.endAt == null)
+                        ? 'TBA'
+                        : '${_formatTime(session.startAt!)} - ${_formatTime(session.endAt!)}',
                   ),
+                  SizedBox(height: 10.h),
+                  _DetailLine(
+                    label: 'JOIN',
+                    value: session.joinOpensAt == null
+                        ? '—'
+                        : '${_formatDate(session.joinOpensAt!)}, ${_formatTime(session.joinOpensAt!)}',
+                  ),
+                  if (session.totalStudents > 0) ...[
+                    SizedBox(height: 10.h),
+                    _DetailLine(
+                      label: 'JOINED',
+                      value: '${session.joinedCount}/${session.totalStudents}',
+                    ),
+                  ],
                 ],
               ),
             ),
-            SizedBox(height: 16.h),
+            SizedBox(height: 14.h),
             Container(
               padding: EdgeInsets.all(14.r),
               decoration: BoxDecoration(
-                color: SumAcademyTheme.errorLight,
+                color: SumAcademyTheme.warningLight,
                 borderRadius: BorderRadius.circular(18.r),
                 border: Border.all(
-                  color: SumAcademyTheme.error.withOpacityFloat(0.25),
+                  color: SumAcademyTheme.warning.withOpacityFloat(0.25),
                 ),
               ),
               child: Text(
@@ -362,14 +404,8 @@ class StudentLiveSessionDetailView extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: canJoin
-                    ? () => Get.to(
-                          () => StudentCourseVideoView(
-                            courseId: session.courseId,
-                            lecture: session.lecture,
-                            onCompleted: () {},
-                          ),
-                        )
+                onPressed: _isPrimaryEnabled(session)
+                    ? () => _handlePrimaryAction()
                     : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: SumAcademyTheme.brandBlue,
@@ -379,13 +415,13 @@ class StudentLiveSessionDetailView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(18.r),
                   ),
                 ),
-                child: Text(buttonLabel),
+                child: Text(_primaryLabel(session)),
               ),
             ),
-            if (!canJoin) ...[
+            if (!_isPrimaryEnabled(session)) ...[
               SizedBox(height: 10.h),
               Text(
-                _joinDisabledReason(session),
+                _disabledReason(session),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: textColor.withOpacityFloat(0.65),
                       height: 1.35,
@@ -399,48 +435,120 @@ class StudentLiveSessionDetailView extends StatelessWidget {
     );
   }
 
-  String _classLine(StudentLiveSession session) {
-    final code = session.classCode.trim();
+  String _classLine(StudentSession session) {
     final name = session.className.trim();
-    if (name.isEmpty) return 'Class session';
+    final code = session.batchCode.trim();
+    if (name.isEmpty && code.isEmpty) return 'Class session';
+    if (name.isEmpty) return code;
     if (code.isEmpty) return name;
     return '$name ($code)';
   }
 
-  String _formatFull(DateTime? date) {
-    if (date == null) return 'TBA';
-    return '${_formatDate(date)}, ${_formatTime(date)}';
+  String _primaryLabel(StudentSession session) {
+    if (session.hasEnded) {
+      if (session.isLocked) return 'Recording Locked';
+      if (session.recordingUrl.trim().isNotEmpty) return 'Watch Recording';
+      return 'Session Ended';
+    }
+    if (session.isLive) return 'Open Session';
+    return 'Join Session';
   }
 
-  bool _canJoinNow(StudentLiveSession session) {
-    final now = DateTime.now();
-    final joinOpensAt = session.joinOpensAt;
-    final startsAt = session.startsAt;
-    final endsAt = session.endsAt;
-
-    if (endsAt != null && now.isAfter(endsAt)) return false;
-    if (joinOpensAt != null && now.isBefore(joinOpensAt)) return false;
-    if (joinOpensAt == null && startsAt != null && now.isBefore(startsAt)) {
-      return false;
+  bool _isPrimaryEnabled(StudentSession session) {
+    if (session.hasEnded) {
+      return !session.isLocked && session.recordingUrl.trim().isNotEmpty;
     }
-    return session.lecture.videoUrl.trim().isNotEmpty;
+    final hasAnyLink =
+        session.meetingLink.trim().isNotEmpty || session.recordingUrl.trim().isNotEmpty;
+    if (!hasAnyLink) return false;
+    return true;
   }
 
-  String _joinDisabledReason(StudentLiveSession session) {
-    final now = DateTime.now();
-    final joinOpensAt = session.joinOpensAt;
-    final startsAt = session.startsAt;
-    final endsAt = session.endsAt;
-    if (endsAt != null && now.isAfter(endsAt)) {
-      return 'This live session has ended. Pull to refresh to see the recording in your class content.';
+  String _disabledReason(StudentSession session) {
+    if (session.hasEnded) {
+      if (session.isLocked) {
+        return 'Recording is locked. Ask admin to unlock this session.';
+      }
+      return 'Recording is not available yet.';
     }
-    if (joinOpensAt != null && now.isBefore(joinOpensAt)) {
-      return 'Join opens at ${_formatDate(joinOpensAt)}, ${_formatTime(joinOpensAt)}.';
-    }
-    if (startsAt != null && now.isBefore(startsAt)) {
-      return 'Session starts at ${_formatDate(startsAt)}, ${_formatTime(startsAt)}.';
+    if (session.joinOpensAt != null && DateTime.now().isBefore(session.joinOpensAt!)) {
+      return 'Join opens at ${_formatDate(session.joinOpensAt!)}, ${_formatTime(session.joinOpensAt!)}.';
     }
     return 'Session link is not available yet.';
+  }
+
+  Future<void> _handlePrimaryAction() async {
+    final controller = Get.find<StudentLiveSessionsController>();
+    try {
+      final now = DateTime.now();
+
+      if (session.hasEnded) {
+        if (session.isLocked) {
+          await showAppErrorDialog(
+            title: 'Live Session',
+            message: 'Recording is locked. Ask admin to unlock this session.',
+          );
+          return;
+        }
+        final url = session.recordingUrl.trim();
+        if (url.isEmpty) {
+          await showAppErrorDialog(
+            title: 'Live Session',
+            message: 'Recording is not available yet.',
+          );
+          return;
+        }
+        await Get.to(
+          () => StudentLiveSessionPlayerView(session: session, playbackUrl: url),
+        );
+        return;
+      }
+
+      final startAt = session.startAt;
+      if (startAt != null && now.isBefore(startAt)) {
+        await Get.to(() => StudentLiveSessionWaitingView(session: session));
+        return;
+      }
+
+      final joinData = await controller.joinSession(session);
+      if (joinData['canPlay'] == false) {
+        await Get.to(() => StudentLiveSessionWaitingView(session: session));
+        return;
+      }
+
+      final meeting = session.meetingLink.trim();
+      if (meeting.isNotEmpty) {
+        final uri = Uri.tryParse(meeting);
+        if (uri != null) {
+          final launched = await launchUrl(
+            uri,
+            mode: LaunchMode.externalApplication,
+          );
+          if (launched) return;
+        }
+      }
+
+      final recording = session.recordingUrl.trim();
+      if (recording.isNotEmpty) {
+        await Get.to(
+          () => StudentLiveSessionPlayerView(
+            session: session,
+            playbackUrl: recording,
+          ),
+        );
+        return;
+      }
+
+      await showAppErrorDialog(
+        title: 'Live Session',
+        message: 'Session link is not available yet.',
+      );
+    } catch (e) {
+      await showAppErrorDialog(
+        title: 'Live Session',
+        message: e.toString().replaceFirst('Exception: ', ''),
+      );
+    }
   }
 }
 
@@ -641,3 +749,4 @@ String _formatTime(DateTime date) {
   if (hour == 0) hour = 12;
   return '$hour:$minute $suffix';
 }
+

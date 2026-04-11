@@ -16,6 +16,7 @@ import 'package:sum_academy/modules/student/views/student_certificates_view.dart
 import 'package:sum_academy/modules/student/views/student_live_sessions_view.dart';
 import 'package:sum_academy/modules/student/views/student_payments_view.dart';
 import 'package:sum_academy/modules/student/views/student_placeholder_view.dart';
+import 'package:sum_academy/modules/student/views/student_tests_view.dart';
 import 'package:sum_academy/modules/student/views/student_quizzes_view.dart';
 import 'package:sum_academy/modules/student/views/student_settings_view.dart';
 import 'package:sum_academy/modules/student/widgets/student_sidebar.dart';
@@ -37,11 +38,7 @@ class StudentShellView extends GetView<StudentShellController> {
         const ExploreCoursesView(),
         const StudentCertificatesView(),
         const StudentQuizzesView(),
-        const StudentPlaceholderView(
-          title: 'Tests',
-          icon: Icons.fact_check_rounded,
-          subtitle: 'Practice tests and assignments will appear here.',
-        ),
+        const StudentTestsView(),
         const StudentPaymentsView(),
         const StudentAnnouncementsView(),
         const HelpSupportView(),

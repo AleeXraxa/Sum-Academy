@@ -66,6 +66,7 @@ class ApiClient {
     bool auth = false,
     Map<String, dynamic>? query,
     bool retryAuth = true,
+    bool retryNetwork = true,
   }) async {
     final headers = await _headers(auth: auth);
     final uri = _buildUri(path, query);
@@ -102,11 +103,35 @@ class ApiClient {
           throw ApiException('Unsupported HTTP method: $method');
       }
     } on SocketException {
+      if (method == 'GET' && retryNetwork) {
+        await Future.delayed(const Duration(milliseconds: 800));
+        return _send(
+          method,
+          path,
+          body: body,
+          auth: auth,
+          query: query,
+          retryAuth: retryAuth,
+          retryNetwork: false,
+        );
+      }
       throw ApiException(
         'No internet connection. Please check your connection and try again.',
         statusCode: 0,
       );
     } on TimeoutException {
+      if (method == 'GET' && retryNetwork) {
+        await Future.delayed(const Duration(milliseconds: 800));
+        return _send(
+          method,
+          path,
+          body: body,
+          auth: auth,
+          query: query,
+          retryAuth: retryAuth,
+          retryNetwork: false,
+        );
+      }
       throw ApiException(
         'Network timeout. Please check your connection and try again.',
         statusCode: 0,
@@ -122,6 +147,7 @@ class ApiClient {
         auth: auth,
         query: query,
         retryAuth: false,
+        retryNetwork: retryNetwork,
       );
     }
 

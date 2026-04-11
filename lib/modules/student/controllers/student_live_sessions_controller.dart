@@ -1,19 +1,25 @@
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/core/services/api_exception.dart';
 import 'package:sum_academy/core/utils/network_error.dart';
 import 'package:sum_academy/modules/student/controllers/student_courses_controller.dart';
 import 'package:sum_academy/modules/student/models/student_course.dart';
 import 'package:sum_academy/modules/student/models/student_course_progress.dart';
-import 'package:sum_academy/modules/student/models/student_live_session.dart';
+import 'package:sum_academy/modules/student/models/student_session.dart';
 import 'package:sum_academy/modules/student/services/student_course_progress_service.dart';
+import 'package:sum_academy/modules/student/services/student_sessions_service.dart';
 
 class StudentLiveSessionsController extends GetxController {
   final StudentCourseProgressService _progressService;
+  final StudentSessionsService _sessionsService;
 
-  StudentLiveSessionsController({StudentCourseProgressService? progressService})
-      : _progressService = progressService ?? StudentCourseProgressService();
+  StudentLiveSessionsController({
+    StudentCourseProgressService? progressService,
+    StudentSessionsService? sessionsService,
+  })  : _progressService = progressService ?? StudentCourseProgressService(),
+        _sessionsService = sessionsService ?? StudentSessionsService();
 
-  final sessions = <StudentLiveSession>[].obs;
+  final sessions = <StudentSession>[].obs;
   final isLoading = false.obs;
   final errorMessage = ''.obs;
 
@@ -29,35 +35,30 @@ class StudentLiveSessionsController extends GetxController {
       errorMessage.value = '';
     }
     try {
-      final courses = _enrolledCourses();
-      final found = <StudentLiveSession>[];
-
-      for (final course in courses) {
-        final progress = await _progressService.fetchProgress(course.id);
-        for (final chapter in progress.chapters) {
-          for (final lecture in chapter.lectures) {
-            if (!lecture.shouldShowInLiveSessionsTab) continue;
-            found.add(
-              StudentLiveSession(
-                courseId: course.id,
-                courseTitle: course.title,
-                className: course.className,
-                classCode: course.classCode,
-                lecture: lecture,
-              ),
-            );
-          }
-        }
+      final listed = await _sessionsService.fetchLiveSessions();
+      if (kDebugMode) {
+        debugPrint('Live sessions list -> count=${listed.length}');
       }
-
-      found.sort((a, b) {
-        if (a.isLive != b.isLive) return a.isLive ? -1 : 1;
-        final aStart = a.startsAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-        final bStart = b.startsAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final detailed = await Future.wait(
+        listed.map((s) async {
+          if (s.id.trim().isEmpty) return s;
+          try {
+            return await _sessionsService.fetchSession(s.id);
+          } catch (_) {
+            return s;
+          }
+        }),
+      );
+      final filtered = detailed.where((s) => s.id.trim().isNotEmpty).toList();
+      filtered.sort((a, b) {
+        final aRank = _statusRank(a);
+        final bRank = _statusRank(b);
+        if (aRank != bRank) return aRank.compareTo(bRank);
+        final aStart = a.startAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bStart = b.startAt ?? DateTime.fromMillisecondsSinceEpoch(0);
         return aStart.compareTo(bStart);
       });
-
-      sessions.assignAll(found);
+      sessions.assignAll(filtered);
     } on ApiException catch (e) {
       if (!silent) {
         errorMessage.value = e.message;
@@ -81,10 +82,42 @@ class StudentLiveSessionsController extends GetxController {
     await fetchSessions();
   }
 
+  Future<Map<String, dynamic>> joinSession(StudentSession session) async {
+    final id = session.id.trim();
+    if (id.isEmpty) return const {'canPlay': false};
+    return _sessionsService.joinSession(id);
+  }
+
+  Future<void> reportViolation({
+    required StudentSession session,
+    required String reason,
+    required int count,
+  }) async {
+    final id = session.id.trim();
+    if (id.isEmpty) return;
+    await _sessionsService.reportViolation(
+      sessionId: id,
+      reason: reason,
+      count: count,
+      timestamp: DateTime.now(),
+    );
+  }
+
+  Future<void> leaveSession(StudentSession session) async {
+    final id = session.id.trim();
+    if (id.isEmpty) return;
+    await _sessionsService.leaveSession(id);
+  }
+
   List<StudentCourse> _enrolledCourses() {
     if (!Get.isRegistered<StudentCoursesController>()) return const [];
     final controller = Get.find<StudentCoursesController>();
     return controller.courses.where((c) => c.isEnrolled).toList();
   }
-}
 
+  int _statusRank(StudentSession session) {
+    if (session.isLive) return 0;
+    if (session.hasEnded) return 2;
+    return 1;
+  }
+}

@@ -129,6 +129,7 @@ class StudentCourseLecture {
   final String videoUrl;
   final String videoMode;
   final bool isLiveSession;
+  final String sessionId;
   final DateTime? joinOpensAt;
   final DateTime? startsAt;
   final DateTime? endsAt;
@@ -146,6 +147,7 @@ class StudentCourseLecture {
     required this.videoUrl,
     required this.videoMode,
     required this.isLiveSession,
+    required this.sessionId,
     this.joinOpensAt,
     this.startsAt,
     this.endsAt,
@@ -157,9 +159,8 @@ class StudentCourseLecture {
 
   bool get shouldShowInLiveSessionsTab {
     if (!isLiveSession) return false;
-    final end = endsAt;
-    if (end == null) return true;
-    return end.isAfter(DateTime.now());
+    // Live sessions stay in the Live Session tab until the student completes them.
+    return !isCompleted;
   }
 
   bool get isCurrentlyLive {
@@ -370,18 +371,65 @@ List<StudentCourseLecture> _parseLectures(
         'mode',
         'type',
       ]);
-      final isLiveSession = _readBool(lectureMap, const [
-            'isLiveSession',
-            'isLive',
-            'live',
-          ]) ??
-          false;
       final scheduleMap = _readMap(lectureMap, const [
         'liveSession',
         'schedule',
         'session',
         'live',
       ]);
+      final scheduleSessionMap = scheduleMap == null
+          ? null
+          : _readMap(scheduleMap, const [
+              'session',
+              'liveSession',
+              'meta',
+              'sessionMeta',
+              'sessionInfo',
+            ]);
+      final isLiveSession = _readBool(lectureMap, const [
+            'isLiveSession',
+            'isLive',
+            'live',
+          ]) ??
+          (scheduleMap == null
+              ? null
+              : _readBool(scheduleMap, const [
+                  'isLiveSession',
+                  'isLive',
+                  'live',
+                ])) ??
+          false;
+      final sessionId = _readFirstString([
+        _readString(lectureMap, const [
+          'sessionId',
+          'liveSessionId',
+          'session_id',
+          'sessionDocId',
+          'sessionDocID',
+          'docId',
+        ]),
+        if (scheduleMap != null)
+          _readString(scheduleMap, const [
+            'sessionId',
+            'liveSessionId',
+            'id',
+            '_id',
+            'sessionDocId',
+            'sessionDocID',
+            'docId',
+          ]),
+        if (scheduleSessionMap != null)
+          _readString(scheduleSessionMap, const [
+            'sessionId',
+            'liveSessionId',
+            'id',
+            '_id',
+            'sessionDocId',
+            'sessionDocID',
+            'docId',
+          ]),
+      ]);
+      final normalizedIsLiveSession = isLiveSession || sessionId.isNotEmpty;
       final joinOpensAt = _readDateTime(lectureMap, const [
             'joinOpensAt',
             'joinOpenAt',
@@ -418,6 +466,22 @@ List<StudentCourseLecture> _parseLectures(
                   'endAt',
                   'endTime',
                 ]));
+      final scheduledStartAt = startsAt ??
+          _readDateTimeFromDateAndTime(
+            scheduleMap,
+            dateKeys: const ['date', 'day'],
+            timeKeys: const ['startTime', 'start_time', 'startsAt', 'startAt'],
+          );
+      final scheduledEndAt = endsAt ??
+          _readDateTimeFromDateAndTime(
+            scheduleMap,
+            dateKeys: const ['date', 'day'],
+            timeKeys: const ['endTime', 'end_time', 'endsAt', 'endAt'],
+          );
+      final scheduledJoinOpensAt = joinOpensAt ??
+          (scheduledStartAt == null
+              ? null
+              : scheduledStartAt.subtract(const Duration(minutes: 10)));
       final lockReason = _readString(lectureMap, const [
         'lockReason',
         'lockedReason',
@@ -523,10 +587,11 @@ List<StudentCourseLecture> _parseLectures(
           progress: computedProgress,
           videoUrl: videoUrl,
           videoMode: videoMode,
-          isLiveSession: isLiveSession,
-          joinOpensAt: joinOpensAt,
-          startsAt: startsAt,
-          endsAt: endsAt,
+          isLiveSession: normalizedIsLiveSession,
+          sessionId: sessionId,
+          joinOpensAt: scheduledJoinOpensAt,
+          startsAt: scheduledStartAt,
+          endsAt: scheduledEndAt,
           isLocked: isLocked,
           canRewatch: canRewatch,
           lockAfterCompletion: lockAfterCompletion,
@@ -548,6 +613,7 @@ List<StudentCourseLecture> _parseLectures(
           videoUrl: '',
           videoMode: '',
           isLiveSession: false,
+          sessionId: '',
           joinOpensAt: null,
           startsAt: null,
           endsAt: null,
@@ -637,6 +703,50 @@ DateTime? _readDateTime(Map<String, dynamic> map, List<String> keys) {
   return null;
 }
 
+DateTime? _readDateTimeFromDateAndTime(
+  Map<String, dynamic>? map, {
+  required List<String> dateKeys,
+  required List<String> timeKeys,
+}) {
+  if (map == null) return null;
+  String dateText = '';
+  String timeText = '';
+  for (final key in dateKeys) {
+    final value = map[key];
+    if (value == null) continue;
+    final text = value.toString().trim();
+    if (text.isNotEmpty) {
+      dateText = text;
+      break;
+    }
+  }
+  for (final key in timeKeys) {
+    final value = map[key];
+    if (value == null) continue;
+    final text = value.toString().trim();
+    if (text.isNotEmpty) {
+      timeText = text;
+      break;
+    }
+  }
+  if (dateText.isEmpty || timeText.isEmpty) return null;
+
+  final parsedDate = DateTime.tryParse(dateText);
+  if (parsedDate == null) return null;
+
+  final parts = timeText.split(':');
+  if (parts.length < 2) return null;
+  final hours = int.tryParse(parts[0]) ?? 0;
+  final minutes = int.tryParse(parts[1]) ?? 0;
+  return DateTime(
+    parsedDate.year,
+    parsedDate.month,
+    parsedDate.day,
+    hours,
+    minutes,
+  );
+}
+
 bool? _readBool(Map<String, dynamic>? map, List<String> keys) {
   if (map == null) return null;
   for (final key in keys) {
@@ -697,4 +807,12 @@ Map<String, dynamic>? _readNestedMap(
     }
   }
   return null;
+}
+
+String _readFirstString(List<String?> values) {
+  for (final value in values) {
+    final text = value?.toString().trim() ?? '';
+    if (text.isNotEmpty) return text;
+  }
+  return '';
 }

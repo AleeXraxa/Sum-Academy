@@ -2,12 +2,15 @@ import 'package:flutter/foundation.dart';
 import 'package:sum_academy/core/services/api_client.dart';
 import 'package:sum_academy/core/services/api_exception.dart';
 import 'package:sum_academy/modules/student/models/student_course_progress.dart';
+import 'package:sum_academy/modules/student/models/student_session.dart';
+import 'package:sum_academy/modules/student/services/student_sessions_service.dart';
 
 class StudentCourseProgressService {
   StudentCourseProgressService({ApiClient? client})
       : _client = client ?? ApiClient();
 
   final ApiClient _client;
+  final StudentSessionsService _sessionsService = StudentSessionsService();
 
   Future<StudentCourseProgress> fetchProgress(String courseId) async {
     if (courseId.trim().isEmpty) {
@@ -27,9 +30,10 @@ class StudentCourseProgressService {
     }
 
     if (progressData == null || progressData.isEmpty) {
-      return contentProgress;
+      return _applySessionTiming(contentProgress);
     }
-    return _mergeProgress(contentProgress, progressData);
+    final merged = _mergeProgress(contentProgress, progressData);
+    return _applySessionTiming(merged);
   }
 
   Future<void> markLectureComplete({
@@ -91,6 +95,74 @@ class StudentCourseProgressService {
       coursePath:
           '/student/courses/$courseId/lectures/$lectureId/progress',
       body: body,
+    );
+  }
+
+  Future<StudentCourseProgress> _applySessionTiming(
+    StudentCourseProgress progress,
+  ) async {
+    if (progress.chapters.isEmpty) return progress;
+
+    final sessionIds = <String>{};
+    for (final chapter in progress.chapters) {
+      for (final lecture in chapter.lectures) {
+        if (!lecture.isLiveSession) continue;
+        if (lecture.sessionId.trim().isEmpty) continue;
+        sessionIds.add(lecture.sessionId.trim());
+      }
+    }
+    if (sessionIds.isEmpty) return progress;
+
+    final sessionMap = <String, StudentSession>{};
+    await Future.wait(
+      sessionIds.map((id) async {
+        try {
+          final session = await _sessionsService.fetchSession(id);
+          if (session.id.isNotEmpty) {
+            sessionMap[id] = session;
+          }
+        } catch (_) {}
+      }),
+    );
+    if (sessionMap.isEmpty) return progress;
+
+    final updatedChapters = progress.chapters
+        .map((chapter) {
+          final updatedLectures = chapter.lectures.map((lecture) {
+            final session = sessionMap[lecture.sessionId];
+            if (session == null) return lecture;
+            return StudentCourseLecture(
+              id: lecture.id,
+              title: lecture.title,
+              duration: lecture.duration,
+              isCompleted: lecture.isCompleted,
+              progress: lecture.progress,
+              videoUrl: lecture.videoUrl,
+              videoMode: lecture.videoMode,
+              isLiveSession: lecture.isLiveSession,
+              sessionId: lecture.sessionId,
+              joinOpensAt: session.joinOpensAt ?? lecture.joinOpensAt,
+              startsAt: session.startAt ?? lecture.startsAt,
+              endsAt: session.endAt ?? lecture.endsAt,
+              isLocked: lecture.isLocked,
+              canRewatch: lecture.canRewatch,
+              lockAfterCompletion: lecture.lockAfterCompletion,
+              lockReason: lecture.lockReason,
+            );
+          }).toList();
+          return StudentCourseChapter(
+            title: chapter.title,
+            lectures: updatedLectures,
+          );
+        })
+        .toList();
+
+    return StudentCourseProgress(
+      courseId: progress.courseId,
+      progress: progress.progress,
+      completedLectures: progress.completedLectures,
+      totalLectures: progress.totalLectures,
+      chapters: updatedChapters,
     );
   }
 }
@@ -160,6 +232,11 @@ extension on StudentCourseProgressService {
     final status = error.statusCode ?? 0;
     if (status == 404) return true;
     final message = error.message.toLowerCase();
+    // Some deployments respond with HTML (200) on unknown/blocked routes.
+    // In that case, try the alternate (course vs subject) route.
+    if (status == 200 && message.contains('unexpected server response')) {
+      return true;
+    }
     return message.contains('not found') ||
         message.contains('route') ||
         message.contains('endpoint');
@@ -204,6 +281,8 @@ StudentCourseProgress _mergeProgress(
           videoMode:
               lecture.videoMode.isNotEmpty ? lecture.videoMode : override.videoMode,
           isLiveSession: lecture.isLiveSession || override.isLiveSession,
+          sessionId:
+              lecture.sessionId.isNotEmpty ? lecture.sessionId : override.sessionId,
           joinOpensAt: lecture.joinOpensAt ?? override.joinOpensAt,
           startsAt: lecture.startsAt ?? override.startsAt,
           endsAt: lecture.endsAt ?? override.endsAt,
