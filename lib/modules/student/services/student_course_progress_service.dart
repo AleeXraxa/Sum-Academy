@@ -133,15 +133,22 @@ class StudentCourseProgressService {
             if (session == null) return lecture;
             final recordingUrl = session.recordingUrl.trim();
             final completedFromSession = session.lectureCompleted == true;
+            final fallbackEnded = lecture.endsAt != null
+                ? DateTime.now().isAfter(lecture.endsAt!)
+                : false;
+            final effectiveEnded = session.hasEnded || fallbackEnded;
             final shouldUseRecording =
-                recordingUrl.isNotEmpty && session.hasEnded;
+                recordingUrl.isNotEmpty && effectiveEnded;
             final mergedCompleted = lecture.isCompleted || completedFromSession;
             final mergedProgress = mergedCompleted ? 1.0 : lecture.progress;
-            final mergedIsLocked = session.isLocked
-                ? true
-                : (completedFromSession ? false : lecture.isLocked);
-            final mergedCanRewatch =
-                lecture.canRewatch || (shouldUseRecording && mergedCompleted);
+            final mergedIsLocked = effectiveEnded
+                ? session.isLocked
+                : (session.isLocked
+                    ? true
+                    : (completedFromSession ? false : lecture.isLocked));
+            final mergedCanRewatch = effectiveEnded
+                ? !mergedIsLocked
+                : (lecture.canRewatch || (shouldUseRecording && mergedCompleted));
             return StudentCourseLecture(
               id: lecture.id,
               title: lecture.title,
@@ -152,7 +159,7 @@ class StudentCourseProgressService {
               videoUrl: shouldUseRecording ? recordingUrl : lecture.videoUrl,
               videoMode: lecture.videoMode,
               // Once the live session ends, treat it as a normal lecture in course content.
-              isLiveSession: lecture.isLiveSession && !session.hasEnded,
+              isLiveSession: lecture.isLiveSession && !effectiveEnded,
               sessionId: lecture.sessionId,
               joinOpensAt: session.joinOpensAt ?? lecture.joinOpensAt,
               startsAt: session.startAt ?? lecture.startsAt,

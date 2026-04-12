@@ -39,9 +39,9 @@ class StudentLiveSessionsController extends GetxController {
       return sessions.where((s) => !s.isLive && !s.hasEnded).toList();
     }
     if (filter == 'recording') {
-      return sessions.where((s) => s.hasEnded).toList();
+      return const [];
     }
-    return sessions;
+    return sessions.where((s) => !s.hasEnded).toList();
   }
 
   void setFilter(String value) {
@@ -149,7 +149,6 @@ class StudentLiveSessionsController extends GetxController {
 
   int _statusRank(StudentSession session) {
     if (session.isLive) return 0;
-    if (session.hasEnded) return 2;
     return 1;
   }
 }

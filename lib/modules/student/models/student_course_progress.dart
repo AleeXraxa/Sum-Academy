@@ -460,6 +460,7 @@ List<StudentCourseLecture> _parseLectures(
       final startsAt = _readDateTime(lectureMap, const [
             'startsAt',
             'startAt',
+            'liveStartAt',
             'startTime',
           ]) ??
           (scheduleMap == null
@@ -467,11 +468,13 @@ List<StudentCourseLecture> _parseLectures(
               : _readDateTime(scheduleMap, const [
                   'startsAt',
                   'startAt',
+                  'liveStartAt',
                   'startTime',
                 ]));
       final endsAt = _readDateTime(lectureMap, const [
             'endsAt',
             'endAt',
+            'liveEndAt',
             'endTime',
           ]) ??
           (scheduleMap == null
@@ -479,6 +482,7 @@ List<StudentCourseLecture> _parseLectures(
               : _readDateTime(scheduleMap, const [
                   'endsAt',
                   'endAt',
+                  'liveEndAt',
                   'endTime',
                 ]));
       final scheduledStartAt = startsAt ??

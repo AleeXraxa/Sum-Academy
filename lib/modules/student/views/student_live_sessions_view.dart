@@ -32,7 +32,7 @@ class StudentLiveSessionsView extends StatelessWidget {
             _HeaderRow(textColor: textColor),
             SizedBox(height: 6.h),
             Text(
-              'Upcoming and live sessions are shown here. When a session ends, the recording will remain here until you watch it completely.',
+              'Upcoming and live sessions are shown here. Ended sessions move to your class recordings automatically.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: textColor.withOpacityFloat(0.65),
                     height: 1.35,
@@ -161,8 +161,6 @@ class _FilterRow extends StatelessWidget {
           chip(id: 'live', label: 'Live'),
           SizedBox(width: 8.w),
           chip(id: 'upcoming', label: 'Upcoming'),
-          SizedBox(width: 8.w),
-          chip(id: 'recording', label: 'Recordings'),
         ],
       ),
     );
@@ -185,9 +183,7 @@ class _LiveSessionCard extends StatelessWidget {
     final badge = _badgeFor(session);
     final accent = badge == _SessionBadge.live
         ? SumAcademyTheme.success
-        : (badge == _SessionBadge.recording
-            ? SumAcademyTheme.brandBlue
-            : SumAcademyTheme.brandBlue);
+        : SumAcademyTheme.brandBlue;
     final badgeText = badge.name;
 
     return InkWell(
@@ -307,14 +303,11 @@ class _LiveSessionCard extends StatelessWidget {
   }
 }
 
-enum _SessionBadge { upcoming, live, recording, ended }
+enum _SessionBadge { upcoming, live, ended }
 
 _SessionBadge _badgeFor(StudentSession session) {
   if (session.isLive) return _SessionBadge.live;
   if (session.hasEnded) {
-    if (session.recordingUrl.trim().isNotEmpty && !session.isLocked) {
-      return _SessionBadge.recording;
-    }
     return _SessionBadge.ended;
   }
   return _SessionBadge.upcoming;
@@ -724,7 +717,7 @@ class _EmptyState extends StatelessWidget {
         border: Border.all(color: border),
       ),
       child: Text(
-        'No upcoming live sessions right now.',
+        'No live sessions right now.',
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: (isDark
                       ? SumAcademyTheme.white
