@@ -1,12 +1,15 @@
 import 'dart:async';
 
 import 'package:better_player/better_player.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/core/utils/network_error.dart';
 import 'package:sum_academy/modules/student/controllers/student_live_sessions_controller.dart';
+import 'package:sum_academy/modules/student/controllers/student_courses_controller.dart';
 import 'package:sum_academy/modules/student/models/student_session.dart';
 
 class _MinimalLiveControls extends StatelessWidget {
@@ -85,11 +88,13 @@ class _MinimalLiveControls extends StatelessWidget {
 class StudentLiveSessionPlayerView extends StatefulWidget {
   final StudentSession session;
   final String playbackUrl;
+  final int initialSeekSeconds;
 
   const StudentLiveSessionPlayerView({
     super.key,
     required this.session,
     required this.playbackUrl,
+    this.initialSeekSeconds = 0,
   });
 
   @override
@@ -99,16 +104,86 @@ class StudentLiveSessionPlayerView extends StatefulWidget {
 
 class _StudentLiveSessionPlayerViewState extends State<StudentLiveSessionPlayerView>
     with WidgetsBindingObserver {
-  late final BetterPlayerController _playerController;
+  BetterPlayerController? _playerController;
   late final void Function(BetterPlayerEvent event) _eventListener;
   bool _finishHandled = false;
+  bool _initialSeekApplied = false;
+  Timer? _statusTimer;
+  Timer? _tickTimer;
+  int _joinedCount = 0;
+  int _totalStudents = 0;
+  int _elapsedSeconds = 0;
+  int _remainingSeconds = 0;
+  String _status = '';
+  DateTime? _openedAt;
+  int _maxPositionMs = 0;
+  int _durationMs = 0;
+  bool _startupErrorShown = false;
+  String _lastPlayerError = '';
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _openedAt = DateTime.now();
 
-    _playerController = BetterPlayerController(
+    _joinedCount = widget.session.joinedCount;
+    _totalStudents = widget.session.totalStudents;
+    _elapsedSeconds = widget.session.elapsedSeconds;
+    _remainingSeconds = widget.session.remainingSeconds;
+    _status = widget.session.status;
+
+    _eventListener = _handlePlayerEvent;
+    unawaited(_initPlayer());
+
+    _statusTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
+      if (!mounted) return;
+      if (!Get.isRegistered<StudentLiveSessionsController>()) return;
+      final controller = Get.find<StudentLiveSessionsController>();
+      try {
+        final latest = await controller.fetchSessionStatus(widget.session.id);
+        if (!mounted) return;
+        setState(() {
+          _joinedCount = latest.joinedCount;
+          _totalStudents = latest.totalStudents;
+          _elapsedSeconds = latest.elapsedSeconds;
+          _remainingSeconds = latest.remainingSeconds;
+          _status = latest.status;
+        });
+      } catch (_) {}
+    });
+
+    _tickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      if (_status.toLowerCase() != 'active') return;
+      setState(() {
+        _elapsedSeconds += 1;
+        if (_remainingSeconds > 0) _remainingSeconds -= 1;
+      });
+    });
+  }
+
+  Future<void> _initPlayer() async {
+    final headers = await _maybeAuthHeaders(widget.playbackUrl);
+    if (kDebugMode) {
+      debugPrint(
+        'Live player init -> url=${widget.playbackUrl} '
+        'headers=${headers == null ? 'none' : headers.keys.join(',')}',
+      );
+    }
+    final uri = Uri.tryParse(widget.playbackUrl);
+    BetterPlayerVideoFormat? formatHint;
+    final path = uri?.path.toLowerCase() ?? '';
+    if (path.endsWith('.m3u8')) {
+      formatHint = BetterPlayerVideoFormat.hls;
+    } else if (path.endsWith('.mpd')) {
+      formatHint = BetterPlayerVideoFormat.dash;
+    } else if (path.endsWith('.mp4') || path.endsWith('.m4v')) {
+      formatHint = BetterPlayerVideoFormat.other;
+    }
+
+    if (!mounted) return;
+    final controller = BetterPlayerController(
       BetterPlayerConfiguration(
         autoPlay: true,
         fit: BoxFit.contain,
@@ -123,7 +198,7 @@ class _StudentLiveSessionPlayerViewState extends State<StudentLiveSessionPlayerV
           playerTheme: BetterPlayerTheme.custom,
           showControls: true,
           showControlsOnInitialize: true,
-          loadingWidget: SizedBox.shrink(),
+          loadingWidget: const SizedBox.shrink(),
           loadingColor: Colors.transparent,
           enableOverflowMenu: false,
           enablePlayPause: false,
@@ -146,17 +221,42 @@ class _StudentLiveSessionPlayerViewState extends State<StudentLiveSessionPlayerV
       betterPlayerDataSource: BetterPlayerDataSource(
         BetterPlayerDataSourceType.network,
         widget.playbackUrl,
+        headers: headers,
+        liveStream: widget.session.isLive,
+        videoFormat: formatHint,
       ),
     );
-    _eventListener = _handlePlayerEvent;
-    _playerController.addEventsListener(_eventListener);
+    controller.addEventsListener(_eventListener);
+    setState(() => _playerController = controller);
+  }
+
+  Future<Map<String, String>?> _maybeAuthHeaders(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return null;
+    final needsAuth = (uri.path.contains('/api/') && uri.host.isNotEmpty);
+    if (!needsAuth) return null;
+
+    final user = FirebaseAuth.instance.currentUser;
+    final token = await user?.getIdToken();
+    if (kDebugMode) {
+      debugPrint(
+        'Live player auth -> needsAuth=true user=${user?.uid ?? 'null'} token=${token == null ? 'null' : 'present'}',
+      );
+    }
+    if (token == null || token.isEmpty) return null;
+    return {'Authorization': 'Bearer $token'};
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _playerController.removeEventsListener(_eventListener);
-    _playerController.dispose();
+    _statusTimer?.cancel();
+    _tickTimer?.cancel();
+    final controller = _playerController;
+    if (controller != null) {
+      controller.removeEventsListener(_eventListener);
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -181,14 +281,94 @@ class _StudentLiveSessionPlayerViewState extends State<StudentLiveSessionPlayerV
 
   void _handlePlayerEvent(BetterPlayerEvent event) {
     if (!mounted) return;
+    if (event.betterPlayerEventType == BetterPlayerEventType.exception) {
+      _lastPlayerError = (event.parameters ?? const {}).toString();
+      if (!_startupErrorShown) {
+        _startupErrorShown = true;
+        unawaited(
+          showAppErrorDialog(
+            title: 'Live Session',
+            message:
+                'Unable to start the live video. Please try again.',
+          ),
+        );
+      }
+      return;
+    }
+    if (event.betterPlayerEventType == BetterPlayerEventType.initialized) {
+      if (_initialSeekApplied) return;
+      final seconds = widget.initialSeekSeconds;
+      if (seconds <= 0) {
+        _initialSeekApplied = true;
+        return;
+      }
+      _initialSeekApplied = true;
+      final controller = _playerController;
+      final vp = controller?.videoPlayerController;
+      final dur = vp?.value.duration;
+      if (controller != null && dur != null && dur.inMilliseconds > 0) {
+        final target = Duration(seconds: seconds);
+        // If the backend elapsedSeconds is larger than the actual video duration,
+        // seeking past end will instantly finish. Clamp or skip the seek.
+        if (target >= dur) {
+          return;
+        }
+        unawaited(controller.seekTo(target));
+      }
+      return;
+    }
+    if (event.betterPlayerEventType == BetterPlayerEventType.progress) {
+      final vp = _playerController?.videoPlayerController;
+      final value = vp?.value;
+      if (value != null && value.initialized) {
+        final duration = value.duration;
+        final position = value.position;
+        if (duration != null) {
+          _durationMs = duration.inMilliseconds;
+        }
+        if (position != null) {
+          final posMs = position.inMilliseconds;
+          if (posMs > _maxPositionMs) _maxPositionMs = posMs;
+        }
+      }
+    }
     if (event.betterPlayerEventType != BetterPlayerEventType.finished) return;
     if (_finishHandled) return;
+    // Guard: BetterPlayer can emit "finished" immediately if the stream fails or has zero duration.
+    final openedAt = _openedAt ?? DateTime.now();
+    final secondsSinceOpen = DateTime.now().difference(openedAt).inSeconds;
+    final durationMs = _durationMs;
+    final maxPosMs = _maxPositionMs;
+    final durationOk = durationMs > 1500;
+    final nearEnd = durationOk && maxPosMs >= (durationMs * 0.92).round();
+    if (secondsSinceOpen < 3 && !nearEnd) {
+      if (!_startupErrorShown) {
+        _startupErrorShown = true;
+        unawaited(
+          showAppErrorDialog(
+            title: 'Live Session',
+            message: 'Unable to start the live video. Please try again.',
+          ),
+        );
+      }
+      return;
+    }
     _finishHandled = true;
     unawaited(_handleFinished());
   }
 
   Future<void> _handleFinished() async {
-    await _leaveSession();
+    if (Get.isRegistered<StudentLiveSessionsController>()) {
+      try {
+        final controller = Get.find<StudentLiveSessionsController>();
+        // Mark completion in liveSessionAccess (backend may store this flag).
+        await controller.leaveSession(widget.session, lectureCompleted: true);
+      } catch (_) {
+        await _leaveSession();
+      }
+    } else {
+      await _leaveSession();
+    }
     if (!mounted) return;
     await showAppSuccessDialog(
       title: 'Live Session',
@@ -197,6 +377,12 @@ class _StudentLiveSessionPlayerViewState extends State<StudentLiveSessionPlayerV
     if (Get.isRegistered<StudentLiveSessionsController>()) {
       final controller = Get.find<StudentLiveSessionsController>();
       unawaited(controller.fetchSessions(silent: true));
+    }
+    // Refresh My Classes / Courses so the lecture can appear there after completion.
+    // (Course content progress merges liveSessionAccess completion via session status.)
+    if (Get.isRegistered<StudentCoursesController>()) {
+      final courses = Get.find<StudentCoursesController>();
+      unawaited(courses.fetchCourses(silent: true));
     }
     if (mounted) Get.back();
   }
@@ -242,9 +428,86 @@ class _StudentLiveSessionPlayerViewState extends State<StudentLiveSessionPlayerV
             SizedBox(height: 10.h),
             ClipRRect(
               borderRadius: BorderRadius.circular(18.r),
-              child: AspectRatio(
-                aspectRatio: 16 / 9,
-                child: BetterPlayer(controller: _playerController),
+              child: Stack(
+                children: [
+                  AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: _playerController == null
+                        ? Container(
+                            color: Colors.black,
+                            alignment: Alignment.center,
+                            child: SizedBox(
+                              width: 22.r,
+                              height: 22.r,
+                              child: const CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            ),
+                          )
+                        : BetterPlayer(controller: _playerController!),
+                  ),
+                  Positioned(
+                    left: 10.w,
+                    top: 10.h,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacityFloat(0.45),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: Colors.white.withOpacityFloat(0.10),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 7.r,
+                            height: 7.r,
+                            decoration: BoxDecoration(
+                              color: _status.toLowerCase() == 'active'
+                                  ? SumAcademyTheme.error
+                                  : SumAcademyTheme.brandBlue,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          SizedBox(width: 6.w),
+                          Text(
+                            'LIVE LECTURE',
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  color: SumAcademyTheme.white,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.2,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (_totalStudents > 0)
+                    Positioned(
+                      right: 10.w,
+                      top: 10.h,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacityFloat(0.45),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: Colors.white.withOpacityFloat(0.10),
+                          ),
+                        ),
+                        child: Text(
+                          'Joined $_joinedCount/$_totalStudents',
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: SumAcademyTheme.white.withOpacityFloat(0.92),
+                                fontWeight: FontWeight.w800,
+                              ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
             SizedBox(height: 14.h),
@@ -270,5 +533,16 @@ class _StudentLiveSessionPlayerViewState extends State<StudentLiveSessionPlayerV
         ),
       ),
     );
+  }
+
+  String _formatClock(int totalSeconds) {
+    final seconds = totalSeconds.clamp(0, 24 * 60 * 60);
+    final h = seconds ~/ 3600;
+    final m = (seconds % 3600) ~/ 60;
+    final s = seconds % 60;
+    if (h > 0) {
+      return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+    }
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 }

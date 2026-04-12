@@ -43,6 +43,11 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
   bool _initialSeekApplied = false;
   late final void Function(BetterPlayerEvent event) _eventListener;
   late final bool _isReplayLocked;
+  static const int _seekStepSeconds = 10;
+  Duration _currentPosition = Duration.zero;
+  Duration _totalDuration = Duration.zero;
+  double? _scrubValue;
+  bool _isScrubbing = false;
 
   @override
   void initState() {
@@ -70,12 +75,28 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
         fit: BoxFit.contain,
         aspectRatio: 16 / 9,
         allowedScreenSleep: false,
-        controlsConfiguration: const BetterPlayerControlsConfiguration(
+        controlsConfiguration: BetterPlayerControlsConfiguration(
+          // Use custom controls to avoid default overlays and show only:
+          // back/forward 10s + volume + fullscreen.
+          playerTheme: BetterPlayerTheme.custom,
+          showControls: true,
+          showControlsOnInitialize: true,
+          controlsHideTime: const Duration(days: 365),
+          customControlsBuilder: (controller, onPlayerVisibilityChanged) {
+            onPlayerVisibilityChanged(true);
+            return _MinimalSeekControls(
+              controller: controller,
+              seekStepSeconds: _seekStepSeconds,
+            );
+          },
+          loadingWidget: const SizedBox.shrink(),
+          loadingColor: Colors.transparent,
           enableOverflowMenu: false,
           enablePlayPause: false,
           enableSkips: false,
           enableProgressText: false,
           enableProgressBar: false,
+          enableProgressBarDrag: false,
           enableAudioTracks: false,
           enableSubtitles: false,
           enablePlaybackSpeed: false,
@@ -84,7 +105,6 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
           enableQualities: false,
           enableFullscreen: true,
           enableMute: true,
-          showControlsOnInitialize: true,
         ),
       ),
       betterPlayerDataSource: BetterPlayerDataSource(
@@ -150,18 +170,42 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
       _playerController.seekTo(target);
     }
     final position = value.position ?? Duration.zero;
+    final clampedPosition = position < Duration.zero
+        ? Duration.zero
+        : (position > duration ? duration : position);
     final progress = (position.inMilliseconds / duration.inMilliseconds).clamp(
       0.0,
       1.0,
     );
     if (!mounted) return;
-    if (progress != _playbackProgress) {
-      setState(() => _playbackProgress = progress);
+    if (progress != _playbackProgress ||
+        (!_isScrubbing && (_currentPosition != clampedPosition || _totalDuration != duration))) {
+      setState(() {
+        _playbackProgress = progress;
+        if (!_isScrubbing) {
+          _currentPosition = clampedPosition;
+          _totalDuration = duration;
+        } else {
+          // Keep total duration fresh even while scrubbing.
+          _totalDuration = duration;
+        }
+      });
     }
     if (progress >= 0.98 && !_autoMarked && !widget.lecture.isCompleted) {
       _autoMarked = true;
       unawaited(_markComplete(silent: true));
     }
+  }
+
+  String _formatClock(Duration duration) {
+    final seconds = duration.inSeconds.clamp(0, 24 * 60 * 60);
+    final h = seconds ~/ 3600;
+    final m = (seconds % 3600) ~/ 60;
+    final s = seconds % 60;
+    if (h > 0) {
+      return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+    }
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
   double _currentPlaybackPercent() {
@@ -444,6 +488,94 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
                   ),
                 ),
               ),
+              SizedBox(height: 10.h),
+              Container(
+                padding: EdgeInsets.fromLTRB(14.w, 12.h, 14.w, 12.h),
+                decoration: BoxDecoration(
+                  color: surface,
+                  borderRadius: BorderRadius.circular(16.r),
+                  border: Border.all(color: border),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          _formatClock(
+                            _isScrubbing
+                                ? Duration(
+                                    milliseconds:
+                                        ((_totalDuration.inMilliseconds) *
+                                                (_scrubValue ?? 0))
+                                            .round(),
+                                  )
+                                : _currentPosition,
+                          ),
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: textColor.withOpacityFloat(0.75),
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          _formatClock(_totalDuration),
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: textColor.withOpacityFloat(0.75),
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 6.h),
+                    SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 4.h,
+                        overlayShape:
+                            RoundSliderOverlayShape(overlayRadius: 16.r),
+                        thumbShape:
+                            RoundSliderThumbShape(enabledThumbRadius: 7.r),
+                        activeTrackColor: SumAcademyTheme.brandBlue,
+                        inactiveTrackColor:
+                            SumAcademyTheme.brandBluePale.withOpacityFloat(0.9),
+                        thumbColor: SumAcademyTheme.brandBlue,
+                        overlayColor:
+                            SumAcademyTheme.brandBlue.withOpacityFloat(0.12),
+                      ),
+                      child: Slider(
+                        value: (_totalDuration.inMilliseconds <= 0)
+                            ? 0
+                            : (_isScrubbing
+                                ? (_scrubValue ?? 0)
+                                : (_currentPosition.inMilliseconds /
+                                        _totalDuration.inMilliseconds)
+                                    .clamp(0.0, 1.0)),
+                        onChanged: (_totalDuration.inMilliseconds <= 0 || _isReplayLocked)
+                            ? null
+                            : (v) {
+                                setState(() {
+                                  _isScrubbing = true;
+                                  _scrubValue = v;
+                                });
+                              },
+                        onChangeEnd: (_totalDuration.inMilliseconds <= 0 || _isReplayLocked)
+                            ? null
+                            : (v) {
+                                final targetMillis =
+                                    (_totalDuration.inMilliseconds * v).round();
+                                final target =
+                                    Duration(milliseconds: targetMillis);
+                                _playerController.seekTo(target);
+                                setState(() {
+                                  _isScrubbing = false;
+                                  _scrubValue = null;
+                                  _currentPosition = target;
+                                });
+                              },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               SizedBox(height: 16.h),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
@@ -587,6 +719,154 @@ class _StudentCourseVideoViewState extends State<StudentCourseVideoView>
           ),
         ),
       ),
+    );
+  }
+}
+
+class _MinimalSeekControls extends StatelessWidget {
+  final BetterPlayerController controller;
+  final int seekStepSeconds;
+
+  const _MinimalSeekControls({
+    required this.controller,
+    required this.seekStepSeconds,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final video = controller.videoPlayerController;
+    if (video == null) return const SizedBox.shrink();
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final iconColor = Colors.white.withOpacityFloat(0.95);
+
+    Future<void> seekBy(int deltaSeconds) async {
+      final value = video.value;
+      final current = value.position;
+      final duration = value.duration ?? Duration.zero;
+      final next = current + Duration(seconds: deltaSeconds);
+      final clamped = next < Duration.zero
+          ? Duration.zero
+          : (duration != Duration.zero && next > duration ? duration : next);
+      await controller.seekTo(clamped);
+    }
+
+    return ValueListenableBuilder(
+      valueListenable: video,
+      builder: (context, value, child) {
+        final volume = value.volume;
+        final isMuted = volume <= 0.001;
+        final isPlaying = value.isPlaying;
+
+        return Stack(
+          children: [
+            Positioned(
+              left: 10.w,
+              right: 10.w,
+              bottom: 10.h,
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                decoration: BoxDecoration(
+                  color: (isDark ? Colors.black : Colors.black)
+                      .withOpacityFloat(0.35),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: Colors.white.withOpacityFloat(0.10),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: BoxConstraints.tight(Size(36.r, 36.r)),
+                          icon: Icon(
+                            Icons.replay_10_rounded,
+                            color: iconColor,
+                            size: 20.sp,
+                          ),
+                          onPressed: () => seekBy(-seekStepSeconds),
+                        ),
+                        SizedBox(width: 6.w),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: BoxConstraints.tight(Size(36.r, 36.r)),
+                          icon: Icon(
+                            isPlaying
+                                ? Icons.pause_circle_filled_rounded
+                                : Icons.play_circle_fill_rounded,
+                            color: iconColor,
+                            size: 22.sp,
+                          ),
+                          onPressed: () async {
+                            if (isPlaying) {
+                              await controller.pause();
+                            } else {
+                              await controller.play();
+                            }
+                          },
+                        ),
+                        SizedBox(width: 6.w),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: BoxConstraints.tight(Size(36.r, 36.r)),
+                          icon: Icon(
+                            Icons.forward_10_rounded,
+                            color: iconColor,
+                            size: 20.sp,
+                          ),
+                          onPressed: () => seekBy(seekStepSeconds),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: BoxConstraints.tight(Size(36.r, 36.r)),
+                          icon: Icon(
+                            isMuted
+                                ? Icons.volume_off_rounded
+                                : Icons.volume_up_rounded,
+                            color: iconColor,
+                            size: 20.sp,
+                          ),
+                          onPressed: () async {
+                            final next = isMuted ? 1.0 : 0.0;
+                            await controller.setVolume(next);
+                          },
+                        ),
+                        SizedBox(width: 6.w),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: BoxConstraints.tight(Size(36.r, 36.r)),
+                          icon: Icon(
+                            controller.isFullScreen
+                                ? Icons.fullscreen_exit_rounded
+                                : Icons.fullscreen_rounded,
+                            color: iconColor,
+                            size: 20.sp,
+                          ),
+                          onPressed: controller.toggleFullScreen,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

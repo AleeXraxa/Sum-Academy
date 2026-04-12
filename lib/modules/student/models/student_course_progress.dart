@@ -159,8 +159,23 @@ class StudentCourseLecture {
 
   bool get shouldShowInLiveSessionsTab {
     if (!isLiveSession) return false;
-    // Live sessions stay in the Live Session tab until the student completes them.
-    return !isCompleted;
+    // Show in course content once a recording/video URL is available OR the session has ended.
+    // Otherwise keep it in Live Session tab.
+    if (isCompleted) return false;
+
+    // If we don't even have a session id or timing yet, don't hide the lecture from course content.
+    // (Otherwise student gets stuck with "watch in live session" but live list is empty.)
+    final hasSchedule = sessionId.trim().isNotEmpty || startsAt != null || endsAt != null;
+    if (!hasSchedule) return false;
+
+    final now = DateTime.now();
+    final end = endsAt;
+    if (end != null) {
+      return now.isBefore(end);
+    }
+    // If we don't have an end time but we do have a playable URL, treat it as ended/recording.
+    if (videoUrl.trim().isNotEmpty) return false;
+    return true;
   }
 
   bool get isCurrentlyLive {
@@ -680,23 +695,25 @@ DateTime? _readDateTime(Map<String, dynamic> map, List<String> keys) {
     if (value is DateTime) return value;
     if (value is String) {
       final parsed = DateTime.tryParse(value.trim());
-      if (parsed != null) return parsed;
+      if (parsed != null) {
+        return parsed.isUtc ? parsed.toLocal() : parsed;
+      }
     }
     if (value is int) {
       if (value > 100000000000) {
-        return DateTime.fromMillisecondsSinceEpoch(value);
+        return DateTime.fromMillisecondsSinceEpoch(value).toLocal();
       }
       if (value > 1000000000) {
-        return DateTime.fromMillisecondsSinceEpoch(value * 1000);
+        return DateTime.fromMillisecondsSinceEpoch(value * 1000).toLocal();
       }
     }
     if (value is num) {
       final intValue = value.toInt();
       if (intValue > 100000000000) {
-        return DateTime.fromMillisecondsSinceEpoch(intValue);
+        return DateTime.fromMillisecondsSinceEpoch(intValue).toLocal();
       }
       if (intValue > 1000000000) {
-        return DateTime.fromMillisecondsSinceEpoch(intValue * 1000);
+        return DateTime.fromMillisecondsSinceEpoch(intValue * 1000).toLocal();
       }
     }
   }

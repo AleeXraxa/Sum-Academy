@@ -22,11 +22,30 @@ class StudentLiveSessionsController extends GetxController {
   final sessions = <StudentSession>[].obs;
   final isLoading = false.obs;
   final errorMessage = ''.obs;
+  final selectedFilter = 'all'.obs; // all | live | upcoming | recording
 
   @override
   void onInit() {
     super.onInit();
     fetchSessions();
+  }
+
+  List<StudentSession> get filteredSessions {
+    final filter = selectedFilter.value;
+    if (filter == 'live') {
+      return sessions.where((s) => s.isLive).toList();
+    }
+    if (filter == 'upcoming') {
+      return sessions.where((s) => !s.isLive && !s.hasEnded).toList();
+    }
+    if (filter == 'recording') {
+      return sessions.where((s) => s.hasEnded).toList();
+    }
+    return sessions;
+  }
+
+  void setFilter(String value) {
+    selectedFilter.value = value;
   }
 
   Future<void> fetchSessions({bool silent = false}) async {
@@ -103,10 +122,23 @@ class StudentLiveSessionsController extends GetxController {
     );
   }
 
-  Future<void> leaveSession(StudentSession session) async {
+  Future<void> leaveSession(
+    StudentSession session, {
+    bool lectureCompleted = false,
+  }) async {
     final id = session.id.trim();
     if (id.isEmpty) return;
-    await _sessionsService.leaveSession(id);
+    await _sessionsService.leaveSession(id, lectureCompleted: lectureCompleted);
+  }
+
+  Future<Map<String, dynamic>> syncSession(StudentSession session) async {
+    final id = session.id.trim();
+    if (id.isEmpty) return const {};
+    return _sessionsService.syncSession(id);
+  }
+
+  Future<StudentSession> fetchSessionStatus(String sessionId) {
+    return _sessionsService.fetchSession(sessionId);
   }
 
   List<StudentCourse> _enrolledCourses() {

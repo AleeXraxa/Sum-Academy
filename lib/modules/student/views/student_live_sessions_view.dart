@@ -38,6 +38,8 @@ class StudentLiveSessionsView extends StatelessWidget {
                     height: 1.35,
                   ),
             ),
+            SizedBox(height: 12.h),
+            const _FilterRow(),
             SizedBox(height: 14.h),
             if (controller.isLoading.value)
               const _Skeleton()
@@ -46,10 +48,10 @@ class StudentLiveSessionsView extends StatelessWidget {
                 message: controller.errorMessage.value,
                 onRetry: controller.fetchSessions,
               )
-            else if (controller.sessions.isEmpty)
+            else if (controller.filteredSessions.isEmpty)
               const _EmptyState()
             else
-              ...controller.sessions.map(
+              ...controller.filteredSessions.map(
                 (session) => Padding(
                   padding: EdgeInsets.only(bottom: 12.h),
                   child: _LiveSessionCard(session: session),
@@ -71,6 +73,7 @@ class _HeaderRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final scaffoldState = Scaffold.maybeOf(context);
     final showMenu = scaffoldState?.hasDrawer ?? false;
+    final controller = Get.find<StudentLiveSessionsController>();
     return Row(
       children: [
         if (showMenu)
@@ -97,6 +100,71 @@ class _HeaderRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _FilterRow extends StatelessWidget {
+  const _FilterRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = Get.find<StudentLiveSessionsController>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final base =
+        isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
+
+    Widget chip({
+      required String id,
+      required String label,
+    }) {
+      return Obx(() {
+        final selected = controller.selectedFilter.value == id;
+        final bg = selected
+            ? SumAcademyTheme.brandBlue
+            : (isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white);
+        final fg = selected ? SumAcademyTheme.white : base.withOpacityFloat(0.85);
+        final bd = selected
+            ? SumAcademyTheme.brandBlue
+            : (isDark
+                ? SumAcademyTheme.white.withOpacityFloat(0.08)
+                : SumAcademyTheme.brandBluePale);
+        return InkWell(
+          borderRadius: BorderRadius.circular(999),
+          onTap: () => controller.setFilter(id),
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 7.h),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: bd),
+            ),
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: fg,
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+          ),
+        );
+      });
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: [
+          chip(id: 'all', label: 'All'),
+          SizedBox(width: 8.w),
+          chip(id: 'live', label: 'Live'),
+          SizedBox(width: 8.w),
+          chip(id: 'upcoming', label: 'Upcoming'),
+          SizedBox(width: 8.w),
+          chip(id: 'recording', label: 'Recordings'),
+        ],
+      ),
     );
   }
 }
@@ -325,14 +393,6 @@ class StudentLiveSessionDetailView extends StatelessWidget {
               ],
             ),
             SizedBox(height: 14.h),
-            Text(
-              _classLine(session),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: textColor.withOpacityFloat(0.65),
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-            SizedBox(height: 14.h),
             Container(
               padding: EdgeInsets.all(16.r),
               decoration: BoxDecoration(
@@ -340,10 +400,26 @@ class StudentLiveSessionDetailView extends StatelessWidget {
                 borderRadius:
                     BorderRadius.circular(SumAcademyTheme.radiusCard.r),
                 border: Border.all(color: border),
+                boxShadow: [
+                  if (!isDark)
+                    BoxShadow(
+                      color: SumAcademyTheme.darkBase.withOpacityFloat(0.06),
+                      blurRadius: 18,
+                      offset: const Offset(0, 12),
+                    ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    _classLine(session),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: textColor.withOpacityFloat(0.7),
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  SizedBox(height: 12.h),
                   _DetailLine(
                     label: 'TEACHER',
                     value: session.teacherName.trim().isEmpty
@@ -498,9 +574,7 @@ class StudentLiveSessionDetailView extends StatelessWidget {
           );
           return;
         }
-        await Get.to(
-          () => StudentLiveSessionPlayerView(session: session, playbackUrl: url),
-        );
+        await Get.to(() => StudentLiveSessionPlayerView(session: session, playbackUrl: url));
         return;
       }
 
@@ -530,10 +604,23 @@ class StudentLiveSessionDetailView extends StatelessWidget {
 
       final recording = session.recordingUrl.trim();
       if (recording.isNotEmpty) {
+        // Only late-join seek while session is actively running.
+        var seekSeconds = 0;
+        if (session.isLive) {
+          try {
+            final sync = await controller.syncSession(session);
+            final isRunning = sync['isRunning'] == true;
+            final elapsed = sync['elapsedSeconds'];
+            if (isRunning && elapsed is int) seekSeconds = elapsed;
+            if (isRunning && elapsed is num) seekSeconds = elapsed.toInt();
+          } catch (_) {}
+        }
+
         await Get.to(
           () => StudentLiveSessionPlayerView(
             session: session,
             playbackUrl: recording,
+            initialSeekSeconds: seekSeconds.clamp(0, 24 * 60 * 60),
           ),
         );
         return;
@@ -749,4 +836,3 @@ String _formatTime(DateTime date) {
   if (hour == 0) hour = 12;
   return '$hour:$minute $suffix';
 }
-

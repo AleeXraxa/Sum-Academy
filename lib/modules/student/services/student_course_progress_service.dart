@@ -131,21 +131,34 @@ class StudentCourseProgressService {
           final updatedLectures = chapter.lectures.map((lecture) {
             final session = sessionMap[lecture.sessionId];
             if (session == null) return lecture;
+            final recordingUrl = session.recordingUrl.trim();
+            final completedFromSession = session.lectureCompleted == true;
+            final shouldUseRecording =
+                recordingUrl.isNotEmpty && session.hasEnded;
+            final mergedCompleted = lecture.isCompleted || completedFromSession;
+            final mergedProgress = mergedCompleted ? 1.0 : lecture.progress;
+            final mergedIsLocked = session.isLocked
+                ? true
+                : (completedFromSession ? false : lecture.isLocked);
+            final mergedCanRewatch =
+                lecture.canRewatch || (shouldUseRecording && mergedCompleted);
             return StudentCourseLecture(
               id: lecture.id,
               title: lecture.title,
               duration: lecture.duration,
-              isCompleted: lecture.isCompleted,
-              progress: lecture.progress,
-              videoUrl: lecture.videoUrl,
+              isCompleted: mergedCompleted,
+              progress: mergedProgress,
+              // After session ends, we prefer the recording URL for playback.
+              videoUrl: shouldUseRecording ? recordingUrl : lecture.videoUrl,
               videoMode: lecture.videoMode,
-              isLiveSession: lecture.isLiveSession,
+              // Once the live session ends, treat it as a normal lecture in course content.
+              isLiveSession: lecture.isLiveSession && !session.hasEnded,
               sessionId: lecture.sessionId,
               joinOpensAt: session.joinOpensAt ?? lecture.joinOpensAt,
               startsAt: session.startAt ?? lecture.startsAt,
               endsAt: session.endAt ?? lecture.endsAt,
-              isLocked: lecture.isLocked,
-              canRewatch: lecture.canRewatch,
+              isLocked: mergedIsLocked,
+              canRewatch: mergedCanRewatch,
               lockAfterCompletion: lecture.lockAfterCompletion,
               lockReason: lecture.lockReason,
             );

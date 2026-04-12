@@ -10,6 +10,7 @@ class StudentSession {
   final String meetingLink;
   final String status; // upcoming | active | ended | completed | cancelled (backend-defined)
   final bool canJoin;
+  final bool lectureCompleted;
   final int joinedCount;
   final int totalStudents;
   final int elapsedSeconds;
@@ -33,6 +34,7 @@ class StudentSession {
     required this.meetingLink,
     required this.status,
     required this.canJoin,
+    required this.lectureCompleted,
     required this.joinedCount,
     required this.totalStudents,
     required this.elapsedSeconds,
@@ -58,6 +60,7 @@ class StudentSession {
       meetingLink: '',
       status: '',
       canJoin: false,
+      lectureCompleted: false,
       joinedCount: 0,
       totalStudents: 0,
       elapsedSeconds: 0,
@@ -89,7 +92,11 @@ class StudentSession {
       if (raw is DateTime) return raw;
       final text = raw.toString().trim();
       if (text.isEmpty) return null;
-      return DateTime.tryParse(text);
+      final parsed = DateTime.tryParse(text);
+      if (parsed == null) return null;
+      // Most backend timestamps include a trailing Z (UTC). Convert to device local
+      // so Pakistan timings render correctly (e.g. 10:55Z -> 3:55 PM PKT).
+      return parsed.isUtc ? parsed.toLocal() : parsed;
     }
 
     DateTime? readDateTimeFromDateAndTime(dynamic rawDate, dynamic rawTime) {
@@ -164,6 +171,23 @@ class StudentSession {
         ) ??
         readDateTimeFromDateAndTime(dateText, endTimeText);
 
+    // Prefer actual live session timing when provided (backend may also send shift timing).
+    final liveStartAt = readDate(
+      timing?['liveStartAt'] ??
+          timing?['live_start_at'] ??
+          data['liveStartAt'] ??
+          data['live_start_at'],
+    );
+    final liveEndAt = readDate(
+      timing?['liveEndAt'] ??
+          timing?['live_end_at'] ??
+          data['liveEndAt'] ??
+          data['live_end_at'],
+    );
+
+    final normalizedStartAt = liveStartAt ?? startAt;
+    final normalizedEndAt = liveEndAt ?? endAt;
+
     final id = readFirstString(const [
       'id',
       '_id',
@@ -190,25 +214,49 @@ class StudentSession {
     var joinOpensAt = readDate(joinWindow?['opensAt'] ?? data['opensAt']);
     var joinClosesAt = readDate(joinWindow?['closesAt'] ?? data['closesAt']);
     // Fallback: join opens 10 minutes before start, closes at start.
-    if (joinOpensAt == null && startAt != null) {
-      joinOpensAt = startAt.subtract(const Duration(minutes: 10));
+    if (joinOpensAt == null && normalizedStartAt != null) {
+      joinOpensAt = normalizedStartAt.subtract(const Duration(minutes: 10));
     }
-    if (joinClosesAt == null && startAt != null) {
-      joinClosesAt = startAt;
+    if (joinClosesAt == null && normalizedStartAt != null) {
+      joinClosesAt = normalizedStartAt;
     }
 
     return StudentSession(
       id: id,
-      topic: readString('topic'),
+      topic: readFirstString(const [
+        'topic',
+        'title',
+        'name',
+        'lectureTitle',
+        'lecture_title',
+        'sessionTitle',
+        'session_title',
+      ]),
       classId: readString('classId'),
       className: readString('className'),
-      batchCode: readString('batchCode'),
+      batchCode: readFirstString(const [
+        'batchCode',
+        'classCode',
+        'batch_code',
+        'class_code',
+      ]),
       teacherId: readString('teacherId'),
-      teacherName: readString('teacherName'),
+      teacherName: readFirstString(const [
+        'teacherName',
+        'teacher_name',
+        'instructorName',
+        'instructor_name',
+      ]),
       platform: readString('platform'),
       meetingLink: meetingLink,
       status: readString('status'),
       canJoin: readBool('canJoin'),
+      lectureCompleted: readBool('lectureCompleted') ||
+          readBool('lecture_completed') ||
+          readBool('completed') ||
+          readBool('isCompleted') ||
+          readBool('lectureDone') ||
+          readBool('lecture_done'),
       joinedCount: readInt('joinedCount'),
       totalStudents: readInt('totalStudents'),
       elapsedSeconds: readInt('elapsedSeconds'),
@@ -217,15 +265,18 @@ class StudentSession {
       recordingUrl: recordingUrl,
       joinOpensAt: joinOpensAt,
       joinClosesAt: joinClosesAt,
-      startAt: startAt,
-      endAt: endAt,
+      startAt: normalizedStartAt,
+      endAt: normalizedEndAt,
     );
   }
 
   bool get isLive {
     final now = DateTime.now();
-    if (status.toLowerCase() == 'active') return true;
     if (startAt == null || endAt == null) return false;
+    // Don't rely solely on the backend status: time window is the source of truth.
+    // Some backends may keep status="active" briefly after end.
+    if (now.isAfter(endAt!)) return false;
+    if (status.toLowerCase() == 'active') return true;
     return now.isAfter(startAt!) && now.isBefore(endAt!);
   }
 

@@ -23,11 +23,14 @@ class StudentLiveSessionWaitingView extends StatefulWidget {
 class _StudentLiveSessionWaitingViewState
     extends State<StudentLiveSessionWaitingView> {
   Timer? _timer;
+  Timer? _statusTimer;
   Duration _remaining = Duration.zero;
   bool _isJoining = false;
   bool _didStart = false;
   DateTime? _targetStartAt;
   bool _waitingForJoinWindow = false;
+  int _joinedCount = 0;
+  int _totalStudents = 0;
 
   DateTime? get _startAt => _targetStartAt;
 
@@ -49,6 +52,20 @@ class _StudentLiveSessionWaitingViewState
         _maybeStartNow();
       }
     });
+    _joinedCount = widget.session.joinedCount;
+    _totalStudents = widget.session.totalStudents;
+    _statusTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
+      if (!mounted) return;
+      final controller = Get.find<StudentLiveSessionsController>();
+      try {
+        final latest = await controller.fetchSessionStatus(widget.session.id);
+        if (!mounted) return;
+        setState(() {
+          _joinedCount = latest.joinedCount;
+          _totalStudents = latest.totalStudents;
+        });
+      } catch (_) {}
+    });
     // If user enters near start time, start without waiting for first tick.
     _maybeStartNow();
   }
@@ -56,6 +73,7 @@ class _StudentLiveSessionWaitingViewState
   @override
   void dispose() {
     _timer?.cancel();
+    _statusTimer?.cancel();
     super.dispose();
   }
 
@@ -129,10 +147,23 @@ class _StudentLiveSessionWaitingViewState
 
       final recordingUrl = widget.session.recordingUrl.trim();
       if (recordingUrl.isNotEmpty) {
+        // Only late-join seek while session is actively running.
+        var seekSeconds = 0;
+        if (widget.session.isLive) {
+          try {
+            final sync = await controller.syncSession(widget.session);
+            final isRunning = sync['isRunning'] == true;
+            final elapsed = sync['elapsedSeconds'];
+            if (isRunning && elapsed is int) seekSeconds = elapsed;
+            if (isRunning && elapsed is num) seekSeconds = elapsed.toInt();
+          } catch (_) {}
+        }
+
         await Get.off(
           () => StudentLiveSessionPlayerView(
             session: widget.session,
             playbackUrl: recordingUrl,
+            initialSeekSeconds: seekSeconds.clamp(0, 24 * 60 * 60),
           ),
         );
         return;
@@ -264,6 +295,29 @@ class _StudentLiveSessionWaitingViewState
                               letterSpacing: 1.6,
                             ),
                       ),
+                      if (_totalStudents > 0) ...[
+                        SizedBox(height: 10.h),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 10.w,
+                            vertical: 6.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: SumAcademyTheme.brandBlue.withOpacityFloat(0.10),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: SumAcademyTheme.brandBlue.withOpacityFloat(0.18),
+                            ),
+                          ),
+                          child: Text(
+                            'Joined: $_joinedCount/$_totalStudents',
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  color: SumAcademyTheme.brandBlue,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                          ),
+                        ),
+                      ],
                       SizedBox(height: 10.h),
                       Text(
                         'Keep this page open. Video will start automatically.',
