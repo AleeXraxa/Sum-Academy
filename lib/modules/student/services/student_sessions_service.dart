@@ -1,4 +1,5 @@
 import 'package:sum_academy/core/services/api_client.dart';
+import 'package:sum_academy/core/services/api_exception.dart';
 import 'package:sum_academy/modules/student/models/student_session.dart';
 import 'package:flutter/foundation.dart';
 
@@ -16,6 +17,20 @@ class StudentSessionsService {
       if (value is Map) {
         // Sometimes backend returns a map keyed by sessionId.
         return value.values.map(StudentSession.fromAny).toList();
+      }
+      return const [];
+    }
+
+    List<StudentSession> scanForLists(dynamic value, {int depth = 0}) {
+      if (value is List) {
+        return value.map(StudentSession.fromAny).toList();
+      }
+      if (value is Map && depth < 4) {
+        final map = Map<String, dynamic>.from(value);
+        for (final entry in map.entries) {
+          final found = scanForLists(entry.value, depth: depth + 1);
+          if (found.isNotEmpty) return found;
+        }
       }
       return const [];
     }
@@ -52,6 +67,9 @@ class StudentSessionsService {
         final list = parseList(c);
         if (list.isNotEmpty) return list;
       }
+
+      final scanned = scanForLists(map);
+      if (scanned.isNotEmpty) return scanned;
     }
 
     // Fallback: sometimes the list is nested deeper under data.sessions.
@@ -70,6 +88,9 @@ class StudentSessionsService {
         final list = parseList(c);
         if (list.isNotEmpty) return list;
       }
+
+      final scanned = scanForLists(deepMap);
+      if (scanned.isNotEmpty) return scanned;
     }
 
     if (kDebugMode) {
@@ -87,10 +108,28 @@ class StudentSessionsService {
     if (sessionId.trim().isEmpty) {
       return StudentSession.empty();
     }
-    // Updated API: status endpoint powers the live/pre/ended UI.
-    final response =
-        await _client.get('/student/sessions/$sessionId/status', auth: true);
-    return StudentSession.fromJson(response);
+    // Prefer status endpoint; keep fallbacks because some deployments mount
+    // status/sync under /student/live-sessions instead of /student/sessions.
+    try {
+      final response =
+          await _client.get('/student/sessions/$sessionId/status', auth: true);
+      return StudentSession.fromJson(response);
+    } on ApiException catch (e) {
+      if ((e.statusCode ?? 0) != 404) rethrow;
+      try {
+        final response = await _client.get(
+          '/student/live-sessions/$sessionId/status',
+          auth: true,
+        );
+        return StudentSession.fromJson(response);
+      } on ApiException catch (e2) {
+        if ((e2.statusCode ?? 0) != 404) rethrow;
+        // Oldest shape: session details directly.
+        final response =
+            await _client.get('/student/sessions/$sessionId', auth: true);
+        return StudentSession.fromJson(response);
+      }
+    }
   }
 
   Future<Map<String, dynamic>> joinSession(String sessionId) async {
@@ -112,12 +151,20 @@ class StudentSessionsService {
   }
 
   Future<Map<String, dynamic>> syncSession(String sessionId) async {
-    // Spec: sync is exposed under /student/sessions/:id/sync
-    final response =
-        await _client.get('/student/sessions/$sessionId/sync', auth: true);
-    return response['data'] is Map
-        ? Map<String, dynamic>.from(response['data'])
-        : response;
+    try {
+      final response =
+          await _client.get('/student/sessions/$sessionId/sync', auth: true);
+      return response['data'] is Map
+          ? Map<String, dynamic>.from(response['data'])
+          : response;
+    } on ApiException catch (e) {
+      if ((e.statusCode ?? 0) != 404) rethrow;
+      final response =
+          await _client.get('/student/live-sessions/$sessionId/sync', auth: true);
+      return response['data'] is Map
+          ? Map<String, dynamic>.from(response['data'])
+          : response;
+    }
   }
 
   Future<void> leaveSession(
@@ -127,11 +174,20 @@ class StudentSessionsService {
     // Spec: leave is exposed under /student/sessions/:id/leave
     // Some backends accept additional flags (e.g. lectureCompleted) on leave.
     final body = lectureCompleted ? {'lectureCompleted': true} : null;
-    await _client.post(
-      '/student/sessions/$sessionId/leave',
-      auth: true,
-      body: body,
-    );
+    try {
+      await _client.post(
+        '/student/sessions/$sessionId/leave',
+        auth: true,
+        body: body,
+      );
+    } on ApiException catch (e) {
+      if ((e.statusCode ?? 0) != 404) rethrow;
+      await _client.post(
+        '/student/live-sessions/$sessionId/leave',
+        auth: true,
+        body: body,
+      );
+    }
   }
 
   Future<void> reportViolation({
@@ -145,11 +201,19 @@ class StudentSessionsService {
       'count': count,
       'timestamp': timestamp.toUtc().toIso8601String(),
     };
-    // Spec: violation is exposed under /student/sessions/:id/violation
-    await _client.post(
-      '/student/sessions/$sessionId/violation',
-      auth: true,
-      body: body,
-    );
+    try {
+      await _client.post(
+        '/student/sessions/$sessionId/violation',
+        auth: true,
+        body: body,
+      );
+    } on ApiException catch (e) {
+      if ((e.statusCode ?? 0) != 404) rethrow;
+      await _client.post(
+        '/student/live-sessions/$sessionId/violation',
+        auth: true,
+        body: body,
+      );
+    }
   }
 }

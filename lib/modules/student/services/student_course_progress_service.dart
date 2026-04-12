@@ -196,10 +196,19 @@ extension on StudentCourseProgressService {
   }
 
   Future<Map<String, dynamic>> _fetchProgress(String courseId) async {
-    return _getWithFallback(
-      subjectPath: '/student/subjects/$courseId/progress',
-      coursePath: '/student/courses/$courseId/progress',
-    );
+    // Backend docs expose only /student/courses/:courseId/progress.
+    // Some parts of the app pass a subjectId as "courseId" (class-based access),
+    // in which case the backend may return 403. We treat that as "no progress"
+    // and rely on the content payload progress instead.
+    try {
+      return await _client.get('/student/courses/$courseId/progress', auth: true);
+    } on ApiException catch (e) {
+      if ((e.statusCode ?? 0) == 403 &&
+          e.message.toLowerCase().contains('not enrolled')) {
+        return const {};
+      }
+      rethrow;
+    }
   }
 
   Future<Map<String, dynamic>> _getWithFallback({
@@ -210,7 +219,18 @@ extension on StudentCourseProgressService {
       return await _client.get(subjectPath, auth: true);
     } on ApiException catch (e) {
       if (_shouldFallback(e)) {
-        return _client.get(coursePath, auth: true);
+        try {
+          return await _client.get(coursePath, auth: true);
+        } on ApiException catch (e2) {
+          // Common case in this app: UI treats "subjectId" as "courseId" and hits
+          // the /student/courses/... fallback with a subject id, which the backend
+          // correctly rejects with 403. This is read-only and shouldn't block UI.
+          if ((e2.statusCode ?? 0) == 403 &&
+              e2.message.toLowerCase().contains('not enrolled')) {
+            return const {};
+          }
+          rethrow;
+        }
       }
       rethrow;
     }

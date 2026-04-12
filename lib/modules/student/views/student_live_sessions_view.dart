@@ -551,6 +551,33 @@ class StudentLiveSessionDetailView extends StatelessWidget {
     try {
       final now = DateTime.now();
 
+      if (session.isClientComputed) {
+        final startAt = session.startAt;
+        if (startAt != null && now.isBefore(startAt)) {
+          await Get.to(() => StudentLiveSessionWaitingView(session: session));
+          return;
+        }
+        final url = session.recordingUrl.trim();
+        if (url.isEmpty) {
+          await showAppErrorDialog(
+            title: 'Live Session',
+            message: 'Session video is not available yet.',
+          );
+          return;
+        }
+        final seekSeconds = startAt == null
+            ? 0
+            : now.difference(startAt).inSeconds.clamp(0, 24 * 60 * 60);
+        await Get.to(
+          () => StudentLiveSessionPlayerView(
+            session: session,
+            playbackUrl: url,
+            initialSeekSeconds: seekSeconds,
+          ),
+        );
+        return;
+      }
+
       if (session.hasEnded) {
         if (session.isLocked) {
           await showAppErrorDialog(

@@ -10,6 +10,7 @@ import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/core/utils/network_error.dart';
 import 'package:sum_academy/modules/student/controllers/student_live_sessions_controller.dart';
 import 'package:sum_academy/modules/student/controllers/student_courses_controller.dart';
+import 'package:sum_academy/modules/student/controllers/student_shell_controller.dart';
 import 'package:sum_academy/modules/student/models/student_session.dart';
 
 class _MinimalLiveControls extends StatelessWidget {
@@ -136,22 +137,24 @@ class _StudentLiveSessionPlayerViewState extends State<StudentLiveSessionPlayerV
     _eventListener = _handlePlayerEvent;
     unawaited(_initPlayer());
 
-    _statusTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
-      if (!mounted) return;
-      if (!Get.isRegistered<StudentLiveSessionsController>()) return;
-      final controller = Get.find<StudentLiveSessionsController>();
-      try {
-        final latest = await controller.fetchSessionStatus(widget.session.id);
+    if (!widget.session.isClientComputed) {
+      _statusTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
         if (!mounted) return;
-        setState(() {
-          _joinedCount = latest.joinedCount;
-          _totalStudents = latest.totalStudents;
-          _elapsedSeconds = latest.elapsedSeconds;
-          _remainingSeconds = latest.remainingSeconds;
-          _status = latest.status;
-        });
-      } catch (_) {}
-    });
+        if (!Get.isRegistered<StudentLiveSessionsController>()) return;
+        final controller = Get.find<StudentLiveSessionsController>();
+        try {
+          final latest = await controller.fetchSessionStatus(widget.session.id);
+          if (!mounted) return;
+          setState(() {
+            _joinedCount = latest.joinedCount;
+            _totalStudents = latest.totalStudents;
+            _elapsedSeconds = latest.elapsedSeconds;
+            _remainingSeconds = latest.remainingSeconds;
+            _status = latest.status;
+          });
+        } catch (_) {}
+      });
+    }
 
     _tickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
@@ -183,6 +186,18 @@ class _StudentLiveSessionPlayerViewState extends State<StudentLiveSessionPlayerV
     }
 
     if (!mounted) return;
+    final isLiveStream = widget.session.isLive &&
+        (formatHint == BetterPlayerVideoFormat.hls ||
+            formatHint == BetterPlayerVideoFormat.dash) &&
+        widget.session.status.toLowerCase() == 'active';
+    final bufferingConfig = isLiveStream
+        ? const BetterPlayerBufferingConfiguration(
+            minBufferMs: 20000,
+            maxBufferMs: 100000,
+            bufferForPlaybackMs: 1200,
+            bufferForPlaybackAfterRebufferMs: 2500,
+          )
+        : const BetterPlayerBufferingConfiguration();
     final controller = BetterPlayerController(
       BetterPlayerConfiguration(
         autoPlay: true,
@@ -222,8 +237,17 @@ class _StudentLiveSessionPlayerViewState extends State<StudentLiveSessionPlayerV
         BetterPlayerDataSourceType.network,
         widget.playbackUrl,
         headers: headers,
-        liveStream: widget.session.isLive,
+        liveStream: isLiveStream,
         videoFormat: formatHint,
+        bufferingConfiguration: bufferingConfig,
+        cacheConfiguration: isLiveStream
+            ? null
+            : const BetterPlayerCacheConfiguration(
+                useCache: true,
+                maxCacheSize: 200 * 1024 * 1024,
+                maxCacheFileSize: 50 * 1024 * 1024,
+                preCacheSize: 5 * 1024 * 1024,
+              ),
       ),
     );
     controller.addEventsListener(_eventListener);
@@ -270,6 +294,7 @@ class _StudentLiveSessionPlayerViewState extends State<StudentLiveSessionPlayerV
   }
 
   Future<void> _leaveSession() async {
+    if (widget.session.isClientComputed) return;
     if (!Get.isRegistered<StudentLiveSessionsController>()) return;
     try {
       final controller = Get.find<StudentLiveSessionsController>();
@@ -384,7 +409,24 @@ class _StudentLiveSessionPlayerViewState extends State<StudentLiveSessionPlayerV
       final courses = Get.find<StudentCoursesController>();
       unawaited(courses.fetchCourses(silent: true));
     }
-    if (mounted) Get.back();
+    if (!mounted) return;
+    _goToLiveSessionsRoot();
+  }
+
+  void _goToLiveSessionsRoot() {
+    if (Get.isRegistered<StudentShellController>()) {
+      final shell = Get.find<StudentShellController>();
+      shell.navIndex.value = 1; // Live Session tab in StudentShellView
+      shell.setActiveLabel('Live Session');
+    }
+    try {
+      Get.until((route) {
+        final name = route.settings.name ?? '';
+        return name == '/StudentShellView' || route.isFirst;
+      });
+    } catch (_) {
+      Get.back();
+    }
   }
 
   @override

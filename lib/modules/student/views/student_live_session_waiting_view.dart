@@ -54,18 +54,20 @@ class _StudentLiveSessionWaitingViewState
     });
     _joinedCount = widget.session.joinedCount;
     _totalStudents = widget.session.totalStudents;
-    _statusTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
-      if (!mounted) return;
-      final controller = Get.find<StudentLiveSessionsController>();
-      try {
-        final latest = await controller.fetchSessionStatus(widget.session.id);
+    if (!widget.session.isClientComputed) {
+      _statusTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
         if (!mounted) return;
-        setState(() {
-          _joinedCount = latest.joinedCount;
-          _totalStudents = latest.totalStudents;
-        });
-      } catch (_) {}
-    });
+        final controller = Get.find<StudentLiveSessionsController>();
+        try {
+          final latest = await controller.fetchSessionStatus(widget.session.id);
+          if (!mounted) return;
+          setState(() {
+            _joinedCount = latest.joinedCount;
+            _totalStudents = latest.totalStudents;
+          });
+        } catch (_) {}
+      });
+    }
     // If user enters near start time, start without waiting for first tick.
     _maybeStartNow();
   }
@@ -104,6 +106,32 @@ class _StudentLiveSessionWaitingViewState
 
     final controller = Get.find<StudentLiveSessionsController>();
     try {
+      if (widget.session.isClientComputed) {
+        final url = widget.session.recordingUrl.trim();
+        if (url.isEmpty) {
+          setState(() => _isJoining = false);
+          await showAppErrorDialog(
+            title: 'Live Session',
+            message: 'Session video is not available yet.',
+          );
+          if (mounted) Get.back();
+          return;
+        }
+        final startAt = widget.session.startAt;
+        final seekSeconds = startAt == null
+            ? 0
+            : DateTime.now().difference(startAt).inSeconds.clamp(0, 24 * 60 * 60);
+        await Get.to(
+          () => StudentLiveSessionPlayerView(
+            session: widget.session,
+            playbackUrl: url,
+            initialSeekSeconds: seekSeconds,
+          ),
+        );
+        if (mounted) Get.back();
+        return;
+      }
+
       final joinData = await controller.joinSession(widget.session);
       if (joinData['canPlay'] == false) {
         final waiting = joinData['waiting'] == true;

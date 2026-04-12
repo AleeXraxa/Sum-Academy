@@ -18,7 +18,7 @@ class StudentPaymentsView extends GetView<StudentPaymentsController> {
     return Obx(() {
       return RefreshIndicator(
         color: SumAcademyTheme.brandBlue,
-        onRefresh: controller.fetchAll,
+        onRefresh: () => controller.fetchAll(force: true),
         child: ListView(
           padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 28.h),
           physics: const AlwaysScrollableScrollPhysics(

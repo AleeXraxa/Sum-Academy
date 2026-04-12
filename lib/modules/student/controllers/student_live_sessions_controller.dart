@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/core/services/api_exception.dart';
@@ -23,11 +25,26 @@ class StudentLiveSessionsController extends GetxController {
   final isLoading = false.obs;
   final errorMessage = ''.obs;
   final selectedFilter = 'all'.obs; // all | live | upcoming | recording
+  Worker? _coursesWatcher;
 
   @override
   void onInit() {
     super.onInit();
     fetchSessions();
+    if (Get.isRegistered<StudentCoursesController>()) {
+      final courses = Get.find<StudentCoursesController>();
+      _coursesWatcher = ever(courses.courses, (_) {
+        if (sessions.isNotEmpty) return;
+        if (isLoading.value) return;
+        unawaited(fetchSessions(silent: true));
+      });
+    }
+  }
+
+  @override
+  void onClose() {
+    _coursesWatcher?.dispose();
+    super.onClose();
   }
 
   List<StudentSession> get filteredSessions {
@@ -58,9 +75,11 @@ class StudentLiveSessionsController extends GetxController {
       if (kDebugMode) {
         debugPrint('Live sessions list -> count=${listed.length}');
       }
+      final source = listed.isEmpty ? await _buildFallbackSessions() : listed;
       final detailed = await Future.wait(
-        listed.map((s) async {
+        source.map((s) async {
           if (s.id.trim().isEmpty) return s;
+          if (s.isClientComputed) return s;
           try {
             return await _sessionsService.fetchSession(s.id);
           } catch (_) {
@@ -97,6 +116,75 @@ class StudentLiveSessionsController extends GetxController {
     }
   }
 
+  Future<List<StudentSession>> _buildFallbackSessions() async {
+    final courses = _enrolledCourses();
+    if (courses.isEmpty) return const [];
+
+    final collected = <StudentSession>[];
+    for (final course in courses) {
+      try {
+        final progress = await _progressService.fetchProgress(course.id);
+        for (final chapter in progress.chapters) {
+          for (final lecture in chapter.lectures) {
+            if (!lecture.isLiveSession) continue;
+            final url = lecture.videoUrl.trim();
+            if (url.isEmpty) continue;
+            final startAt = lecture.startsAt;
+            final endAt = lecture.endsAt;
+            if (startAt == null) continue;
+
+            final now = DateTime.now();
+            final computedStatus = (endAt != null && now.isAfter(endAt))
+                ? 'ended'
+                : (now.isAfter(startAt) && (endAt == null || now.isBefore(endAt)))
+                    ? 'active'
+                    : 'upcoming';
+            if (computedStatus == 'ended') continue; // ended sessions move to Classes
+
+            final idBase = lecture.sessionId.trim().isNotEmpty
+                ? lecture.sessionId.trim()
+                : 'local_${course.id}_${lecture.id}_${startAt.millisecondsSinceEpoch}';
+
+            collected.add(
+              StudentSession(
+                id: idBase,
+                topic: '${course.title} - ${lecture.title}'.trim(),
+                classId: course.classId,
+                className: course.className,
+                batchCode: course.classCode,
+                teacherId: '',
+                teacherName: course.teacher,
+                platform: 'video',
+                meetingLink: '',
+                status: computedStatus,
+                canJoin: true,
+                lectureCompleted: false,
+                joinedCount: 0,
+                totalStudents: 0,
+                elapsedSeconds: 0,
+                remainingSeconds: endAt == null
+                    ? 0
+                    : endAt.difference(now).inSeconds.clamp(0, 24 * 60 * 60),
+                isLocked: false,
+                recordingUrl: url,
+                isClientComputed: true,
+                joinOpensAt: lecture.joinOpensAt ??
+                    startAt.subtract(const Duration(minutes: 10)),
+                joinClosesAt: lecture.joinOpensAt ??
+                    startAt.add(const Duration(minutes: 10)),
+                startAt: startAt,
+                endAt: endAt,
+              ),
+            );
+          }
+        }
+      } catch (_) {
+        // Ignore: fallback is best-effort.
+      }
+    }
+    return collected;
+  }
+
   Future<void> refresh() async {
     await fetchSessions();
   }
@@ -104,6 +192,7 @@ class StudentLiveSessionsController extends GetxController {
   Future<Map<String, dynamic>> joinSession(StudentSession session) async {
     final id = session.id.trim();
     if (id.isEmpty) return const {'canPlay': false};
+    if (session.isClientComputed) return const {'canPlay': true};
     return _sessionsService.joinSession(id);
   }
 
@@ -128,12 +217,14 @@ class StudentLiveSessionsController extends GetxController {
   }) async {
     final id = session.id.trim();
     if (id.isEmpty) return;
+    if (session.isClientComputed) return;
     await _sessionsService.leaveSession(id, lectureCompleted: lectureCompleted);
   }
 
   Future<Map<String, dynamic>> syncSession(StudentSession session) async {
     final id = session.id.trim();
     if (id.isEmpty) return const {};
+    if (session.isClientComputed) return const {};
     return _sessionsService.syncSession(id);
   }
 
@@ -144,7 +235,11 @@ class StudentLiveSessionsController extends GetxController {
   List<StudentCourse> _enrolledCourses() {
     if (!Get.isRegistered<StudentCoursesController>()) return const [];
     final controller = Get.find<StudentCoursesController>();
-    return controller.courses.where((c) => c.isEnrolled).toList();
+    final enrolled = controller.courses.where((c) => c.isEnrolled).toList();
+    // Backend/admin may mark a subject as "locked/NA" after completion which can
+    // flip `isEnrolled` in some responses. For Live Sessions we still want to
+    // compute schedule from visible courses in the student app.
+    return enrolled.isNotEmpty ? enrolled : controller.courses.toList();
   }
 
   int _statusRank(StudentSession session) {

@@ -17,6 +17,7 @@ class StudentSession {
   final int remainingSeconds;
   final bool isLocked;
   final String recordingUrl;
+  final bool isClientComputed;
   final DateTime? joinOpensAt;
   final DateTime? joinClosesAt;
   final DateTime? startAt;
@@ -41,6 +42,7 @@ class StudentSession {
     required this.remainingSeconds,
     required this.isLocked,
     required this.recordingUrl,
+    required this.isClientComputed,
     required this.joinOpensAt,
     required this.joinClosesAt,
     required this.startAt,
@@ -67,6 +69,7 @@ class StudentSession {
       remainingSeconds: 0,
       isLocked: false,
       recordingUrl: '',
+      isClientComputed: false,
       joinOpensAt: null,
       joinClosesAt: null,
       startAt: null,
@@ -263,6 +266,7 @@ class StudentSession {
       remainingSeconds: readInt('remainingSeconds'),
       isLocked: readBool('isLocked'),
       recordingUrl: recordingUrl,
+      isClientComputed: false,
       joinOpensAt: joinOpensAt,
       joinClosesAt: joinClosesAt,
       startAt: normalizedStartAt,

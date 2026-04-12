@@ -20,12 +20,13 @@ class StudentPaymentsController extends GetxController {
     fetchAll();
   }
 
-  Future<void> fetchAll() async {
+  Future<void> fetchAll({bool force = false}) async {
+    if (isLoading.value) return;
     isLoading.value = true;
     try {
       final results = await Future.wait([
-        _service.fetchPayments(),
-        _service.fetchInstallments(),
+        _service.fetchPayments(force: force),
+        _service.fetchInstallments(force: force),
       ]);
       payments.assignAll(results[0] as List<StudentPaymentSummary>);
       installments.assignAll(results[1] as List<StudentInstallmentPlan>);
