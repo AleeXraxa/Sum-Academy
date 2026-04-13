@@ -3,9 +3,12 @@ import 'dart:async';
 import 'package:flutter/animation.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/routes/app_routes.dart';
+import 'package:sum_academy/core/services/maintenance_service.dart';
 import 'package:sum_academy/modules/admin/bindings/admin_binding.dart';
 import 'package:sum_academy/modules/admin/views/admin_shell_view.dart';
 import 'package:sum_academy/modules/auth/services/auth_service.dart';
+import 'package:sum_academy/modules/maintenance/bindings/maintenance_binding.dart';
+import 'package:sum_academy/modules/maintenance/views/maintenance_view.dart';
 import 'package:sum_academy/modules/student/bindings/student_binding.dart';
 import 'package:sum_academy/modules/student/views/student_shell_view.dart';
 
@@ -21,6 +24,7 @@ class SplashController extends GetxController
   Timer? _redirectTimer;
 
   AuthService get _authService => Get.find<AuthService>();
+  MaintenanceService get _maintenanceService => Get.find<MaintenanceService>();
 
   @override
   void onInit() {
@@ -104,10 +108,27 @@ class SplashController extends GetxController
         binding: AdminBinding(),
       );
     } else {
+      final maintenanceEnabled = await _isMaintenanceEnabled();
+      if (maintenanceEnabled) {
+        Get.offAll(
+          () => const MaintenanceView(),
+          binding: MaintenanceBinding(),
+        );
+        return;
+      }
       Get.offAll(
         () => const StudentShellView(),
         binding: StudentBinding(),
       );
+    }
+  }
+
+  Future<bool> _isMaintenanceEnabled() async {
+    try {
+      final status = await _maintenanceService.fetchStatus();
+      return status.enabled;
+    } catch (_) {
+      return false;
     }
   }
 

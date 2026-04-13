@@ -11,6 +11,7 @@ import 'package:sum_academy/modules/student/models/student_class.dart';
 import 'package:sum_academy/modules/student/models/student_course.dart';
 import 'package:sum_academy/modules/student/models/student_explore_course.dart';
 import 'package:sum_academy/modules/student/services/student_announcements_service.dart';
+import 'package:sum_academy/modules/student/widgets/pinned_announcement_dialog.dart';
 
 class StudentAnnouncementsController extends GetxController {
   StudentAnnouncementsController(this._service);
@@ -31,6 +32,8 @@ class StudentAnnouncementsController extends GetxController {
   static const Duration _autoRefreshInterval = Duration(seconds: 30);
   bool _isAutoRefreshing = false;
   final List<Worker> _workers = [];
+  final Set<String> _shownPinnedPopupIds = <String>{};
+  bool _pinnedPopupQueued = false;
 
   final List<StudentAnnouncementFilter> filters = const [
     StudentAnnouncementFilter(label: 'All', type: 'all'),
@@ -78,6 +81,7 @@ class StudentAnnouncementsController extends GetxController {
       if (!silent) {
         errorMessage.value = '';
       }
+      _maybeShowPinnedAnnouncementPopup();
     } on ApiException catch (e) {
       if (silent) {
         return;
@@ -99,6 +103,46 @@ class StudentAnnouncementsController extends GetxController {
         isLoading.value = false;
       }
     }
+  }
+
+  void _maybeShowPinnedAnnouncementPopup() {
+    if (_pinnedPopupQueued) return;
+    if (Get.isDialogOpen ?? false) return;
+    if (announcements.isEmpty) return;
+
+    StudentAnnouncement? candidate;
+    for (final item in announcements) {
+      if (!item.isPinned) continue;
+      if (item.isRead) continue;
+      if (item.id.isEmpty) continue;
+      if (_shownPinnedPopupIds.contains(item.id)) continue;
+      candidate = item;
+      break;
+    }
+    if (candidate == null) return;
+    final pinned = candidate;
+
+    // Avoid showing during rebuilds and repeated auto-refreshes.
+    _pinnedPopupQueued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        if (Get.isDialogOpen ?? false) return;
+        final context = Get.context;
+        if (context == null) return;
+
+        await Get.dialog<void>(
+          PinnedAnnouncementDialog(
+            announcement: pinned,
+            onClose: () => Get.back<void>(),
+          ),
+          barrierDismissible: true,
+        );
+        _shownPinnedPopupIds.add(pinned.id);
+        await markRead(pinned);
+      } finally {
+        _pinnedPopupQueued = false;
+      }
+    });
   }
 
   Future<void> refresh() async {

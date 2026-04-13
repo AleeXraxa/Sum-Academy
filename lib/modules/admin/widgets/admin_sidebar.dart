@@ -132,6 +132,7 @@ List<_SidebarSection> _buildSections(String role) {
     title: 'Announcements',
     items: [
       _SidebarItem(label: 'Announcements', icon: Icons.campaign_outlined),
+      _SidebarItem(label: 'Site Settings', icon: Icons.settings_outlined),
     ],
   );
 

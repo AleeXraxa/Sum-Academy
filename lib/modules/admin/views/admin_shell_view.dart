@@ -17,6 +17,7 @@ import 'package:sum_academy/modules/admin/views/dashboard/admin_dashboard_view.d
 import 'package:sum_academy/modules/admin/views/payments/admin_installments_view.dart';
 import 'package:sum_academy/modules/admin/views/payments/admin_payments_view.dart';
 import 'package:sum_academy/modules/admin/views/announcements/admin_announcements_view.dart';
+import 'package:sum_academy/modules/admin/views/site_settings/admin_site_settings_view.dart';
 import 'package:sum_academy/modules/admin/views/students/admin_students_view.dart';
 import 'package:sum_academy/modules/admin/views/teachers/admin_teachers_view.dart';
 import 'package:sum_academy/modules/admin/views/users/admin_users_view.dart';
@@ -309,6 +310,13 @@ class _SettingsShell extends StatelessWidget {
       case 'Announcements':
         return AdminAnnouncementsView(
           controller: Get.find<AdminAnnouncementController>(),
+          textColor: textColor,
+          surface: surface,
+          isDark: isDark,
+          userName: userName,
+        );
+      case 'Site Settings':
+        return AdminSiteSettingsView(
           textColor: textColor,
           surface: surface,
           isDark: isDark,

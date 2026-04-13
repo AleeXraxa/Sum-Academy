@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
+import 'package:sum_academy/core/services/secure_screen_service.dart';
 import 'package:sum_academy/core/utils/network_error.dart';
 import 'package:sum_academy/modules/student/controllers/student_live_sessions_controller.dart';
 import 'package:sum_academy/modules/student/models/student_session.dart';
@@ -37,6 +38,9 @@ class _StudentLiveSessionWaitingViewState
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      SecureScreenService.enable();
+    });
     final joinOpensAt = widget.session.joinOpensAt;
     if (joinOpensAt != null && DateTime.now().isBefore(joinOpensAt)) {
       _targetStartAt = joinOpensAt;
@@ -74,6 +78,7 @@ class _StudentLiveSessionWaitingViewState
 
   @override
   void dispose() {
+    SecureScreenService.disable();
     _timer?.cancel();
     _statusTimer?.cancel();
     super.dispose();
@@ -117,15 +122,11 @@ class _StudentLiveSessionWaitingViewState
           if (mounted) Get.back();
           return;
         }
-        final startAt = widget.session.startAt;
-        final seekSeconds = startAt == null
-            ? 0
-            : DateTime.now().difference(startAt).inSeconds.clamp(0, 24 * 60 * 60);
         await Get.to(
           () => StudentLiveSessionPlayerView(
             session: widget.session,
             playbackUrl: url,
-            initialSeekSeconds: seekSeconds,
+            initialSeekSeconds: 0,
           ),
         );
         if (mounted) Get.back();
@@ -175,23 +176,13 @@ class _StudentLiveSessionWaitingViewState
 
       final recordingUrl = widget.session.recordingUrl.trim();
       if (recordingUrl.isNotEmpty) {
-        // Only late-join seek while session is actively running.
-        var seekSeconds = 0;
-        if (widget.session.isLive) {
-          try {
-            final sync = await controller.syncSession(widget.session);
-            final isRunning = sync['isRunning'] == true;
-            final elapsed = sync['elapsedSeconds'];
-            if (isRunning && elapsed is int) seekSeconds = elapsed;
-            if (isRunning && elapsed is num) seekSeconds = elapsed.toInt();
-          } catch (_) {}
-        }
-
         await Get.off(
           () => StudentLiveSessionPlayerView(
             session: widget.session,
             playbackUrl: recordingUrl,
-            initialSeekSeconds: seekSeconds.clamp(0, 24 * 60 * 60),
+            // For MP4 "live" playback, seeking causes heavy buffering.
+            // Start from beginning for smooth playback until HLS is available.
+            initialSeekSeconds: 0,
           ),
         );
         return;

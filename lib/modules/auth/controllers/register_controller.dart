@@ -3,10 +3,13 @@ import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sum_academy/app/routes/app_routes.dart';
 import 'package:sum_academy/core/services/api_exception.dart';
+import 'package:sum_academy/core/services/maintenance_service.dart';
 import 'package:sum_academy/core/utils/network_error.dart';
 import 'package:sum_academy/modules/admin/bindings/admin_binding.dart';
 import 'package:sum_academy/modules/admin/views/admin_shell_view.dart';
 import 'package:sum_academy/modules/auth/services/auth_service.dart';
+import 'package:sum_academy/modules/maintenance/bindings/maintenance_binding.dart';
+import 'package:sum_academy/modules/maintenance/views/maintenance_view.dart';
 import 'package:sum_academy/modules/student/bindings/student_binding.dart';
 import 'package:sum_academy/modules/student/views/student_shell_view.dart';
 
@@ -127,6 +130,16 @@ class RegisterController extends GetxController {
         binding: AdminBinding(),
       );
     } else {
+      try {
+        final status = await Get.find<MaintenanceService>().fetchStatus();
+        if (status.enabled) {
+          Get.offAll(
+            () => const MaintenanceView(),
+            binding: MaintenanceBinding(),
+          );
+          return;
+        }
+      } catch (_) {}
       Get.offAll(
         () => const StudentShellView(),
         binding: StudentBinding(),

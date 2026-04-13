@@ -33,8 +33,13 @@ class StudentCourse {
     this.isEnrolled = true,
   });
 
-  bool get isCompleted =>
-      progress >= 1 || status.toLowerCase().contains('complete');
+  bool get isCompleted {
+    // Completion is admin-driven: do not auto-mark completed purely from progress.
+    final normalized = status.trim().toLowerCase();
+    return normalized == 'completed' ||
+        normalized == 'complete' ||
+        normalized.contains('complete');
+  }
 }
 
 List<StudentCourse> parseStudentCourses(dynamic data) {

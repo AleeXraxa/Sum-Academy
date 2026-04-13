@@ -565,14 +565,13 @@ class StudentLiveSessionDetailView extends StatelessWidget {
           );
           return;
         }
-        final seekSeconds = startAt == null
-            ? 0
-            : now.difference(startAt).inSeconds.clamp(0, 24 * 60 * 60);
         await Get.to(
           () => StudentLiveSessionPlayerView(
             session: session,
             playbackUrl: url,
-            initialSeekSeconds: seekSeconds,
+            // For MP4 "live" playback, seeking causes heavy buffering.
+            // Start from beginning for smooth playback until HLS is available.
+            initialSeekSeconds: 0,
           ),
         );
         return;
@@ -624,23 +623,13 @@ class StudentLiveSessionDetailView extends StatelessWidget {
 
       final recording = session.recordingUrl.trim();
       if (recording.isNotEmpty) {
-        // Only late-join seek while session is actively running.
-        var seekSeconds = 0;
-        if (session.isLive) {
-          try {
-            final sync = await controller.syncSession(session);
-            final isRunning = sync['isRunning'] == true;
-            final elapsed = sync['elapsedSeconds'];
-            if (isRunning && elapsed is int) seekSeconds = elapsed;
-            if (isRunning && elapsed is num) seekSeconds = elapsed.toInt();
-          } catch (_) {}
-        }
-
         await Get.to(
           () => StudentLiveSessionPlayerView(
             session: session,
             playbackUrl: recording,
-            initialSeekSeconds: seekSeconds.clamp(0, 24 * 60 * 60),
+            // For MP4 "live" playback, seeking causes heavy buffering.
+            // Start from beginning for smooth playback until HLS is available.
+            initialSeekSeconds: 0,
           ),
         );
         return;

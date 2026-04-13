@@ -62,9 +62,6 @@ class ExploreCoursesView extends GetView<StudentExploreCoursesController> {
                             }
                             Get.to(() => StudentCheckoutView(course: course));
                           },
-                          onChooseSubject: () {
-                            _showSubjectPicker(context, course);
-                          },
                         ),
                       ),
                     )
@@ -128,7 +125,7 @@ class _HeaderSubtitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      'Pick a class or subject to start learning.',
+      'Pick a class to start learning.',
       style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: textColor.withOpacityFloat(0.65),
             height: 1.4,
@@ -148,7 +145,7 @@ class _SearchField extends StatelessWidget {
     return TextField(
       controller: controller.searchController,
       decoration: InputDecoration(
-        hintText: 'Search class, batch, teacher, or subject...',
+        hintText: 'Search class, batch, or teacher...',
         prefixIcon: Icon(Icons.search, size: 20.sp),
         filled: true,
         fillColor: isDark
@@ -158,113 +155,6 @@ class _SearchField extends StatelessWidget {
       ),
     );
   }
-}
-
-void _showSubjectPicker(BuildContext context, StudentExploreCourse course) {
-  final subjects =
-      course.subjects.where((subject) => !subject.alreadyPurchased).toList();
-  if (subjects.isEmpty) {
-    showAppErrorDialog(
-      title: 'Subjects',
-      message: 'No individual subjects are available for this class right now.',
-    );
-    return;
-  }
-
-  final isDark = Theme.of(context).brightness == Brightness.dark;
-  final sheetColor =
-      isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white;
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: sheetColor,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(22.r)),
-    ),
-    builder: (context) {
-      final isDark = Theme.of(context).brightness == Brightness.dark;
-      final textColor =
-          isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
-      final cardColor = isDark
-          ? SumAcademyTheme.darkBase.withOpacityFloat(0.25)
-          : SumAcademyTheme.surfaceSecondary;
-      final borderColor =
-          isDark ? SumAcademyTheme.darkBorder : SumAcademyTheme.brandBluePale;
-      return Padding(
-        padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 28.h),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Choose Individual Subject',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: textColor,
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-            SizedBox(height: 12.h),
-            ...subjects.map((subject) {
-              final price = subject.discountedPrice > 0
-                  ? subject.discountedPrice
-                  : subject.price;
-              return Container(
-                margin: EdgeInsets.only(bottom: 10.h),
-                padding: EdgeInsets.all(12.r),
-                decoration: BoxDecoration(
-                  color: cardColor,
-                  borderRadius: BorderRadius.circular(16.r),
-                  border: Border.all(color: borderColor),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            subject.title,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: textColor,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                          ),
-                          if (price > 0) ...[
-                            SizedBox(height: 4.h),
-                            Text(
-                              _formatPkr(price),
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: textColor.withOpacityFloat(0.6),
-                                  ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        Get.to(() => StudentCheckoutView(
-                              course: course,
-                              subject: subject,
-                            ));
-                      },
-                      child: const Text('Enroll'),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ],
-        ),
-      );
-    },
-  );
-}
-
-String _formatPkr(double value) {
-  final rounded = value.isNaN ? 0 : value.round();
-  return 'PKR $rounded';
 }
 
 class _FilterChips extends StatelessWidget {

@@ -6,13 +6,11 @@ import 'package:sum_academy/modules/student/models/student_explore_course.dart';
 class ExploreCourseCard extends StatelessWidget {
   final StudentExploreCourse course;
   final VoidCallback? onEnrollClass;
-  final VoidCallback? onChooseSubject;
 
   const ExploreCourseCard({
     super.key,
     required this.course,
     this.onEnrollClass,
-    this.onChooseSubject,
   });
 
   @override
@@ -51,8 +49,6 @@ class ExploreCourseCard extends StatelessWidget {
     final statusLabel = _statusLabel(course.status);
     final statusTone = _statusTone(course.status);
     final visibleSubjects = course.subjects.take(3).toList();
-    final hasSubjectChoice =
-        course.subjects.any((subject) => !subject.alreadyPurchased);
 
     final isActionDisabled = isFullyEnrolled || !canEnroll;
 
@@ -266,29 +262,9 @@ class ExploreCourseCard extends StatelessWidget {
                       BorderRadius.circular(SumAcademyTheme.radiusButton.r),
                 ),
               ),
-              child: Text(actionLabel),
+          child: Text(actionLabel),
             ),
           ),
-          if (hasSubjectChoice) ...[
-            SizedBox(height: 10.h),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: onChooseSubject,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: SumAcademyTheme.brandBlue,
-                  padding: EdgeInsets.symmetric(vertical: 12.h),
-                  side: BorderSide(color: SumAcademyTheme.brandBluePale),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      SumAcademyTheme.radiusButton.r,
-                    ),
-                  ),
-                ),
-                child: const Text('Choose Individual Subject'),
-              ),
-            ),
-          ],
         ],
       ),
     );

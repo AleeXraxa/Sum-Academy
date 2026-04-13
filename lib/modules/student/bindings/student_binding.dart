@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:sum_academy/core/services/maintenance_service.dart';
 import 'package:sum_academy/modules/auth/services/auth_service.dart';
 import 'package:sum_academy/modules/home/controllers/home_controller.dart';
 import 'package:sum_academy/modules/home/services/home_service.dart';
@@ -36,7 +37,10 @@ class StudentBinding extends Bindings {
     }
     if (!Get.isRegistered<StudentShellController>()) {
       Get.lazyPut<StudentShellController>(
-        () => StudentShellController(Get.find<AuthService>()),
+        () => StudentShellController(
+          Get.find<AuthService>(),
+          Get.find<MaintenanceService>(),
+        ),
       );
     }
     if (!Get.isRegistered<StudentCoursesService>()) {

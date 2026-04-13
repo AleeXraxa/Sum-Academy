@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
+import 'package:sum_academy/core/services/secure_screen_service.dart';
 import 'package:sum_academy/core/utils/network_error.dart';
 import 'package:sum_academy/modules/student/controllers/student_live_sessions_controller.dart';
 import 'package:sum_academy/modules/student/controllers/student_courses_controller.dart';
@@ -110,7 +111,6 @@ class _StudentLiveSessionPlayerViewState extends State<StudentLiveSessionPlayerV
   bool _finishHandled = false;
   bool _initialSeekApplied = false;
   Timer? _statusTimer;
-  Timer? _tickTimer;
   int _joinedCount = 0;
   int _totalStudents = 0;
   int _elapsedSeconds = 0;
@@ -127,6 +127,9 @@ class _StudentLiveSessionPlayerViewState extends State<StudentLiveSessionPlayerV
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _openedAt = DateTime.now();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      SecureScreenService.enable();
+    });
 
     _joinedCount = widget.session.joinedCount;
     _totalStudents = widget.session.totalStudents;
@@ -156,14 +159,6 @@ class _StudentLiveSessionPlayerViewState extends State<StudentLiveSessionPlayerV
       });
     }
 
-    _tickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
-      if (_status.toLowerCase() != 'active') return;
-      setState(() {
-        _elapsedSeconds += 1;
-        if (_remainingSeconds > 0) _remainingSeconds -= 1;
-      });
-    });
   }
 
   Future<void> _initPlayer() async {
@@ -197,7 +192,12 @@ class _StudentLiveSessionPlayerViewState extends State<StudentLiveSessionPlayerV
             bufferForPlaybackMs: 1200,
             bufferForPlaybackAfterRebufferMs: 2500,
           )
-        : const BetterPlayerBufferingConfiguration();
+        : const BetterPlayerBufferingConfiguration(
+            minBufferMs: 15000,
+            maxBufferMs: 60000,
+            bufferForPlaybackMs: 1000,
+            bufferForPlaybackAfterRebufferMs: 2500,
+          );
     final controller = BetterPlayerController(
       BetterPlayerConfiguration(
         autoPlay: true,
@@ -273,9 +273,9 @@ class _StudentLiveSessionPlayerViewState extends State<StudentLiveSessionPlayerV
 
   @override
   void dispose() {
+    SecureScreenService.disable();
     WidgetsBinding.instance.removeObserver(this);
     _statusTimer?.cancel();
-    _tickTimer?.cancel();
     final controller = _playerController;
     if (controller != null) {
       controller.removeEventsListener(_eventListener);
@@ -286,6 +286,9 @@ class _StudentLiveSessionPlayerViewState extends State<StudentLiveSessionPlayerV
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      SecureScreenService.enable();
+    }
     if (state == AppLifecycleState.paused) {
       // Best-effort: keep session access consistent (backend may use this).
       unawaited(_leaveSession());
