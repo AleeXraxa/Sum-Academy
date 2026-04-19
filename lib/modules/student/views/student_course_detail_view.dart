@@ -77,77 +77,152 @@ class _StudentCourseDetailViewState extends State<StudentCourseDetailView>
         isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
 
     return Scaffold(
-      body: SafeArea(
-        child: GetX<StudentCourseProgressController>(
-          tag: _tag,
-          builder: (controller) {
-            final progress = controller.progress.value;
-            final progressValue =
-                progress.progress > 0 ? progress.progress : widget.progress;
-            final nextLecture = _findNextLecture(progress);
-            final nextLectureTitle =
-                nextLecture?.title ?? widget.nextLecture;
-            return RefreshIndicator(
-              color: SumAcademyTheme.brandBlue,
-              onRefresh: controller.refresh,
-              child: ListView(
-                padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 24.h),
-                physics: const AlwaysScrollableScrollPhysics(
-                  parent: BouncingScrollPhysics(),
-                ),
-                children: [
-                  StudentDashboardHeader(subtitle: widget.title),
-                  SizedBox(height: 16.h),
-                  _CourseOverviewCard(
-                    title: widget.title,
-                    teacher: widget.teacher,
-                    progress: progressValue,
-                    nextLecture: nextLectureTitle,
-                    onResume: nextLecture != null
-                        ? () {
-                            if (nextLecture.videoUrl.isEmpty) {
-                              return;
-                            }
-                            Get.to(
-                              () => StudentCourseVideoView(
-                                courseId: widget.courseId,
-                                lecture: nextLecture,
-                                onCompleted: controller.refresh,
-                              ),
-                            );
-                          }
-                        : null,
-                    completedLectures: progress.completedLectures,
-                    totalLectures: progress.totalLectures,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDark
+                ? [SumAcademyTheme.darkBase, SumAcademyTheme.darkSurface]
+                : [SumAcademyTheme.surfaceSecondary, SumAcademyTheme.white],
+          ),
+        ),
+        child: SafeArea(
+          child: GetX<StudentCourseProgressController>(
+            tag: _tag,
+            builder: (controller) {
+              final progress = controller.progress.value;
+              final progressValue =
+                  progress.progress > 0 ? progress.progress : widget.progress;
+              final nextLecture = _findNextLecture(progress);
+              final nextLectureTitle =
+                  nextLecture?.title ?? widget.nextLecture;
+
+              return RefreshIndicator(
+                color: SumAcademyTheme.brandBlue,
+                onRefresh: controller.refresh,
+                child: ListView(
+                  padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 32.h),
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
                   ),
-                  SizedBox(height: 18.h),
-                  Text(
-                    'Course Content',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: textColor,
-                          fontWeight: FontWeight.w700,
+                  children: [
+                    // Premium Header
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: () => Get.back(),
+                          icon: Icon(Icons.arrow_back_rounded, color: textColor),
+                          style: IconButton.styleFrom(
+                            backgroundColor: isDark
+                                ? SumAcademyTheme.darkSurface
+                                : SumAcademyTheme.white,
+                            padding: EdgeInsets.all(12.r),
+                            side: BorderSide(
+                              color: isDark
+                                  ? SumAcademyTheme.darkBorder
+                                  : SumAcademyTheme.brandBluePale,
+                            ),
+                          ),
                         ),
-                  ),
-                  SizedBox(height: 12.h),
-                  if (controller.isLoading.value)
-                    const _ContentSkeleton()
-                  else if (controller.errorMessage.value.isNotEmpty)
-                    _ErrorState(
-                      message: controller.errorMessage.value,
-                      onRetry: controller.load,
-                    )
-                  else if (progress.isEmpty)
-                    const _EmptyContentState()
-                  else
-                    _ChaptersList(
-                      chapters: progress.chapters,
-                      courseId: widget.courseId,
-                      onRefresh: controller.refresh,
+                        SizedBox(width: 14.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'COURSE DETAILS',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .labelSmall
+                                    ?.copyWith(
+                                      color: textColor.withOpacityFloat(0.45),
+                                      letterSpacing: 2.0,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
+                              Text(
+                                widget.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
+                                      color: SumAcademyTheme.brandBlue,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                ],
-              ),
-            );
-          },
+                    SizedBox(height: 24.h),
+                    _CourseOverviewCard(
+                      title: widget.title,
+                      teacher: widget.teacher,
+                      progress: progressValue,
+                      nextLecture: nextLectureTitle,
+                      onResume: nextLecture != null
+                          ? () {
+                              if (nextLecture.videoUrl.isEmpty) {
+                                return;
+                              }
+                              Get.to(
+                                () => StudentCourseVideoView(
+                                  courseId: widget.courseId,
+                                  lecture: nextLecture,
+                                  onCompleted: controller.refresh,
+                                ),
+                              );
+                            }
+                          : null,
+                      completedLectures: progress.completedLectures,
+                      totalLectures: progress.totalLectures,
+                    ),
+                    SizedBox(height: 24.h),
+                    Row(
+                      children: [
+                        Container(
+                          width: 4.w,
+                          height: 18.h,
+                          decoration: BoxDecoration(
+                            color: SumAcademyTheme.brandBlue,
+                            borderRadius: BorderRadius.circular(4.r),
+                          ),
+                        ),
+                        SizedBox(width: 10.w),
+                        Text(
+                          'Course Content',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                color: textColor,
+                                fontWeight: FontWeight.w800,
+                              ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16.h),
+                    if (controller.isLoading.value)
+                      const _ContentSkeleton()
+                    else if (controller.errorMessage.value.isNotEmpty)
+                      _ErrorState(
+                        message: controller.errorMessage.value,
+                        onRetry: controller.load,
+                      )
+                    else if (progress.isEmpty)
+                      const _EmptyContentState()
+                    else
+                      _ChaptersList(
+                        chapters: progress.chapters,
+                        courseId: widget.courseId,
+                        onRefresh: controller.refresh,
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );

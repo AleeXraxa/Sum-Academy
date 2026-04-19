@@ -14,6 +14,9 @@ class StudentNotificationBell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<StudentAnnouncementsController>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final defaultColor = isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
+
     return Obx(() {
       final count = controller.unreadCount;
       return Stack(
@@ -23,7 +26,7 @@ class StudentNotificationBell extends StatelessWidget {
             onPressed: () => _showNotifications(context, controller),
             icon: Icon(
               Icons.notifications_none_rounded,
-              color: iconColor ?? SumAcademyTheme.darkBase,
+              color: iconColor ?? defaultColor,
             ),
           ),
           if (count > 0)
@@ -56,34 +59,69 @@ void _showNotifications(
   StudentAnnouncementsController controller,
 ) {
   controller.fetchAnnouncements(silent: true);
-  showDialog(
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+
+  showGeneralDialog(
     context: context,
+    barrierDismissible: true,
+    barrierLabel: 'Notifications',
     barrierColor: Colors.black.withOpacity(0.08),
-    builder: (context) {
+    transitionDuration: const Duration(milliseconds: 300),
+    pageBuilder: (context, anim1, anim2) => const SizedBox.shrink(),
+    transitionBuilder: (context, anim1, anim2, child) {
       final width = MediaQuery.of(context).size.width;
       final dialogWidth = width < 420 ? width - 32.w : 360.w;
-      return Align(
-        alignment: Alignment.topRight,
-        child: Padding(
-          padding: EdgeInsets.only(top: 66.h, right: 16.w),
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              width: dialogWidth,
-              padding: EdgeInsets.all(16.r),
-              decoration: BoxDecoration(
-                color: SumAcademyTheme.white,
-                borderRadius: BorderRadius.circular(18.r),
-                boxShadow: [
-                  BoxShadow(
-                    color: SumAcademyTheme.darkBase.withOpacityFloat(0.12),
-                    blurRadius: 18.r,
-                    offset: Offset(0, 8.h),
+
+      return Transform.translate(
+        offset: Offset(0, 10.h * (1 - anim1.value)),
+        child: FadeTransition(
+          opacity: anim1,
+          child: Align(
+            alignment: Alignment.topRight,
+            child: Padding(
+              padding: EdgeInsets.only(top: 66.h, right: 16.w),
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  width: dialogWidth,
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    color: isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white,
+                    borderRadius: BorderRadius.circular(22.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: SumAcademyTheme.darkBase.withOpacityFloat(isDark ? 0.3 : 0.12),
+                        blurRadius: 24.r,
+                        offset: Offset(0, 10.h),
+                      ),
+                    ],
+                    border: Border.all(
+                      color: isDark ? SumAcademyTheme.darkBorder : SumAcademyTheme.brandBluePale,
+                    ),
                   ),
-                ],
-                border: Border.all(color: SumAcademyTheme.brandBluePale),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Accent Banner
+                      Container(
+                        height: 4.h,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              SumAcademyTheme.brandBlue,
+                              SumAcademyTheme.brandBlue.withOpacityFloat(0.7),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.all(20.r),
+                        child: _NotificationPanel(controller: controller),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              child: _NotificationPanel(controller: controller),
             ),
           ),
         ),
@@ -99,28 +137,47 @@ class _NotificationPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
+
     return Obx(() {
       final unread = controller.unreadAnnouncements;
       final items = unread.take(4).toList();
+
       return Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Notifications',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: SumAcademyTheme.darkBase,
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-          SizedBox(height: 12.h),
-          if (items.isEmpty)
-            Text(
-              'No new announcements right now.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: SumAcademyTheme.darkBase.withOpacityFloat(0.7),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Notifications',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: textColor,
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+              if (items.isNotEmpty)
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                  decoration: BoxDecoration(
+                    color: SumAcademyTheme.brandBlue.withOpacityFloat(0.1),
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
-            )
+                  child: Text(
+                    '${unread.length} NEW',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: SumAcademyTheme.brandBlue,
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                ),
+            ],
+          ),
+          SizedBox(height: 16.h),
+          if (items.isEmpty)
+            _EmptyNotifications(textColor: textColor)
           else
             ...items.map(
               (announcement) => _NotificationTile(
@@ -132,19 +189,24 @@ class _NotificationPanel extends StatelessWidget {
                 },
               ),
             ),
-          SizedBox(height: 10.h),
-          InkWell(
-            onTap: () {
-              Navigator.of(context).pop();
-              _openAnnouncements();
-            },
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 6.h),
+          SizedBox(height: 12.h),
+          Center(
+            child: TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _openAnnouncements();
+              },
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.r),
+                ),
+              ),
               child: Text(
-                'See all announcements',
+                'View All Announcements',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
                       color: SumAcademyTheme.brandBlue,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
               ),
             ),
@@ -152,6 +214,35 @@ class _NotificationPanel extends StatelessWidget {
         ],
       );
     });
+  }
+}
+
+class _EmptyNotifications extends StatelessWidget {
+  final Color textColor;
+  const _EmptyNotifications({required this.textColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 20.h),
+      child: Row(
+        children: [
+          Icon(
+            Icons.notifications_off_rounded,
+            color: textColor.withOpacityFloat(0.3),
+            size: 20.sp,
+          ),
+          SizedBox(width: 12.w),
+          Text(
+            'Inbox is clear!',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: textColor.withOpacityFloat(0.5),
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -166,40 +257,65 @@ class _NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
+    final surface = isDark ? SumAcademyTheme.darkBase : SumAcademyTheme.surfaceSecondary;
+
     return Padding(
-      padding: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.only(bottom: 10.h),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14.r),
+        borderRadius: BorderRadius.circular(16.r),
         child: Container(
-          padding: EdgeInsets.all(12.r),
+          padding: EdgeInsets.all(14.r),
           decoration: BoxDecoration(
-            color: SumAcademyTheme.surfaceTertiary,
-            borderRadius: BorderRadius.circular(14.r),
-            border: Border.all(color: SumAcademyTheme.brandBluePale),
+            color: surface,
+            borderRadius: BorderRadius.circular(16.r),
+            border: Border.all(
+              color: isDark ? SumAcademyTheme.darkBorder : SumAcademyTheme.brandBluePale,
+            ),
           ),
-          child: Column(
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                announcement.title.isEmpty
-                    ? 'Announcement'
-                    : announcement.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: SumAcademyTheme.darkBase,
-                      fontWeight: FontWeight.w700,
-                    ),
+              Container(
+                padding: EdgeInsets.all(8.r),
+                decoration: BoxDecoration(
+                  color: SumAcademyTheme.brandBlue.withOpacityFloat(0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.campaign_rounded,
+                  size: 16.sp,
+                  color: SumAcademyTheme.brandBlue,
+                ),
               ),
-              SizedBox(height: 4.h),
-              Text(
-                announcement.message,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: SumAcademyTheme.darkBase.withOpacityFloat(0.7),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      announcement.title.isEmpty ? 'Announcement' : announcement.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: textColor,
+                            fontWeight: FontWeight.w700,
+                          ),
                     ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      announcement.message,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: textColor.withOpacityFloat(0.6),
+                            height: 1.3,
+                          ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
