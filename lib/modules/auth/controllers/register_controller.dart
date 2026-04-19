@@ -5,8 +5,6 @@ import 'package:sum_academy/app/routes/app_routes.dart';
 import 'package:sum_academy/core/services/api_exception.dart';
 import 'package:sum_academy/core/services/maintenance_service.dart';
 import 'package:sum_academy/core/utils/network_error.dart';
-import 'package:sum_academy/modules/admin/bindings/admin_binding.dart';
-import 'package:sum_academy/modules/admin/views/admin_shell_view.dart';
 import 'package:sum_academy/modules/auth/services/auth_service.dart';
 import 'package:sum_academy/modules/maintenance/bindings/maintenance_binding.dart';
 import 'package:sum_academy/modules/maintenance/views/maintenance_view.dart';
@@ -124,11 +122,16 @@ class RegisterController extends GetxController {
 
   Future<void> _routeByRole() async {
     final role = await _authService.getCurrentUserRole();
-    if (role == 'admin') {
-      Get.offAll(
-        () => const AdminShellView(),
-        binding: AdminBinding(),
-      );
+    if (role == 'admin' || role == 'teacher') {
+      await _authService.logout();
+      Get.offAllNamed(AppRoutes.login);
+      Future.delayed(const Duration(milliseconds: 300), () {
+        showAppErrorDialog(
+          title: 'Access Restricted',
+          message: 'This platform is only for Student, for your role use Web Portal',
+        );
+      });
+      return;
     } else {
       try {
         final status = await Get.find<MaintenanceService>().fetchStatus();

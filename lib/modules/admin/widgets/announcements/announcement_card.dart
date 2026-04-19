@@ -45,25 +45,21 @@ class AnnouncementCard extends StatelessWidget {
       ).copyWith(
         borderRadius: BorderRadius.circular(18.r),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
         children: [
-          Container(
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
             width: 6.w,
-            decoration: BoxDecoration(
-              color: accent,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(18.r),
-                bottomLeft: Radius.circular(18.r),
-              ),
-            ),
+            child: Container(color: accent),
           ),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 16.h),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(16.w + 6.w, 14.h, 16.w, 16.h),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                   Row(
                     children: [
                       Container(
@@ -155,8 +151,7 @@ class AnnouncementCard extends StatelessWidget {
                           ),
                     ),
                   ],
-                ],
-              ),
+              ],
             ),
           ),
         ],

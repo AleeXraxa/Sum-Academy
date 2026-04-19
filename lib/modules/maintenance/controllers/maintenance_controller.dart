@@ -3,8 +3,7 @@ import 'dart:async';
 import 'package:get/get.dart';
 import 'package:sum_academy/app/routes/app_routes.dart';
 import 'package:sum_academy/core/services/maintenance_service.dart';
-import 'package:sum_academy/modules/admin/bindings/admin_binding.dart';
-import 'package:sum_academy/modules/admin/views/admin_shell_view.dart';
+
 import 'package:sum_academy/modules/auth/services/auth_service.dart';
 import 'package:sum_academy/modules/student/bindings/student_binding.dart';
 import 'package:sum_academy/modules/student/views/student_shell_view.dart';
@@ -72,11 +71,9 @@ class MaintenanceController extends GetxController {
       return;
     }
     final role = await _authService.getCurrentUserRole();
-    if (role == 'admin') {
-      Get.offAll(
-        () => const AdminShellView(),
-        binding: AdminBinding(),
-      );
+    if (role == 'admin' || role == 'teacher') {
+      await _authService.logout();
+      Get.offAllNamed(AppRoutes.login);
     } else {
       Get.offAll(
         () => const StudentShellView(),
