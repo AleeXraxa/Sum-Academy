@@ -5,7 +5,6 @@ import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/modules/student/controllers/student_quiz_attempt_controller.dart';
 import 'package:sum_academy/modules/student/controllers/student_quizzes_controller.dart';
 import 'package:sum_academy/modules/student/models/student_quiz.dart';
-import 'package:sum_academy/modules/student/widgets/student_notification_bell.dart';
 import 'package:sum_academy/modules/student/views/student_quiz_attempt_view.dart';
 import 'package:sum_academy/modules/student/widgets/student_dashboard_header.dart';
 
@@ -14,9 +13,6 @@ class StudentQuizzesView extends GetView<StudentQuizzesController> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor =
-        isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
     return Obx(() {
       return RefreshIndicator(
         color: SumAcademyTheme.brandBlue,
@@ -204,94 +200,135 @@ class _QuizCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white;
+    final border = isDark ? SumAcademyTheme.darkBorder : SumAcademyTheme.brandBluePale;
+    
     final isAttempted = quiz.isAttempted;
     final statusLabel = isAttempted
         ? 'Attempted'
-        : (quiz.isAvailable ? 'Available' : 'Attempted');
+        : (quiz.isAvailable ? 'Available' : 'Closed');
     final canStart = quiz.isAvailable && !isAttempted;
+    
     return Container(
-      padding: EdgeInsets.all(16.r),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: SumAcademyTheme.white,
-        borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
-        border: Border.all(color: SumAcademyTheme.brandBluePale),
+        color: surface,
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: border),
         boxShadow: [
-          BoxShadow(
-            color: SumAcademyTheme.darkBase.withOpacityFloat(0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
+          if (!isDark)
+            BoxShadow(
+              color: SumAcademyTheme.brandBlue.withOpacityFloat(0.08),
+              blurRadius: 22.r,
+              offset: Offset(0, 12.h),
+            ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  quiz.title.isNotEmpty ? quiz.title : 'Quiz',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: SumAcademyTheme.darkBase,
-                        fontWeight: FontWeight.w700,
+          // Top gradient banner
+          Container(
+            height: 6.h,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  SumAcademyTheme.brandBlue,
+                  SumAcademyTheme.brandBlueDarker,
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.all(18.r),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        quiz.title.isNotEmpty ? quiz.title : 'Quiz',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase,
+                              fontWeight: FontWeight.w700,
+                            ),
                       ),
+                    ),
+                    _StatusPill(label: statusLabel),
+                  ],
                 ),
-              ),
-              _StatusPill(label: statusLabel),
-            ],
-          ),
-          SizedBox(height: 8.h),
-          Wrap(
-            spacing: 8.w,
-            runSpacing: 8.h,
-            children: [
-              if (quiz.courseTitle.isNotEmpty)
-                _Tag(label: quiz.courseTitle),
-              if (quiz.subject.isNotEmpty) _Tag(label: quiz.subject),
-              _Tag(label: 'Full Subject'),
-            ],
-          ),
-          SizedBox(height: 12.h),
-          Row(
-            children: [
-              Text(
-                '${quiz.questionCount > 0 ? quiz.questionCount : 0} Questions',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: SumAcademyTheme.darkBase.withOpacityFloat(0.7),
+                SizedBox(height: 10.h),
+                Wrap(
+                  spacing: 8.w,
+                  runSpacing: 8.h,
+                  children: [
+                    if (quiz.courseTitle.isNotEmpty)
+                      _Tag(label: quiz.courseTitle),
+                    if (quiz.subject.isNotEmpty) _Tag(label: quiz.subject),
+                    _Tag(label: 'Full Subject'),
+                  ],
+                ),
+                SizedBox(height: 14.h),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.format_list_numbered_rounded,
+                      size: 14.sp,
+                      color: isDark ? SumAcademyTheme.white.withOpacityFloat(0.6) : SumAcademyTheme.darkBase.withOpacityFloat(0.6),
                     ),
-              ),
-              SizedBox(width: 16.w),
-              Text(
-                '${quiz.totalMarks > 0 ? quiz.totalMarks : 0} Marks',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: SumAcademyTheme.darkBase.withOpacityFloat(0.7),
+                    SizedBox(width: 4.w),
+                    Text(
+                      '${quiz.questionCount > 0 ? quiz.questionCount : 0} Questions',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: isDark ? SumAcademyTheme.white.withOpacityFloat(0.7) : SumAcademyTheme.darkBase.withOpacityFloat(0.7),
+                          ),
                     ),
-              ),
-            ],
-          ),
-          if (isAttempted && quiz.scorePercent >= 0) ...[
-            SizedBox(height: 12.h),
-            _ScorePill(scorePercent: quiz.scorePercent),
-          ],
-          SizedBox(height: 14.h),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: SizedBox(
-              height: 40.h,
-              child: ElevatedButton(
-                onPressed:
-                    canStart ? () => _showStartDialog(context, quiz) : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: SumAcademyTheme.brandBlue,
-                  foregroundColor: SumAcademyTheme.white,
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 18.w, vertical: 10.h),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18.r),
+                    SizedBox(width: 16.w),
+                    Icon(
+                      Icons.military_tech_rounded,
+                      size: 14.sp,
+                      color: isDark ? SumAcademyTheme.white.withOpacityFloat(0.6) : SumAcademyTheme.darkBase.withOpacityFloat(0.6),
+                    ),
+                    SizedBox(width: 4.w),
+                    Text(
+                      '${quiz.totalMarks > 0 ? quiz.totalMarks : 0} Marks',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: isDark ? SumAcademyTheme.white.withOpacityFloat(0.7) : SumAcademyTheme.darkBase.withOpacityFloat(0.7),
+                          ),
+                    ),
+                  ],
+                ),
+                if (isAttempted && quiz.scorePercent >= 0) ...[
+                  SizedBox(height: 12.h),
+                  _ScorePill(scorePercent: quiz.scorePercent),
+                ],
+                SizedBox(height: 16.h),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: canStart ? () => _showStartDialog(context, quiz) : null,
+                    icon: Icon(
+                      canStart ? Icons.play_circle_fill_rounded : Icons.check_circle_rounded,
+                      size: 18.sp,
+                      color: SumAcademyTheme.white,
+                    ),
+                    label: Text(canStart ? 'Start Quiz' : 'Attempted'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: SumAcademyTheme.brandBlue,
+                      foregroundColor: SumAcademyTheme.white,
+                      disabledBackgroundColor: SumAcademyTheme.brandBluePale,
+                      disabledForegroundColor: SumAcademyTheme.brandBlue,
+                      padding: EdgeInsets.symmetric(vertical: 12.h),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(SumAcademyTheme.radiusButton.r),
+                      ),
+                    ),
                   ),
                 ),
-                child: Text(canStart ? 'Start Quiz' : 'Attempted'),
-              ),
+              ],
             ),
           ),
         ],

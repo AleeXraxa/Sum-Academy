@@ -18,8 +18,7 @@ class StudentCertificatesView extends GetView<StudentCertificatesController> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor =
-        isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
+    final textColor = isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
 
     return Obx(() {
       return RefreshIndicator(
@@ -53,9 +52,8 @@ class StudentCertificatesView extends GetView<StudentCertificatesController> {
                       cert.pdfUrl.isNotEmpty ? cert.pdfUrl : cert.certificateId,
                       title: 'Share link copied',
                     ),
-                    onVerify: () => controller.verifyCertificate(
-                      cert.certificateId,
-                    ),
+                    onVerify: () =>
+                        controller.verifyCertificate(cert.certificateId),
                   ),
                 ),
               ),
@@ -65,10 +63,7 @@ class StudentCertificatesView extends GetView<StudentCertificatesController> {
     });
   }
 
-  Future<void> _copyLink(
-    String value, {
-    required String title,
-  }) async {
+  Future<void> _copyLink(String value, {required String title}) async {
     if (value.trim().isEmpty) {
       await showAppErrorDialog(
         title: 'Unavailable',
@@ -77,10 +72,7 @@ class StudentCertificatesView extends GetView<StudentCertificatesController> {
       return;
     }
     await Clipboard.setData(ClipboardData(text: value.trim()));
-    await showAppSuccessDialog(
-      title: title,
-      message: 'Copied to clipboard.',
-    );
+    await showAppSuccessDialog(title: title, message: 'Copied to clipboard.');
   }
 
   Future<void> _downloadCertificate(
@@ -122,10 +114,7 @@ class StudentCertificatesView extends GetView<StudentCertificatesController> {
     }
   }
 
-  Future<void> _openLink(
-    String value, {
-    required String title,
-  }) async {
+  Future<void> _openLink(String value, {required String title}) async {
     final url = value.trim();
     if (url.isEmpty) {
       await showAppErrorDialog(
@@ -142,10 +131,7 @@ class StudentCertificatesView extends GetView<StudentCertificatesController> {
       );
       return;
     }
-    final launched = await launchUrl(
-      uri,
-      mode: LaunchMode.externalApplication,
-    );
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!launched) {
       await showAppErrorDialog(
         title: 'Unable to open',
@@ -160,24 +146,29 @@ class StudentCertificatesView extends GetView<StudentCertificatesController> {
   }
 }
 
-
-
 class _StatsRow extends StatelessWidget {
   final int totalEarned;
   final int inProgress;
 
-  const _StatsRow({
-    required this.totalEarned,
-    required this.inProgress,
-  });
+  const _StatsRow({required this.totalEarned, required this.inProgress});
 
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final isTwoColumn = width > 640;
     final cards = [
-      _StatCard(label: 'Total Earned', value: totalEarned.toString()),
-      _StatCard(label: 'Courses In Progress', value: inProgress.toString()),
+      _StatCard(
+        label: 'Total Earned',
+        value: totalEarned.toString(),
+        icon: Icons.workspace_premium_rounded,
+        accent: SumAcademyTheme.warning,
+      ),
+      _StatCard(
+        label: 'Courses In Progress',
+        value: inProgress.toString(),
+        icon: Icons.loop_rounded,
+        accent: SumAcademyTheme.brandBlue,
+      ),
     ];
 
     if (isTwoColumn) {
@@ -203,45 +194,73 @@ class _StatsRow extends StatelessWidget {
 class _StatCard extends StatelessWidget {
   final String label;
   final String value;
+  final IconData icon;
+  final Color accent;
 
   const _StatCard({
     required this.label,
     required this.value,
+    required this.icon,
+    required this.accent,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark
+        ? SumAcademyTheme.darkSurface
+        : SumAcademyTheme.white;
+    final border = isDark
+        ? SumAcademyTheme.darkBorder
+        : SumAcademyTheme.brandBluePale;
+    final textColor = isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
-        color: SumAcademyTheme.white,
-        borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
-        border: Border.all(color: SumAcademyTheme.brandBluePale),
+        color: surface,
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: border),
         boxShadow: [
-          BoxShadow(
-            color: SumAcademyTheme.darkBase.withOpacityFloat(0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
+          if (!isDark)
+            BoxShadow(
+              color: SumAcademyTheme.brandBlue.withOpacityFloat(0.06),
+              blurRadius: 18.r,
+              offset: Offset(0, 10.h),
+            ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Container(
+            width: 38.r,
+            height: 38.r,
+            decoration: BoxDecoration(
+              color: accent.withOpacityFloat(0.12),
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            alignment: Alignment.center,
+            child: Icon(icon, size: 20.sp, color: accent),
+          ),
+          SizedBox(height: 14.h),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              color: textColor,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+              height: 1.0,
+            ),
+          ),
+          SizedBox(height: 4.h),
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: SumAcademyTheme.darkBase.withOpacityFloat(0.6),
-                ),
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: SumAcademyTheme.darkBase,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: textColor.withOpacityFloat(0.55),
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -264,73 +283,128 @@ class _CertificateCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark
+        ? SumAcademyTheme.darkSurface
+        : SumAcademyTheme.white;
+    final border = isDark
+        ? SumAcademyTheme.darkBorder
+        : SumAcademyTheme.brandBluePale;
+
     final issueDate = certificate.issuedAt == null
         ? 'N/A'
         : _formatDate(certificate.issuedAt!);
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(16.r),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: SumAcademyTheme.white,
-        borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
-        border: Border.all(color: SumAcademyTheme.brandBluePale),
+        color: surface,
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: border),
         boxShadow: [
-          BoxShadow(
-            color: SumAcademyTheme.darkBase.withOpacityFloat(0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
+          if (!isDark)
+            BoxShadow(
+              color: SumAcademyTheme.brandBlue.withOpacityFloat(0.08),
+              blurRadius: 22.r,
+              offset: Offset(0, 12.h),
+            ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _CertificatePreview(certificate: certificate, issueDate: issueDate),
-          SizedBox(height: 16.h),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: onDownload,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: SumAcademyTheme.brandBlue,
-                foregroundColor: SumAcademyTheme.white,
-                padding: EdgeInsets.symmetric(vertical: 12.h),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18.r),
-                ),
+          // Top gradient banner
+          Container(
+            height: 6.h,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  SumAcademyTheme.brandBlue,
+                  SumAcademyTheme.brandBlueDarker,
+                ],
               ),
-              child: const Text('Download PDF'),
             ),
           ),
-          SizedBox(height: 12.h),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: onShare,
-              style: OutlinedButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: 12.h),
-                side: BorderSide(color: SumAcademyTheme.brandBluePale),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18.r),
+          Padding(
+            padding: EdgeInsets.all(16.r),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _CertificatePreview(
+                  certificate: certificate,
+                  issueDate: issueDate,
                 ),
-              ),
-              child: const Text('Share'),
-            ),
-          ),
-          SizedBox(height: 12.h),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: onVerify,
-              style: OutlinedButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: 12.h),
-                side: BorderSide(color: SumAcademyTheme.brandBluePale),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18.r),
+                SizedBox(height: 18.h),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: onDownload,
+                    icon: Icon(
+                      Icons.picture_as_pdf_rounded,
+                      size: 18.sp,
+                      color: SumAcademyTheme.white,
+                    ),
+                    label: const Text('Download PDF'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: SumAcademyTheme.brandBlue,
+                      foregroundColor: SumAcademyTheme.white,
+                      padding: EdgeInsets.symmetric(vertical: 12.h),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          SumAcademyTheme.radiusButton.r,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-              child: const Text('Verify'),
+                SizedBox(height: 12.h),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: onShare,
+                        icon: Icon(Icons.share_rounded, size: 16.sp),
+                        label: const Text('Share'),
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 12.h),
+                          side: BorderSide(
+                            color: SumAcademyTheme.brandBluePale,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              SumAcademyTheme.radiusButton.r,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: onVerify,
+                        icon: Icon(
+                          Icons.check_circle_outline_rounded,
+                          size: 16.sp,
+                        ),
+                        label: const Text('Verify'),
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 12.h),
+                          side: BorderSide(
+                            color: SumAcademyTheme.brandBluePale,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              SumAcademyTheme.radiusButton.r,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],
@@ -384,17 +458,17 @@ class _CertificatePreview extends StatelessWidget {
                     Text(
                       'SUM Academy',
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: SumAcademyTheme.darkBase,
-                            fontWeight: FontWeight.w700,
-                          ),
+                        color: SumAcademyTheme.darkBase,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     Text(
                       'MEDICAL LEARNING EXCELLENCE',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: SumAcademyTheme.brandBlue,
-                            letterSpacing: 1.2,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        color: SumAcademyTheme.brandBlue,
+                        letterSpacing: 1.2,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
@@ -405,10 +479,10 @@ class _CertificatePreview extends StatelessWidget {
           Text(
             'CERTIFICATE OF COMPLETION',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: SumAcademyTheme.brandBlue,
-                  letterSpacing: 2,
-                  fontWeight: FontWeight.w600,
-                ),
+              color: SumAcademyTheme.brandBlue,
+              letterSpacing: 2,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           SizedBox(height: 8.h),
           Text(
@@ -416,16 +490,16 @@ class _CertificatePreview extends StatelessWidget {
                 ? 'Student'
                 : certificate.studentName,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: SumAcademyTheme.darkBase,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: SumAcademyTheme.darkBase,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           SizedBox(height: 6.h),
           Text(
             certificate.displayProgramLine,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: SumAcademyTheme.darkBase.withOpacityFloat(0.7),
-                ),
+              color: SumAcademyTheme.darkBase.withOpacityFloat(0.7),
+            ),
           ),
           SizedBox(height: 12.h),
           Row(
@@ -455,10 +529,7 @@ class _MiniInfo extends StatelessWidget {
   final String label;
   final String value;
 
-  const _MiniInfo({
-    required this.label,
-    required this.value,
-  });
+  const _MiniInfo({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -469,9 +540,9 @@ class _MiniInfo extends StatelessWidget {
           Text(
             label.toUpperCase(),
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: SumAcademyTheme.darkBase.withOpacityFloat(0.5),
-                  letterSpacing: 1.2,
-                ),
+              color: SumAcademyTheme.darkBase.withOpacityFloat(0.5),
+              letterSpacing: 1.2,
+            ),
           ),
           SizedBox(height: 4.h),
           Text(
@@ -479,9 +550,9 @@ class _MiniInfo extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: SumAcademyTheme.darkBase,
-                  fontWeight: FontWeight.w600,
-                ),
+              color: SumAcademyTheme.darkBase,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -509,8 +580,8 @@ class _EmptyState extends StatelessWidget {
             child: Text(
               'No certificates earned yet.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: SumAcademyTheme.darkBase.withOpacityFloat(0.7),
-                  ),
+                color: SumAcademyTheme.darkBase.withOpacityFloat(0.7),
+              ),
             ),
           ),
         ],
@@ -546,7 +617,11 @@ class _CertificatesSkeleton extends StatelessWidget {
                 SizedBox(height: 12.h),
                 _SkeletonLine(width: 120.w, height: 12.h, color: base),
                 SizedBox(height: 16.h),
-                _SkeletonLine(width: double.infinity, height: 42.h, color: base),
+                _SkeletonLine(
+                  width: double.infinity,
+                  height: 42.h,
+                  color: base,
+                ),
               ],
             ),
           ),
@@ -599,7 +674,9 @@ class _SkeletonLineState extends State<_SkeletonLine>
       builder: (context, child) {
         final color = Color.lerp(base, highlight, _controller.value) ?? base;
         return Container(
-          width: widget.width == double.infinity ? double.infinity : widget.width,
+          width: widget.width == double.infinity
+              ? double.infinity
+              : widget.width,
           height: widget.height,
           decoration: BoxDecoration(
             color: color,

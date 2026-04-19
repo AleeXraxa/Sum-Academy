@@ -623,173 +623,236 @@ class _ClassCourseCard extends StatelessWidget {
         : SumAcademyTheme.brandBlue;
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: surface,
-        borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
+        borderRadius: BorderRadius.circular(20.r),
         border: Border.all(color: border),
         boxShadow: [
           if (!isDark)
             BoxShadow(
-              color: SumAcademyTheme.darkBase.withOpacityFloat(0.06),
-              blurRadius: 18,
-              offset: const Offset(0, 10),
+              color: SumAcademyTheme.brandBlue.withOpacityFloat(0.08),
+              blurRadius: 22.r,
+              offset: Offset(0, 12.h),
             ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Stack(
-            children: [
-              Container(
-                height: 104.h,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: SumAcademyTheme.brandBluePale,
-                  borderRadius: BorderRadius.circular(16.r),
-                  image: course.thumbnailUrl.isNotEmpty
-                      ? DecorationImage(
-                          image: NetworkImage(course.thumbnailUrl),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
-                ),
-                alignment: Alignment.center,
-                child: course.thumbnailUrl.isEmpty
-                    ? Text(
-                        course.category.isEmpty ? 'Subject' : course.category,
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                              color: SumAcademyTheme.brandBlue,
-                              fontWeight: FontWeight.w600,
-                            ),
-                      )
-                    : null,
+          // Top gradient banner for consistency with Dashboard Active Course
+          Container(
+            height: 6.h,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  SumAcademyTheme.brandBlue,
+                  SumAcademyTheme.brandBlueDarker,
+                ],
               ),
-              Positioned(
-                right: 10.w,
-                top: 10.h,
-                child: Container(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacityFloat(0.15),
-                    borderRadius: BorderRadius.circular(12.r),
-                    border: Border.all(
-                      color: statusColor.withOpacityFloat(0.4),
-                    ),
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 14.h),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Stack(
+                    children: [
+                      Container(
+                        height: 104.h,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16.r),
+                          gradient: course.thumbnailUrl.isEmpty
+                              ? LinearGradient(
+                                  colors: [
+                                    SumAcademyTheme.brandBluePale,
+                                    SumAcademyTheme.brandBlueLight
+                                        .withOpacityFloat(0.45),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                )
+                              : null,
+                          image: course.thumbnailUrl.isNotEmpty
+                              ? DecorationImage(
+                                  image: NetworkImage(course.thumbnailUrl),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
+                        ),
+                        alignment: course.thumbnailUrl.isEmpty
+                            ? Alignment.center
+                            : null,
+                        child: course.thumbnailUrl.isEmpty
+                            ? Container(
+                                width: 44.r,
+                                height: 44.r,
+                                decoration: BoxDecoration(
+                                  color: SumAcademyTheme.white,
+                                  borderRadius: BorderRadius.circular(12.r),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: SumAcademyTheme.brandBlue
+                                          .withOpacityFloat(0.2),
+                                      blurRadius: 8.r,
+                                      offset: Offset(0, 4.h),
+                                    ),
+                                  ],
+                                ),
+                                alignment: Alignment.center,
+                                child: Icon(
+                                  Icons.play_arrow_rounded,
+                                  size: 26.sp,
+                                  color: SumAcademyTheme.brandBlue,
+                                ),
+                              )
+                            : null,
+                      ),
+                      Positioned(
+                        right: 10.w,
+                        top: 10.h,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 10.w, vertical: 4.h),
+                          decoration: BoxDecoration(
+                            color: statusColor.withOpacityFloat(0.15),
+                            borderRadius: BorderRadius.circular(12.r),
+                            border: Border.all(
+                              color: statusColor.withOpacityFloat(0.4),
+                            ),
+                          ),
+                          child: Text(
+                            statusLabel,
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(
+                                  color: statusColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  child: Text(
-                    statusLabel,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: statusColor,
-                          fontWeight: FontWeight.w600,
+                  SizedBox(height: 12.h),
+                  Text(
+                    course.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: isDark
+                              ? SumAcademyTheme.white
+                              : SumAcademyTheme.darkBase,
+                          fontWeight: FontWeight.w700,
                         ),
                   ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 10.h),
-          Text(
-            course.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase,
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-          SizedBox(height: 4.h),
-          Row(
-            children: [
-              Icon(
-                Icons.person_rounded,
-                size: 14.sp,
-                color: (isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase)
-                    .withOpacityFloat(0.55),
-              ),
-              SizedBox(width: 6.w),
-              Expanded(
-                child: Text(
-                  course.teacher.isEmpty ? 'Instructor' : course.teacher,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  SizedBox(height: 4.h),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.person_rounded,
+                        size: 14.sp,
                         color: (isDark
                                 ? SumAcademyTheme.white
                                 : SumAcademyTheme.darkBase)
-                            .withOpacityFloat(0.6),
+                            .withOpacityFloat(0.55),
                       ),
-                ),
-              ),
-            ],
-          ),
-          if (course.category.isNotEmpty) ...[
-            SizedBox(height: 6.h),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-              decoration: BoxDecoration(
-                color: SumAcademyTheme.brandBluePale,
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-              child: Text(
-                course.category,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: SumAcademyTheme.brandBlue,
-                      fontWeight: FontWeight.w600,
+                      SizedBox(width: 6.w),
+                      Expanded(
+                        child: Text(
+                          course.teacher.isEmpty
+                              ? 'Instructor'
+                              : course.teacher,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(
+                                color: (isDark
+                                        ? SumAcademyTheme.white
+                                        : SumAcademyTheme.darkBase)
+                                    .withOpacityFloat(0.6),
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (course.category.isNotEmpty) ...[
+                    SizedBox(height: 8.h),
+                    Container(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                      decoration: BoxDecoration(
+                        color: SumAcademyTheme.brandBluePale,
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                      child: Text(
+                        course.category,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: SumAcademyTheme.brandBlue,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
                     ),
-              ),
-            ),
-          ],
-          SizedBox(height: 10.h),
-          Row(
-            children: [
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10.r),
-                  child: LinearProgressIndicator(
-                    value: course.progress,
-                    minHeight: 6.h,
-                    backgroundColor: SumAcademyTheme.brandBluePale,
-                    valueColor: const AlwaysStoppedAnimation(
-                      SumAcademyTheme.brandBlue,
+                  ],
+                  const Spacer(),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10.r),
+                          child: LinearProgressIndicator(
+                            value: course.progress,
+                            minHeight: 6.h,
+                            backgroundColor: isDark
+                                ? SumAcademyTheme.darkElevated
+                                : SumAcademyTheme.brandBluePale,
+                            valueColor: const AlwaysStoppedAnimation(
+                              SumAcademyTheme.brandBlue,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 10.w),
+                      Text(
+                        '$progressPercent%',
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                              color: SumAcademyTheme.brandBlue,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 14.h),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: onContinue,
+                      icon: Icon(
+                        Icons.play_circle_fill_rounded,
+                        size: 20.sp,
+                        color: SumAcademyTheme.white,
+                      ),
+                      label: Text(course.isCompleted ? 'Review' : 'Continue'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: SumAcademyTheme.brandBlue,
+                        foregroundColor: SumAcademyTheme.white,
+                        padding: EdgeInsets.symmetric(vertical: 12.h),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                              SumAcademyTheme.radiusButton.r),
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
-              SizedBox(width: 10.w),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                decoration: BoxDecoration(
-                  color: SumAcademyTheme.brandBluePale,
-                  borderRadius: BorderRadius.circular(10.r),
-                ),
-                child: Text(
-                  '$progressPercent%',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: SumAcademyTheme.brandBlue,
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: onContinue,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: SumAcademyTheme.brandBlue,
-                foregroundColor: SumAcademyTheme.white,
-                padding: EdgeInsets.symmetric(vertical: 12.h),
-                shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(SumAcademyTheme.radiusButton.r),
-                ),
-              ),
-              child: Text(course.isCompleted ? 'Review' : 'Continue'),
             ),
           ),
         ],

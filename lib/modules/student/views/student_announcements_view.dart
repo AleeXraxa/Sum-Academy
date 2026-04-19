@@ -4,7 +4,6 @@ import 'package:get/get.dart';
 import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/modules/student/controllers/student_announcements_controller.dart';
 import 'package:sum_academy/modules/student/models/student_announcement.dart';
-import 'package:sum_academy/modules/student/widgets/student_notification_bell.dart';
 import 'package:sum_academy/modules/student/widgets/student_dashboard_header.dart';
 
 class StudentAnnouncementsView extends GetView<StudentAnnouncementsController> {
@@ -13,80 +12,147 @@ class StudentAnnouncementsView extends GetView<StudentAnnouncementsController> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor =
-        isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
+    final textColor = isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
 
     return Obx(() {
-      return RefreshIndicator(
-        color: SumAcademyTheme.brandBlue,
-        onRefresh: controller.refresh,
-        child: ListView(
-          padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 28.h),
-          physics: const AlwaysScrollableScrollPhysics(
-            parent: BouncingScrollPhysics(),
+      return Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDark
+                ? [SumAcademyTheme.darkBase, SumAcademyTheme.darkSurface]
+                : [SumAcademyTheme.surfaceSecondary, SumAcademyTheme.white],
           ),
-          children: [
-            StudentDashboardHeader(
-              subtitle: 'Announcements',
-              actions: [
-                if (controller.unreadCount > 0) ...[
-                  SizedBox(width: 4.w),
-                  IconButton(
-                    tooltip: 'Mark all as read',
-                    onPressed: controller.markAllRead,
-                    icon: Icon(
-                      Icons.done_all_rounded,
+        ),
+        child: RefreshIndicator(
+          color: SumAcademyTheme.brandBlue,
+          onRefresh: controller.refresh,
+          child: ListView(
+            padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 28.h),
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            children: [
+              StudentDashboardHeader(
+                subtitle: 'Announcements',
+                actions: [
+                  if (controller.unreadCount > 0) ...[
+                    SizedBox(width: 4.w),
+                    IconButton(
+                      tooltip: 'Mark all as read',
+                      onPressed: controller.markAllRead,
+                      icon: Icon(
+                        Icons.done_all_rounded,
+                        size: 20.sp,
+                        color: textColor.withOpacityFloat(0.75),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              SizedBox(height: 6.h),
+              _HeaderMeta(controller: controller),
+              SizedBox(height: 14.h),
+              _FilterRow(controller: controller),
+              SizedBox(height: 12.h),
+              SizedBox(height: 16.h),
+              Container(
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    if (!isDark)
+                      BoxShadow(
+                        color: SumAcademyTheme.brandBlue.withOpacityFloat(0.06),
+                        blurRadius: 18.r,
+                        offset: Offset(0, 8.h),
+                      ),
+                  ],
+                ),
+                child: TextField(
+                  controller: controller.searchController,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: isDark
+                        ? SumAcademyTheme.white
+                        : SumAcademyTheme.darkBase,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Search announcements',
+                    hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color:
+                          (isDark
+                                  ? SumAcademyTheme.white
+                                  : SumAcademyTheme.darkBase)
+                              .withOpacityFloat(0.4),
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search_rounded,
                       size: 20.sp,
-                      color: textColor.withOpacityFloat(0.75),
+                      color: SumAcademyTheme.brandBlue,
+                    ),
+                    filled: true,
+                    fillColor: isDark
+                        ? SumAcademyTheme.darkSurface
+                        : SumAcademyTheme.white,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16.w,
+                      vertical: 14.h,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16.r),
+                      borderSide: BorderSide(
+                        color: isDark
+                            ? SumAcademyTheme.darkBorder
+                            : SumAcademyTheme.brandBluePale,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16.r),
+                      borderSide: BorderSide(
+                        color: isDark
+                            ? SumAcademyTheme.darkBorder
+                            : SumAcademyTheme.brandBluePale,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16.r),
+                      borderSide: const BorderSide(
+                        color: SumAcademyTheme.brandBlue,
+                      ),
                     ),
                   ),
-                ],
-              ],
-            ),
-            SizedBox(height: 6.h),
-            _HeaderMeta(controller: controller),
-            SizedBox(height: 14.h),
-            _FilterRow(controller: controller),
-            SizedBox(height: 12.h),
-            TextField(
-              controller: controller.searchController,
-              decoration: InputDecoration(
-                hintText: 'Search announcements',
-                prefixIcon: Icon(Icons.search, size: 20.sp),
+                ),
               ),
-            ),
-            SizedBox(height: 16.h),
-            if (controller.isLoading.value)
-              const _AnnouncementsSkeleton()
-            else if (controller.errorMessage.value.isNotEmpty)
-              _ErrorState(
-                message: controller.errorMessage.value,
-                onRetry: controller.fetchAnnouncements,
-              )
-            else if (controller.filteredAnnouncements.isEmpty)
-              const _EmptyState()
-            else
-              Column(
-                children: controller.filteredAnnouncements
-                    .map(
-                      (announcement) => Padding(
-                        padding: EdgeInsets.only(bottom: 12.h),
-                        child: _AnnouncementCard(
-                          announcement: announcement,
-                          onTap: () => controller.markRead(announcement),
+              SizedBox(height: 20.h),
+              if (controller.isLoading.value)
+                const _AnnouncementsSkeleton()
+              else if (controller.errorMessage.value.isNotEmpty)
+                _ErrorState(
+                  message: controller.errorMessage.value,
+                  onRetry: controller.fetchAnnouncements,
+                )
+              else if (controller.filteredAnnouncements.isEmpty)
+                const _EmptyState()
+              else
+                Column(
+                  children: controller.filteredAnnouncements
+                      .map(
+                        (announcement) => Padding(
+                          padding: EdgeInsets.only(bottom: 12.h),
+                          child: _AnnouncementCard(
+                            announcement: announcement,
+                            onTap: () => controller.markRead(announcement),
+                          ),
                         ),
-                      ),
-                    )
-                    .toList(),
-              ),
-          ],
+                      )
+                      .toList(),
+                ),
+            ],
+          ),
         ),
       );
     });
   }
 }
-
-
 
 class _HeaderMeta extends StatelessWidget {
   final StudentAnnouncementsController controller;
@@ -96,8 +162,7 @@ class _HeaderMeta extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor =
-        isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
+    final textColor = isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
 
     final updated = controller.lastUpdatedAt.value;
     final updatedLabel = _updatedLabel(updated);
@@ -108,17 +173,17 @@ class _HeaderMeta extends StatelessWidget {
           child: Text(
             'Course, class, system, and direct announcements.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: textColor.withOpacityFloat(0.65),
-                ),
+              color: textColor.withOpacityFloat(0.65),
+            ),
           ),
         ),
         if (updatedLabel.isNotEmpty)
           Text(
             updatedLabel,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: textColor.withOpacityFloat(0.55),
-                  fontWeight: FontWeight.w600,
-                ),
+              color: textColor.withOpacityFloat(0.55),
+              fontWeight: FontWeight.w600,
+            ),
           ),
       ],
     );
@@ -175,21 +240,35 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20.r),
-      child: Container(
+      borderRadius: BorderRadius.circular(SumAcademyTheme.radiusButton.r),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
         padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
         decoration: BoxDecoration(
           color: isActive
               ? SumAcademyTheme.brandBlue
-              : SumAcademyTheme.white,
-          borderRadius: BorderRadius.circular(20.r),
+              : (isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white),
+          borderRadius: BorderRadius.circular(SumAcademyTheme.radiusButton.r),
           border: Border.all(
             color: isActive
                 ? SumAcademyTheme.brandBlue
-                : SumAcademyTheme.brandBluePale,
+                : (isDark
+                      ? SumAcademyTheme.darkBorder
+                      : SumAcademyTheme.brandBluePale),
+            width: 1.2,
           ),
+          boxShadow: [
+            if (isActive && !isDark)
+              BoxShadow(
+                color: SumAcademyTheme.brandBlue.withOpacityFloat(0.2),
+                blurRadius: 8.r,
+                offset: Offset(0, 4.h),
+              ),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -197,11 +276,14 @@ class _FilterChip extends StatelessWidget {
             Text(
               label,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: isActive
-                        ? SumAcademyTheme.white
-                        : SumAcademyTheme.darkBase.withOpacityFloat(0.7),
-                    fontWeight: FontWeight.w600,
-                  ),
+                color: isActive
+                    ? SumAcademyTheme.white
+                    : (isDark
+                              ? SumAcademyTheme.white
+                              : SumAcademyTheme.darkBase)
+                          .withOpacityFloat(0.7),
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+              ),
             ),
             SizedBox(width: 8.w),
             Container(
@@ -209,17 +291,19 @@ class _FilterChip extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isActive
                     ? SumAcademyTheme.white.withOpacityFloat(0.2)
-                    : SumAcademyTheme.brandBluePale,
+                    : (isDark
+                          ? SumAcademyTheme.brandBlue.withOpacityFloat(0.15)
+                          : SumAcademyTheme.brandBluePale),
                 borderRadius: BorderRadius.circular(12.r),
               ),
               child: Text(
                 count.toString(),
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: isActive
-                          ? SumAcademyTheme.white
-                          : SumAcademyTheme.brandBlue,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  color: isActive
+                      ? SumAcademyTheme.white
+                      : SumAcademyTheme.brandBlue,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ],
@@ -233,10 +317,7 @@ class _AnnouncementCard extends StatelessWidget {
   final StudentAnnouncement announcement;
   final VoidCallback onTap;
 
-  const _AnnouncementCard({
-    required this.announcement,
-    required this.onTap,
-  });
+  const _AnnouncementCard({required this.announcement, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -245,169 +326,244 @@ class _AnnouncementCard extends StatelessWidget {
     final dateLabel = _formatDate(announcement.createdAt);
     final relativeLabel = _relativeLabel(announcement.createdAt);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF101828) : SumAcademyTheme.white;
+    final cardColor = isDark
+        ? SumAcademyTheme.darkSurface
+        : SumAcademyTheme.white;
     final borderColor = isDark
-        ? SumAcademyTheme.white.withOpacityFloat(0.08)
+        ? SumAcademyTheme.darkBorder
         : SumAcademyTheme.brandBluePale;
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(18.r),
+      borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
       child: Container(
-        padding: EdgeInsets.all(16.r),
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: cardColor,
-          borderRadius: BorderRadius.circular(18.r),
+          borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
           border: Border.all(
-            color: announcement.isPinned ? accent.withOpacityFloat(0.35) : borderColor,
-            width: announcement.isPinned ? 1.2 : 1,
+            color: announcement.isPinned
+                ? SumAcademyTheme.accentOrange.withOpacityFloat(0.5)
+                : borderColor,
+            width: announcement.isPinned ? 1.5 : 1,
           ),
           boxShadow: [
-            BoxShadow(
-              color: SumAcademyTheme.darkBase.withOpacityFloat(0.05),
-              blurRadius: 12.r,
-              offset: Offset(0, 6.h),
-            ),
+            if (!isDark)
+              BoxShadow(
+                color: SumAcademyTheme.brandBlue.withOpacityFloat(0.06),
+                blurRadius: 20.r,
+                offset: Offset(0, 10.h),
+              ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                  decoration: BoxDecoration(
-                    color: accent.withOpacityFloat(0.12),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    announcement.displayTarget,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: accent,
-                          fontWeight: FontWeight.w600,
-                        ),
-                  ),
+            // Top gradient banner
+            Container(
+              height: 6.h,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [accent, accent.withOpacityFloat(0.8)],
                 ),
-                if (announcement.isPinned) ...[
-                  SizedBox(width: 8.w),
-                  Container(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                    decoration: BoxDecoration(
-                      color: SumAcademyTheme.accentOrange.withOpacityFloat(0.12),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      'Pinned',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: SumAcademyTheme.accentOrange,
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                  ),
-                ],
-                const Spacer(),
-                if (!announcement.isRead)
-                  Container(
-                    width: 8.r,
-                    height: 8.r,
-                    decoration: const BoxDecoration(
-                      color: SumAcademyTheme.brandBlue,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-              ],
-            ),
-            SizedBox(height: 10.h),
-            Text(
-              announcement.title.isEmpty
-                  ? 'Announcement'
-                  : announcement.title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase,
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-            SizedBox(height: 6.h),
-            Text(
-              announcement.message.isEmpty
-                  ? 'No announcement message.'
-                  : announcement.message,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: (isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase)
-                        .withOpacityFloat(0.72),
-                    height: 1.5,
-                  ),
-            ),
-            if (announcement.normalizedType == 'direct') ...[
-              SizedBox(height: 10.h),
-              Text(
-                'To: You',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: (isDark
-                              ? SumAcademyTheme.white
-                              : SumAcademyTheme.darkBase)
-                          .withOpacityFloat(0.6),
-                      fontWeight: FontWeight.w600,
-                    ),
               ),
-            ],
-            SizedBox(height: 12.h),
-            Row(
-              children: [
-                Container(
-                  width: 34.r,
-                  height: 34.r,
-                  decoration: BoxDecoration(
-                    color: SumAcademyTheme.brandBluePale,
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    initials,
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: SumAcademyTheme.brandBlue,
-                          fontWeight: FontWeight.w600,
+            ),
+            Padding(
+              padding: EdgeInsets.all(18.r),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10.w,
+                          vertical: 4.h,
                         ),
+                        decoration: BoxDecoration(
+                          color: accent.withOpacityFloat(0.12),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          announcement.displayTarget,
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                color: accent,
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                      ),
+                      if (announcement.isPinned) ...[
+                        SizedBox(width: 8.w),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 10.w,
+                            vertical: 4.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: SumAcademyTheme.accentOrange
+                                .withOpacityFloat(0.12),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.push_pin_rounded,
+                                size: 12.sp,
+                                color: SumAcademyTheme.accentOrange,
+                              ),
+                              SizedBox(width: 4.w),
+                              Text(
+                                'Pinned',
+                                style: Theme.of(context).textTheme.labelSmall
+                                    ?.copyWith(
+                                      color: SumAcademyTheme.accentOrange,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      const Spacer(),
+                      if (!announcement.isRead)
+                        Container(
+                          width: 8.r,
+                          height: 8.r,
+                          decoration: const BoxDecoration(
+                            color: SumAcademyTheme.brandBlue,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                    ],
                   ),
-                ),
-                SizedBox(width: 10.w),
-                Expanded(
-                  child: Text(
-                    announcement.senderName.isEmpty
-                        ? 'SUM Academy'
-                        : announcement.senderName,
+                  SizedBox(height: 14.h),
+                  Text(
+                    announcement.title.isEmpty
+                        ? 'Announcement'
+                        : announcement.title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: isDark
+                          ? SumAcademyTheme.white
+                          : SumAcademyTheme.darkBase,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(height: 8.h),
+                  Text(
+                    announcement.message.isEmpty
+                        ? 'No announcement message.'
+                        : announcement.message,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: (isDark
+                      color:
+                          (isDark
                                   ? SumAcademyTheme.white
                                   : SumAcademyTheme.darkBase)
-                              .withOpacityFloat(0.8),
-                          fontWeight: FontWeight.w600,
-                        ),
+                              .withOpacityFloat(0.7),
+                      height: 1.6,
+                    ),
                   ),
-                ),
-                if (dateLabel.isNotEmpty)
-                  Text(
-                    dateLabel,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: (isDark
-                                  ? SumAcademyTheme.white
-                                  : SumAcademyTheme.darkBase)
-                              .withOpacityFloat(0.6),
-                        ),
-                  ),
-                if (relativeLabel.isNotEmpty) ...[
-                  SizedBox(width: 8.w),
-                  Text(
-                    relativeLabel,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  if (announcement.normalizedType == 'direct') ...[
+                    SizedBox(height: 12.h),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.mail_outline_rounded,
+                          size: 14.sp,
                           color: SumAcademyTheme.brandBlue,
-                          fontWeight: FontWeight.w600,
                         ),
+                        SizedBox(width: 6.w),
+                        Text(
+                          'Direct Message to You',
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                color: SumAcademyTheme.brandBlue,
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  SizedBox(height: 18.h),
+                  Row(
+                    children: [
+                      Container(
+                        width: 38.r,
+                        height: 38.r,
+                        decoration: BoxDecoration(
+                          color: SumAcademyTheme.brandBlue.withOpacityFloat(
+                            0.1,
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          initials,
+                          style: Theme.of(context).textTheme.labelMedium
+                              ?.copyWith(
+                                color: SumAcademyTheme.brandBlue,
+                                fontWeight: FontWeight.w800,
+                              ),
+                        ),
+                      ),
+                      SizedBox(width: 12.w),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              announcement.senderName.isEmpty
+                                  ? 'SUM Academy'
+                                  : announcement.senderName,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color:
+                                        (isDark
+                                                ? SumAcademyTheme.white
+                                                : SumAcademyTheme.darkBase)
+                                            .withOpacityFloat(0.9),
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
+                            if (dateLabel.isNotEmpty)
+                              Text(
+                                dateLabel,
+                                style: Theme.of(context).textTheme.labelSmall
+                                    ?.copyWith(
+                                      color:
+                                          (isDark
+                                                  ? SumAcademyTheme.white
+                                                  : SumAcademyTheme.darkBase)
+                                              .withOpacityFloat(0.5),
+                                    ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      if (relativeLabel.isNotEmpty)
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 10.w,
+                            vertical: 4.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: SumAcademyTheme.brandBluePale,
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          child: Text(
+                            relativeLabel,
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
+                                  color: SumAcademyTheme.brandBlue,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                          ),
+                        ),
+                    ],
                   ),
                 ],
-              ],
+              ),
             ),
           ],
         ),
@@ -476,18 +632,46 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
-      padding: EdgeInsets.all(16.r),
+      padding: EdgeInsets.symmetric(vertical: 40.h, horizontal: 20.w),
       decoration: BoxDecoration(
-        color: SumAcademyTheme.white,
-        borderRadius: BorderRadius.circular(18.r),
-        border: Border.all(color: SumAcademyTheme.brandBluePale),
+        color: isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white,
+        borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
+        border: Border.all(
+          color: isDark
+              ? SumAcademyTheme.darkBorder
+              : SumAcademyTheme.brandBluePale,
+        ),
       ),
-      child: Text(
-        'No announcements yet.',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: SumAcademyTheme.darkBase.withOpacityFloat(0.7),
+      child: Column(
+        children: [
+          Icon(
+            Icons.notifications_off_rounded,
+            size: 64.sp,
+            color: SumAcademyTheme.brandBlue.withOpacityFloat(0.2),
+          ),
+          SizedBox(height: 16.h),
+          Text(
+            'No announcements yet.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: (isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase)
+                  .withOpacityFloat(0.6),
+              fontWeight: FontWeight.w600,
             ),
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            "We'll notify you when something important comes up.",
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: (isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase)
+                  .withOpacityFloat(0.4),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -497,10 +681,7 @@ class _ErrorState extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
 
-  const _ErrorState({
-    required this.message,
-    required this.onRetry,
-  });
+  const _ErrorState({required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -517,16 +698,16 @@ class _ErrorState extends StatelessWidget {
           Text(
             'Unable to load announcements',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: SumAcademyTheme.error,
-                  fontWeight: FontWeight.w600,
-                ),
+              color: SumAcademyTheme.error,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           SizedBox(height: 6.h),
           Text(
             message,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: SumAcademyTheme.darkBase.withOpacityFloat(0.7),
-                ),
+              color: SumAcademyTheme.darkBase.withOpacityFloat(0.7),
+            ),
           ),
           SizedBox(height: 10.h),
           OutlinedButton(
@@ -591,9 +772,7 @@ String _formatDate(DateTime? date) {
 String _relativeLabel(DateTime? date) {
   if (date == null) return '';
   final now = DateTime.now();
-  if (now.year == date.year &&
-      now.month == date.month &&
-      now.day == date.day) {
+  if (now.year == date.year && now.month == date.month && now.day == date.day) {
     return 'Today';
   }
   return '';

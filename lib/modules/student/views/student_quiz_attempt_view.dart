@@ -74,7 +74,8 @@ class _StudentQuizAttemptViewState extends State<StudentQuizAttemptView>
     _warningVisible = true;
     await showAppErrorDialog(
       title: 'Quiz Warning',
-      message: 'Please stay in the quiz until you submit. Leaving may forfeit your attempt.',
+      message:
+          'Please stay in the quiz until you submit. Leaving may forfeit your attempt.',
     );
     _warningVisible = false;
   }
@@ -82,13 +83,11 @@ class _StudentQuizAttemptViewState extends State<StudentQuizAttemptView>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return WillPopScope(
-      onWillPop: () async {
-        if (_controller.resultPercent.value != null) {
-          return true;
-        }
+    return PopScope(
+      canPop: _controller.resultPercent.value != null,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
         await _showFocusWarning();
-        return false;
       },
       child: Scaffold(
         body: Container(
@@ -110,9 +109,7 @@ class _StudentQuizAttemptViewState extends State<StudentQuizAttemptView>
           child: SafeArea(
             child: Obx(() {
               if (_controller.isLoading.value) {
-                return const AppBootstrapLoader(
-                  message: 'Loading quiz...',
-                );
+                return const AppBootstrapLoader(message: 'Loading quiz...');
               }
               if (_controller.resultPercent.value != null) {
                 return ListView(
@@ -124,9 +121,7 @@ class _StudentQuizAttemptViewState extends State<StudentQuizAttemptView>
                       onExit: () => Get.back(),
                     ),
                     SizedBox(height: 16.h),
-                    _ResultCard(
-                      percent: _controller.resultPercent.value ?? 0,
-                    ),
+                    _ResultCard(percent: _controller.resultPercent.value ?? 0),
                     SizedBox(height: 18.h),
                     SizedBox(
                       height: 48.h,
@@ -165,8 +160,8 @@ class _StudentQuizAttemptViewState extends State<StudentQuizAttemptView>
                   else ...[
                     _QuestionCard(
                       index: _controller.currentIndex.value + 1,
-                      question: _controller
-                          .questions[_controller.currentIndex.value],
+                      question:
+                          _controller.questions[_controller.currentIndex.value],
                       controller: _controller,
                     ),
                     SizedBox(height: 18.h),
@@ -202,9 +197,9 @@ class _AttemptHeader extends StatelessWidget {
           child: Text(
             title.isNotEmpty ? title : 'Quiz',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: SumAcademyTheme.darkBase,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: SumAcademyTheme.darkBase,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
         Obx(() {
@@ -215,9 +210,9 @@ class _AttemptHeader extends StatelessWidget {
               Text(
                 'Quiz Timer',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: SumAcademyTheme.darkBase.withOpacityFloat(0.6),
-                      fontWeight: FontWeight.w600,
-                    ),
+                  color: SumAcademyTheme.darkBase.withOpacityFloat(0.6),
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               SizedBox(height: 4.h),
               Container(
@@ -229,9 +224,9 @@ class _AttemptHeader extends StatelessWidget {
                 child: Text(
                   timeLabel,
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: SumAcademyTheme.brandBlue,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    color: SumAcademyTheme.brandBlue,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
@@ -264,12 +259,28 @@ class _ProgressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final progress = total == 0 ? 0.0 : answered / total;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark
+        ? SumAcademyTheme.darkSurface
+        : SumAcademyTheme.white;
+    final border = isDark
+        ? SumAcademyTheme.darkBorder
+        : SumAcademyTheme.brandBluePale;
+
     return Container(
-      padding: EdgeInsets.all(14.r),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
-        color: SumAcademyTheme.white,
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: SumAcademyTheme.brandBluePale),
+        color: surface,
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: border),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: SumAcademyTheme.brandBlue.withOpacityFloat(0.06),
+              blurRadius: 16.r,
+              offset: Offset(0, 8.h),
+            ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,28 +288,29 @@ class _ProgressCard extends StatelessWidget {
           Text(
             'Progress',
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: SumAcademyTheme.darkBase,
-                  fontWeight: FontWeight.w600,
-                ),
+              color: isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          SizedBox(height: 8.h),
+          SizedBox(height: 10.h),
           ClipRRect(
             borderRadius: BorderRadius.circular(12.r),
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 6.h,
               backgroundColor: SumAcademyTheme.brandBluePale,
-              valueColor:
-                  const AlwaysStoppedAnimation(SumAcademyTheme.brandBlue),
+              valueColor: const AlwaysStoppedAnimation(
+                SumAcademyTheme.brandBlue,
+              ),
             ),
           ),
           SizedBox(height: 6.h),
           Text(
-            'Question ${total == 0 ? 0 : currentIndex + 1} of $total · '
-            '$answered answered',
+            'Question ${total == 0 ? 0 : currentIndex + 1} of $total · $answered answered',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: SumAcademyTheme.darkBase.withOpacityFloat(0.6),
-                ),
+              color: (isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase)
+                  .withOpacityFloat(0.6),
+            ),
           ),
         ],
       ),
@@ -311,18 +323,26 @@ class _EmptyQuestionState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
-      padding: EdgeInsets.all(16.r),
+      padding: EdgeInsets.all(20.r),
       decoration: BoxDecoration(
-        color: SumAcademyTheme.white,
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: SumAcademyTheme.brandBluePale),
+        color: isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white,
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(
+          color: isDark
+              ? SumAcademyTheme.darkBorder
+              : SumAcademyTheme.brandBluePale,
+        ),
       ),
       child: Text(
         'No questions available for this quiz.',
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: SumAcademyTheme.darkBase.withOpacityFloat(0.7),
-            ),
+          color: isDark
+              ? SumAcademyTheme.white.withOpacityFloat(0.7)
+              : SumAcademyTheme.darkBase.withOpacityFloat(0.7),
+        ),
       ),
     );
   }
@@ -336,8 +356,8 @@ class _NavigationRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final isLast = controller.currentIndex.value ==
-          controller.questions.length - 1;
+      final isLast =
+          controller.currentIndex.value == controller.questions.length - 1;
       final isSubmitting = controller.isSubmitting.value;
       return Row(
         children: [
@@ -398,107 +418,138 @@ class _ResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark
+        ? SumAcademyTheme.darkSurface
+        : SumAcademyTheme.white;
+
     final clamped = percent.clamp(0, 100).toDouble();
     final tone = _resultTone(clamped);
     return Container(
-      padding: EdgeInsets.all(18.r),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: SumAcademyTheme.white,
-        borderRadius: BorderRadius.circular(18.r),
+        color: surface,
+        borderRadius: BorderRadius.circular(20.r),
         border: Border.all(color: tone.withOpacityFloat(0.2)),
         boxShadow: [
-          BoxShadow(
-            color: SumAcademyTheme.darkBase.withOpacityFloat(0.08),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
+          if (!isDark)
+            BoxShadow(
+              color: SumAcademyTheme.brandBlue.withOpacityFloat(0.08),
+              blurRadius: 22.r,
+              offset: Offset(0, 12.h),
+            ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text(
-                'Quiz Result',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: SumAcademyTheme.darkBase,
-                      fontWeight: FontWeight.w700,
-                    ),
-              ),
-              const Spacer(),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                decoration: BoxDecoration(
-                  color: tone.withOpacityFloat(0.12),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  _resultLabel(clamped),
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: tone,
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-              ),
-            ],
+          Container(
+            height: 6.h,
+            decoration: BoxDecoration(color: tone),
           ),
-          SizedBox(height: 16.h),
-          Row(
-            children: [
-              Container(
-                width: 78.r,
-                height: 78.r,
-                decoration: BoxDecoration(
-                  color: tone.withOpacityFloat(0.12),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: tone.withOpacityFloat(0.3)),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  '${clamped.toStringAsFixed(0)}%',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: tone,
-                        fontWeight: FontWeight.w800,
-                      ),
-                ),
-              ),
-              SizedBox(width: 14.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          Padding(
+            padding: EdgeInsets.all(20.r),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
                     Text(
-                      'Score Percentage',
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color:
-                                SumAcademyTheme.darkBase.withOpacityFloat(0.6),
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                    SizedBox(height: 6.h),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(999),
-                      child: LinearProgressIndicator(
-                        value: clamped / 100,
-                        minHeight: 6.h,
-                        backgroundColor: SumAcademyTheme.brandBluePale,
-                        valueColor: AlwaysStoppedAnimation(tone),
+                      'Quiz Result',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: isDark
+                            ? SumAcademyTheme.white
+                            : SumAcademyTheme.darkBase,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    SizedBox(height: 8.h),
-                    Text(
-                      'You completed the quiz. Review your results anytime from the quizzes tab.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color:
-                                SumAcademyTheme.darkBase.withOpacityFloat(0.7),
-                            height: 1.5,
-                          ),
+                    const Spacer(),
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10.w,
+                        vertical: 4.h,
+                      ),
+                      decoration: BoxDecoration(
+                        color: tone.withOpacityFloat(0.12),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        _resultLabel(clamped),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: tone,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-              ),
-            ],
+                SizedBox(height: 16.h),
+                Row(
+                  children: [
+                    Container(
+                      width: 78.r,
+                      height: 78.r,
+                      decoration: BoxDecoration(
+                        color: tone.withOpacityFloat(0.12),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: tone.withOpacityFloat(0.3)),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '${clamped.toStringAsFixed(0)}%',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: tone,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 14.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Score Percentage',
+                            style: Theme.of(context).textTheme.labelMedium
+                                ?.copyWith(
+                                  color:
+                                      (isDark
+                                              ? SumAcademyTheme.white
+                                              : SumAcademyTheme.darkBase)
+                                          .withOpacityFloat(0.6),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                          SizedBox(height: 6.h),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(999),
+                            child: LinearProgressIndicator(
+                              value: clamped / 100,
+                              minHeight: 6.h,
+                              backgroundColor: SumAcademyTheme.brandBluePale,
+                              valueColor: AlwaysStoppedAnimation(tone),
+                            ),
+                          ),
+                          SizedBox(height: 8.h),
+                          Text(
+                            'You completed the quiz. Review your results anytime from the quizzes tab.',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color:
+                                      (isDark
+                                              ? SumAcademyTheme.white
+                                              : SumAcademyTheme.darkBase)
+                                          .withOpacityFloat(0.7),
+                                  height: 1.5,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -519,76 +570,121 @@ class _QuestionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark
+        ? SumAcademyTheme.darkSurface
+        : SumAcademyTheme.white;
+    final border = isDark
+        ? SumAcademyTheme.darkBorder
+        : SumAcademyTheme.brandBluePale;
+    final textColor = isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
+
     return Container(
-      padding: EdgeInsets.all(14.r),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: SumAcademyTheme.white,
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: SumAcademyTheme.brandBluePale),
+        color: surface,
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: border),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: SumAcademyTheme.brandBlue.withOpacityFloat(0.08),
+              blurRadius: 22.r,
+              offset: Offset(0, 12.h),
+            ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Question $index',
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: SumAcademyTheme.brandBlue,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-          SizedBox(height: 6.h),
-          Text(
-            question.text.isNotEmpty ? question.text : 'Question',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: SumAcademyTheme.darkBase,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-          SizedBox(height: 10.h),
-          if (question.hasOptions)
-            ...question.options.map((option) {
-              final value = option.id.isNotEmpty ? option.id : option.label;
-              return Obx(() {
-                final selected = controller.answerFor(question.id) == value;
-                return Container(
-                  margin: EdgeInsets.only(bottom: 8.h),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? SumAcademyTheme.brandBluePale
-                        : SumAcademyTheme.surfaceSecondary,
-                    borderRadius: BorderRadius.circular(12.r),
-                    border: Border.all(
-                      color: selected
-                          ? SumAcademyTheme.brandBlue
-                          : SumAcademyTheme.brandBluePale,
-                    ),
-                  ),
-                  child: RadioListTile<String>(
-                    value: value,
-                    groupValue: controller.answerFor(question.id),
-                    onChanged: (value) {
-                      if (value != null) {
-                        controller.setAnswer(question.id, value);
-                      }
-                    },
-                    activeColor: SumAcademyTheme.brandBlue,
-                    title: Text(
-                      option.label,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: SumAcademyTheme.darkBase,
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                  ),
-                );
-              });
-            }).toList()
-          else
-            TextField(
-              controller: controller.controllerFor(question.id),
-              onChanged: (value) => controller.setAnswer(question.id, value),
-              decoration: const InputDecoration(hintText: 'Type your answer'),
+          Container(
+            height: 6.h,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  SumAcademyTheme.brandBlue,
+                  SumAcademyTheme.brandBlueDarker,
+                ],
+              ),
             ),
+          ),
+          Padding(
+            padding: EdgeInsets.all(20.r),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Question $index',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: SumAcademyTheme.brandBlue,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                Text(
+                  question.text.isNotEmpty ? question.text : 'Question',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: textColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(height: 16.h),
+                if (question.hasOptions)
+                  ...question.options.map((option) {
+                    final value = option.id.isNotEmpty
+                        ? option.id
+                        : option.label;
+                    return Obx(() {
+                      final selected =
+                          controller.answerFor(question.id) == value;
+                      return Container(
+                        margin: EdgeInsets.only(bottom: 8.h),
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? SumAcademyTheme.brandBluePale
+                              : isDark
+                              ? SumAcademyTheme.darkBorder
+                              : SumAcademyTheme.surfaceSecondary,
+                          borderRadius: BorderRadius.circular(12.r),
+                          border: Border.all(
+                            color: selected
+                                ? SumAcademyTheme.brandBlue
+                                : SumAcademyTheme.brandBluePale,
+                          ),
+                        ),
+                        child: RadioListTile<String>(
+                          value: value,
+                          groupValue: controller.answerFor(question.id),
+                          onChanged: (value) {
+                            if (value != null) {
+                              controller.setAnswer(question.id, value);
+                            }
+                          },
+                          activeColor: SumAcademyTheme.brandBlue,
+                          title: Text(
+                            option.label,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: textColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                        ),
+                      );
+                    });
+                  })
+                else
+                  TextField(
+                    controller: controller.controllerFor(question.id),
+                    onChanged: (value) =>
+                        controller.setAnswer(question.id, value),
+                    decoration: const InputDecoration(
+                      hintText: 'Type your answer',
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ],
       ),
     );
