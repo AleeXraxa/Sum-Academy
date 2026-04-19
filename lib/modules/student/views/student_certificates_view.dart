@@ -10,6 +10,7 @@ import 'package:sum_academy/modules/student/controllers/student_certificates_con
 import 'package:sum_academy/modules/student/models/student_certificate.dart';
 import 'package:sum_academy/modules/student/widgets/student_notification_bell.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:sum_academy/modules/student/widgets/student_dashboard_header.dart';
 
 class StudentCertificatesView extends GetView<StudentCertificatesController> {
   const StudentCertificatesView({super.key});
@@ -30,7 +31,7 @@ class StudentCertificatesView extends GetView<StudentCertificatesController> {
             parent: BouncingScrollPhysics(),
           ),
           children: [
-            _HeaderRow(textColor: textColor),
+            StudentDashboardHeader(subtitle: 'My Certificates'),
             SizedBox(height: 18.h),
             _StatsRow(
               totalEarned: controller.totalEarned,
@@ -159,48 +160,7 @@ class StudentCertificatesView extends GetView<StudentCertificatesController> {
   }
 }
 
-class _HeaderRow extends StatelessWidget {
-  final Color textColor;
 
-  const _HeaderRow({required this.textColor});
-
-  @override
-  Widget build(BuildContext context) {
-    final scaffoldState = Scaffold.maybeOf(context);
-    final showMenu = scaffoldState?.hasDrawer ?? false;
-
-    return Row(
-      children: [
-        if (showMenu)
-          IconButton(
-            onPressed: () {
-              if (scaffoldState?.hasDrawer ?? false) {
-                scaffoldState?.openDrawer();
-              }
-            },
-            icon: Icon(
-              Icons.menu_rounded,
-              size: 20.sp,
-              color: textColor.withOpacityFloat(0.7),
-            ),
-          ),
-        if (showMenu) SizedBox(width: 6.w),
-        Expanded(
-          child: Text(
-            'My Certificates',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: textColor,
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-        ),
-        StudentNotificationBell(
-          iconColor: textColor.withOpacityFloat(0.75),
-        ),
-      ],
-    );
-  }
-}
 
 class _StatsRow extends StatelessWidget {
   final int totalEarned;

@@ -5,6 +5,7 @@ import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/modules/admin/widgets/users/user_dialog_fields.dart';
 import 'package:sum_academy/modules/student/controllers/student_settings_controller.dart';
 import 'package:sum_academy/modules/student/widgets/student_notification_bell.dart';
+import 'package:sum_academy/modules/student/widgets/student_dashboard_header.dart';
 
 class StudentSettingsView extends GetView<StudentSettingsController> {
   const StudentSettingsView({super.key});
@@ -20,7 +21,13 @@ class StudentSettingsView extends GetView<StudentSettingsController> {
         padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 28.h),
         physics: const BouncingScrollPhysics(),
         children: [
-          _HeaderRow(textColor: textColor, controller: controller),
+          StudentDashboardHeader(
+            subtitle: 'Profile',
+            actions: [
+              SizedBox(width: 8.w),
+              _ProfileStatus(isComplete: controller.isComplete),
+            ],
+          ),
           SizedBox(height: 10.h),
           Text(
             'Manage your profile information and security.',
@@ -42,53 +49,7 @@ class StudentSettingsView extends GetView<StudentSettingsController> {
   }
 }
 
-class _HeaderRow extends StatelessWidget {
-  final Color textColor;
-  final StudentSettingsController controller;
 
-  const _HeaderRow({
-    required this.textColor,
-    required this.controller,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final scaffoldState = Scaffold.maybeOf(context);
-    final showMenu = scaffoldState?.hasDrawer ?? false;
-    return Row(
-      children: [
-        if (showMenu)
-          IconButton(
-            onPressed: () {
-              if (scaffoldState?.hasDrawer ?? false) {
-                scaffoldState?.openDrawer();
-              }
-            },
-            icon: Icon(
-              Icons.menu_rounded,
-              size: 20.sp,
-              color: textColor.withOpacityFloat(0.7),
-            ),
-          ),
-        if (showMenu) SizedBox(width: 6.w),
-        Expanded(
-          child: Text(
-            'Profile',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: textColor,
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-        ),
-        StudentNotificationBell(
-          iconColor: textColor.withOpacityFloat(0.75),
-        ),
-        SizedBox(width: 8.w),
-        _ProfileStatus(isComplete: controller.isComplete),
-      ],
-    );
-  }
-}
 
 class _ProfileStatus extends StatelessWidget {
   final bool isComplete;

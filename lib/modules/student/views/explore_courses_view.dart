@@ -9,6 +9,7 @@ import 'package:sum_academy/modules/student/models/student_explore_course.dart';
 import 'package:sum_academy/modules/student/widgets/explore_course_card.dart';
 import 'package:sum_academy/modules/student/widgets/student_notification_bell.dart';
 import 'package:sum_academy/modules/student/views/student_checkout_view.dart';
+import 'package:sum_academy/modules/student/widgets/student_dashboard_header.dart';
 
 class ExploreCoursesView extends GetView<StudentExploreCoursesController> {
   const ExploreCoursesView({super.key});
@@ -29,7 +30,7 @@ class ExploreCoursesView extends GetView<StudentExploreCoursesController> {
             parent: BouncingScrollPhysics(),
           ),
           children: [
-            _HeaderRow(textColor: textColor),
+            StudentDashboardHeader(subtitle: 'Explore Classes'),
             SizedBox(height: 6.h),
             _HeaderSubtitle(textColor: textColor),
             SizedBox(height: 16.h),
@@ -74,48 +75,7 @@ class ExploreCoursesView extends GetView<StudentExploreCoursesController> {
   }
 }
 
-class _HeaderRow extends StatelessWidget {
-  final Color textColor;
 
-  const _HeaderRow({required this.textColor});
-
-  @override
-  Widget build(BuildContext context) {
-    final scaffoldState = Scaffold.maybeOf(context);
-    final showMenu = scaffoldState?.hasDrawer ?? false;
-
-    return Row(
-      children: [
-        if (showMenu)
-          IconButton(
-            onPressed: () {
-              if (scaffoldState?.hasDrawer ?? false) {
-                scaffoldState?.openDrawer();
-              }
-            },
-            icon: Icon(
-              Icons.menu_rounded,
-              size: 20.sp,
-              color: textColor.withOpacityFloat(0.7),
-            ),
-          ),
-        if (showMenu) SizedBox(width: 6.w),
-        Expanded(
-          child: Text(
-            'Explore Classes',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: textColor,
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-        ),
-        StudentNotificationBell(
-          iconColor: textColor.withOpacityFloat(0.75),
-        ),
-      ],
-    );
-  }
-}
 
 class _HeaderSubtitle extends StatelessWidget {
   final Color textColor;

@@ -5,6 +5,7 @@ import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/modules/student/controllers/student_payments_controller.dart';
 import 'package:sum_academy/modules/student/models/student_payment.dart';
 import 'package:sum_academy/modules/student/widgets/student_notification_bell.dart';
+import 'package:sum_academy/modules/student/widgets/student_dashboard_header.dart';
 
 class StudentPaymentsView extends GetView<StudentPaymentsController> {
   const StudentPaymentsView({super.key});
@@ -25,7 +26,7 @@ class StudentPaymentsView extends GetView<StudentPaymentsController> {
             parent: BouncingScrollPhysics(),
           ),
           children: [
-            _HeaderRow(textColor: textColor),
+            StudentDashboardHeader(subtitle: 'Payments'),
             SizedBox(height: 6.h),
             Text(
               'Track your transactions, installments, and invoices',
@@ -47,47 +48,7 @@ class StudentPaymentsView extends GetView<StudentPaymentsController> {
   }
 }
 
-class _HeaderRow extends StatelessWidget {
-  final Color textColor;
 
-  const _HeaderRow({required this.textColor});
-
-  @override
-  Widget build(BuildContext context) {
-    final scaffoldState = Scaffold.maybeOf(context);
-    final showMenu = scaffoldState?.hasDrawer ?? false;
-    return Row(
-      children: [
-        if (showMenu)
-          IconButton(
-            onPressed: () {
-              if (scaffoldState?.hasDrawer ?? false) {
-                scaffoldState?.openDrawer();
-              }
-            },
-            icon: Icon(
-              Icons.menu_rounded,
-              size: 20.sp,
-              color: textColor.withOpacityFloat(0.7),
-            ),
-          ),
-        if (showMenu) SizedBox(width: 6.w),
-        Expanded(
-          child: Text(
-            'Payments',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: textColor,
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-        ),
-        StudentNotificationBell(
-          iconColor: textColor.withOpacityFloat(0.75),
-        ),
-      ],
-    );
-  }
-}
 
 class _Tabs extends StatelessWidget {
   final StudentPaymentsController controller;

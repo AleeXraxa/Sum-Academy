@@ -9,6 +9,7 @@ import 'package:sum_academy/modules/home/widgets/home_dashboard_skeleton.dart';
 import 'package:sum_academy/modules/student/controllers/student_shell_controller.dart';
 import 'package:sum_academy/modules/student/views/student_course_detail_view.dart';
 import 'package:sum_academy/modules/student/widgets/student_notification_bell.dart';
+import 'package:sum_academy/modules/student/widgets/student_dashboard_header.dart';
 
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
@@ -57,7 +58,7 @@ class HomeDashboardContent extends GetView<HomeController> {
             parent: BouncingScrollPhysics(),
           ),
           children: [
-            const _HeaderRow(),
+            const StudentDashboardHeader(),
             SizedBox(height: 16.h),
             content,
           ],
@@ -140,114 +141,76 @@ class _DashboardContent extends StatelessWidget {
   }
 }
 
-// ── Header Row ────────────────────────────────────────────────────────────────
+// ── Floating Circle Animation ──────────────────────────────────────────────────
 
-class _HeaderRow extends StatelessWidget {
-  const _HeaderRow();
+class _FloatingCircle extends StatefulWidget {
+  final double size;
+  final Color color;
+  final double xOffset;
+  final double yOffset;
+  final Duration duration;
+
+  const _FloatingCircle({
+    required this.size,
+    required this.color,
+    this.xOffset = 10,
+    this.yOffset = 15,
+    this.duration = const Duration(seconds: 4),
+  });
+
+  @override
+  State<_FloatingCircle> createState() => _FloatingCircleState();
+}
+
+class _FloatingCircleState extends State<_FloatingCircle>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: widget.duration,
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor =
-        isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
-    final scaffoldState = Scaffold.maybeOf(context);
-    final showMenu = scaffoldState?.hasDrawer ?? false;
-
-    void openDrawer() {
-      if (scaffoldState?.hasDrawer ?? false) {
-        scaffoldState?.openDrawer();
-      }
-    }
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        // Logo avatar (decorative)
-        Container(
-          width: 38.r,
-          height: 38.r,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: isDark
-                  ? SumAcademyTheme.darkBorder
-                  : SumAcademyTheme.brandBluePale,
-              width: 1.5,
-            ),
-            image: const DecorationImage(
-              image: AssetImage('assets/logo.jpeg'),
-              fit: BoxFit.cover,
-            ),
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        // Use an easeInOut curve for smoother floating
+        final value = Curves.easeInOutSine.transform(_controller.value);
+        return Transform.translate(
+          offset: Offset(
+            value * widget.xOffset,
+            value * widget.yOffset,
           ),
+          child: child,
+        );
+      },
+      child: Container(
+        width: widget.size,
+        height: widget.size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: widget.color,
         ),
-        SizedBox(width: 10.w),
-        // Brand labels
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'SUM ACADEMY',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: textColor.withOpacityFloat(0.45),
-                      letterSpacing: 3.2,
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-              Text(
-                'Student Portal',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: SumAcademyTheme.brandBlue,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.2,
-                    ),
-              ),
-            ],
-          ),
-        ),
-        // Notification bell
-        StudentNotificationBell(
-          iconColor: textColor.withOpacityFloat(0.75),
-        ),
-        // Hamburger menu button (always visible when drawer exists)
-        if (showMenu) ...[
-          SizedBox(width: 4.w),
-          GestureDetector(
-            onTap: openDrawer,
-            child: Container(
-              width: 40.r,
-              height: 40.r,
-              decoration: BoxDecoration(
-                color: isDark
-                    ? SumAcademyTheme.darkSurface
-                    : SumAcademyTheme.white,
-                borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(
-                  color: isDark
-                      ? SumAcademyTheme.darkBorder
-                      : SumAcademyTheme.brandBluePale,
-                ),
-                boxShadow: [
-                  if (!isDark)
-                    BoxShadow(
-                      color: SumAcademyTheme.darkBase.withOpacityFloat(0.05),
-                      blurRadius: 8.r,
-                      offset: Offset(0, 4.h),
-                    ),
-                ],
-              ),
-              child: Icon(
-                Icons.menu_rounded,
-                size: 20.sp,
-                color: textColor.withOpacityFloat(0.75),
-              ),
-            ),
-          ),
-        ],
-      ],
+      ),
     );
   }
 }
+
+// ── Header Row ────────────────────────────────────────────────────────────────
+
+
 
 // ── Greeting Card ─────────────────────────────────────────────────────────────
 
@@ -304,25 +267,23 @@ class _GreetingCard extends StatelessWidget {
           Positioned(
             top: -30.r,
             right: -20.r,
-            child: Container(
-              width: 140.r,
-              height: 140.r,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: SumAcademyTheme.white.withOpacityFloat(0.06),
-              ),
+            child: _FloatingCircle(
+              size: 180.r,
+              color: SumAcademyTheme.white.withOpacityFloat(0.06),
+              xOffset: -240.w,
+              yOffset: 120.h,
+              duration: const Duration(seconds: 12),
             ),
           ),
           Positioned(
             bottom: -40.r,
             left: 60.w,
-            child: Container(
-              width: 100.r,
-              height: 100.r,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: SumAcademyTheme.white.withOpacityFloat(0.04),
-              ),
+            child: _FloatingCircle(
+              size: 140.r,
+              color: SumAcademyTheme.white.withOpacityFloat(0.04),
+              xOffset: 180.w,
+              yOffset: -100.h,
+              duration: const Duration(seconds: 15),
             ),
           ),
           Padding(
@@ -518,19 +479,19 @@ class _StudentStatsGrid extends StatelessWidget {
           children: [
             Expanded(
               child: _StatCard(
-                label: 'Certificates',
-                value: certificates.toString(),
+                label: 'Quizzes',
+                value: certificates.toString(), // The underlying variables will be updated later by Dev
                 accent: const Color(0xFF7C3AED),
-                icon: Icons.verified_rounded,
+                icon: Icons.quiz_rounded,
               ),
             ),
             SizedBox(width: 12.w),
             Expanded(
               child: _StatCard(
-                label: 'Study Days',
-                value: learningDays.toString(),
+                label: 'Tests',
+                value: learningDays.toString(), // The underlying variables will be updated later by Dev
                 accent: SumAcademyTheme.accentOrange,
-                icon: Icons.local_fire_department_rounded,
+                icon: Icons.fact_check_rounded,
               ),
             ),
           ],

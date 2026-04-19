@@ -8,6 +8,7 @@ import 'package:sum_academy/modules/student/models/student_session.dart';
 import 'package:sum_academy/modules/student/views/student_live_session_player_view.dart';
 import 'package:sum_academy/modules/student/views/student_live_session_waiting_view.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:sum_academy/modules/student/widgets/student_dashboard_header.dart';
 
 class StudentLiveSessionsView extends StatelessWidget {
   const StudentLiveSessionsView({super.key});
@@ -29,7 +30,7 @@ class StudentLiveSessionsView extends StatelessWidget {
             parent: BouncingScrollPhysics(),
           ),
           children: [
-            _HeaderRow(textColor: textColor),
+            StudentDashboardHeader(subtitle: 'Live Session'),
             SizedBox(height: 6.h),
             Text(
               'Upcoming and live sessions are shown here. Ended sessions move to your class recordings automatically.',
@@ -64,45 +65,7 @@ class StudentLiveSessionsView extends StatelessWidget {
   }
 }
 
-class _HeaderRow extends StatelessWidget {
-  final Color textColor;
 
-  const _HeaderRow({required this.textColor});
-
-  @override
-  Widget build(BuildContext context) {
-    final scaffoldState = Scaffold.maybeOf(context);
-    final showMenu = scaffoldState?.hasDrawer ?? false;
-    final controller = Get.find<StudentLiveSessionsController>();
-    return Row(
-      children: [
-        if (showMenu)
-          IconButton(
-            onPressed: () {
-              if (scaffoldState?.hasDrawer ?? false) {
-                scaffoldState?.openDrawer();
-              }
-            },
-            icon: Icon(
-              Icons.menu_rounded,
-              size: 20.sp,
-              color: textColor.withOpacityFloat(0.7),
-            ),
-          ),
-        if (showMenu) SizedBox(width: 6.w),
-        Expanded(
-          child: Text(
-            'Live Session',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: textColor,
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class _FilterRow extends StatelessWidget {
   const _FilterRow();

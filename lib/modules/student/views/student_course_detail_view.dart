@@ -7,6 +7,7 @@ import 'package:sum_academy/modules/student/controllers/student_course_progress_
 import 'package:sum_academy/modules/student/models/student_course_progress.dart';
 import 'package:sum_academy/modules/student/services/student_course_progress_service.dart';
 import 'package:sum_academy/modules/student/views/student_course_video_view.dart';
+import 'package:sum_academy/modules/student/widgets/student_dashboard_header.dart';
 
 class StudentCourseDetailView extends StatefulWidget {
   final String courseId;
@@ -95,7 +96,7 @@ class _StudentCourseDetailViewState extends State<StudentCourseDetailView>
                   parent: BouncingScrollPhysics(),
                 ),
                 children: [
-                  _HeaderRow(textColor: textColor, title: widget.title),
+                  StudentDashboardHeader(subtitle: widget.title),
                   SizedBox(height: 16.h),
                   _CourseOverviewCard(
                     title: widget.title,
@@ -153,41 +154,7 @@ class _StudentCourseDetailViewState extends State<StudentCourseDetailView>
   }
 }
 
-class _HeaderRow extends StatelessWidget {
-  final Color textColor;
-  final String title;
 
-  const _HeaderRow({
-    required this.textColor,
-    required this.title,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        IconButton(
-          onPressed: () => Get.back(),
-          icon: Icon(
-            Icons.arrow_back_rounded,
-            color: textColor,
-          ),
-        ),
-        Expanded(
-          child: Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: textColor,
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class _CourseOverviewCard extends StatelessWidget {
   final String title;

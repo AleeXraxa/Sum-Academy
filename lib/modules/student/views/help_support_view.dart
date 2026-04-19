@@ -6,6 +6,7 @@ import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/core/utils/network_error.dart';
 import 'package:sum_academy/modules/student/controllers/student_support_controller.dart';
 import 'package:sum_academy/modules/student/widgets/student_notification_bell.dart';
+import 'package:sum_academy/modules/student/widgets/student_dashboard_header.dart';
 
 class HelpSupportView extends GetView<StudentSupportController> {
   const HelpSupportView({super.key});
@@ -50,7 +51,7 @@ class HelpSupportView extends GetView<StudentSupportController> {
           padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 28.h),
           physics: const BouncingScrollPhysics(),
           children: [
-            _HeaderRow(textColor: textColor),
+            StudentDashboardHeader(subtitle: 'Help & Support'),
             SizedBox(height: 18.h),
             if (controller.isLoading.value)
               const _SupportSkeleton()
@@ -83,48 +84,7 @@ class HelpSupportView extends GetView<StudentSupportController> {
   }
 }
 
-class _HeaderRow extends StatelessWidget {
-  final Color textColor;
 
-  const _HeaderRow({required this.textColor});
-
-  @override
-  Widget build(BuildContext context) {
-    final scaffoldState = Scaffold.maybeOf(context);
-    final showMenu = scaffoldState?.hasDrawer ?? false;
-
-    return Row(
-      children: [
-        if (showMenu)
-          IconButton(
-            onPressed: () {
-              if (scaffoldState?.hasDrawer ?? false) {
-                scaffoldState?.openDrawer();
-              }
-            },
-            icon: Icon(
-              Icons.menu_rounded,
-              size: 20.sp,
-              color: textColor.withOpacityFloat(0.7),
-            ),
-          ),
-        if (showMenu) SizedBox(width: 6.w),
-        Expanded(
-          child: Text(
-            'Help & Support',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: textColor,
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-        ),
-        StudentNotificationBell(
-          iconColor: textColor.withOpacityFloat(0.75),
-        ),
-      ],
-    );
-  }
-}
 
 class _SupportCardData {
   final String title;

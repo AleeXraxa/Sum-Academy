@@ -6,6 +6,7 @@ import 'package:sum_academy/modules/student/controllers/student_tests_controller
 import 'package:sum_academy/modules/student/models/student_test.dart';
 import 'package:sum_academy/modules/student/services/student_tests_service.dart';
 import 'package:sum_academy/modules/student/views/student_test_attempt_view.dart';
+import 'package:sum_academy/modules/student/widgets/student_dashboard_header.dart';
 
 class StudentTestsView extends GetView<StudentTestsController> {
   const StudentTestsView({super.key});
@@ -25,7 +26,7 @@ class StudentTestsView extends GetView<StudentTestsController> {
             parent: BouncingScrollPhysics(),
           ),
           children: [
-            _HeaderRow(textColor: textColor),
+            StudentDashboardHeader(subtitle: 'Tests'),
             SizedBox(height: 6.h),
             Text(
               'Scheduled tests for your classes. You can only attempt during the active time.',
@@ -65,45 +66,7 @@ class StudentTestsView extends GetView<StudentTestsController> {
   }
 }
 
-class _HeaderRow extends StatelessWidget {
-  final Color textColor;
 
-  const _HeaderRow({required this.textColor});
-
-  @override
-  Widget build(BuildContext context) {
-    final scaffoldState = Scaffold.maybeOf(context);
-    final showMenu = scaffoldState?.hasDrawer ?? false;
-
-    return Row(
-      children: [
-        if (showMenu)
-          IconButton(
-            onPressed: () {
-              if (scaffoldState?.hasDrawer ?? false) {
-                scaffoldState?.openDrawer();
-              }
-            },
-            icon: Icon(
-              Icons.menu_rounded,
-              size: 20.sp,
-              color: textColor.withOpacityFloat(0.7),
-            ),
-          ),
-        if (showMenu) SizedBox(width: 6.w),
-        Expanded(
-          child: Text(
-            'Tests',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: textColor,
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class _TestCard extends StatelessWidget {
   final StudentTest test;

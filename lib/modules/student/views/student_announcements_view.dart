@@ -5,6 +5,7 @@ import 'package:sum_academy/app/theme.dart';
 import 'package:sum_academy/modules/student/controllers/student_announcements_controller.dart';
 import 'package:sum_academy/modules/student/models/student_announcement.dart';
 import 'package:sum_academy/modules/student/widgets/student_notification_bell.dart';
+import 'package:sum_academy/modules/student/widgets/student_dashboard_header.dart';
 
 class StudentAnnouncementsView extends GetView<StudentAnnouncementsController> {
   const StudentAnnouncementsView({super.key});
@@ -25,7 +26,23 @@ class StudentAnnouncementsView extends GetView<StudentAnnouncementsController> {
             parent: BouncingScrollPhysics(),
           ),
           children: [
-            _HeaderRow(textColor: textColor, controller: controller),
+            StudentDashboardHeader(
+              subtitle: 'Announcements',
+              actions: [
+                if (controller.unreadCount > 0) ...[
+                  SizedBox(width: 4.w),
+                  IconButton(
+                    tooltip: 'Mark all as read',
+                    onPressed: controller.markAllRead,
+                    icon: Icon(
+                      Icons.done_all_rounded,
+                      size: 20.sp,
+                      color: textColor.withOpacityFloat(0.75),
+                    ),
+                  ),
+                ],
+              ],
+            ),
             SizedBox(height: 6.h),
             _HeaderMeta(controller: controller),
             SizedBox(height: 14.h),
@@ -69,64 +86,7 @@ class StudentAnnouncementsView extends GetView<StudentAnnouncementsController> {
   }
 }
 
-class _HeaderRow extends StatelessWidget {
-  final Color textColor;
-  final StudentAnnouncementsController controller;
 
-  const _HeaderRow({
-    required this.textColor,
-    required this.controller,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final scaffoldState = Scaffold.maybeOf(context);
-    final showMenu = scaffoldState?.hasDrawer ?? false;
-
-    return Row(
-      children: [
-        if (showMenu)
-          IconButton(
-            onPressed: () {
-              if (scaffoldState?.hasDrawer ?? false) {
-                scaffoldState?.openDrawer();
-              }
-            },
-            icon: Icon(
-              Icons.menu_rounded,
-              size: 20.sp,
-              color: textColor.withOpacityFloat(0.7),
-            ),
-          ),
-        if (showMenu) SizedBox(width: 6.w),
-        Expanded(
-          child: Text(
-            'Announcements',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: textColor,
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-        ),
-        StudentNotificationBell(
-          iconColor: textColor.withOpacityFloat(0.75),
-        ),
-        if (controller.unreadCount > 0) ...[
-          SizedBox(width: 4.w),
-          IconButton(
-            tooltip: 'Mark all as read',
-            onPressed: controller.markAllRead,
-            icon: Icon(
-              Icons.done_all_rounded,
-              size: 20.sp,
-              color: textColor.withOpacityFloat(0.75),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
 
 class _HeaderMeta extends StatelessWidget {
   final StudentAnnouncementsController controller;
