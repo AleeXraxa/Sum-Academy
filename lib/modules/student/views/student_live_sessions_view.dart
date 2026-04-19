@@ -16,49 +16,67 @@ class StudentLiveSessionsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<StudentLiveSessionsController>();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor =
-        isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
+
+
 
     return Obx(() {
-      return RefreshIndicator(
-        color: SumAcademyTheme.brandBlue,
-        onRefresh: controller.refresh,
-        child: ListView(
-          padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 28.h),
-          physics: const AlwaysScrollableScrollPhysics(
-            parent: BouncingScrollPhysics(),
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      final textColor = isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
+
+      return Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDark
+                ? [SumAcademyTheme.darkBase, SumAcademyTheme.darkSurface]
+                : [SumAcademyTheme.surfaceSecondary, SumAcademyTheme.white],
           ),
-          children: [
-            StudentDashboardHeader(subtitle: 'Live Session'),
-            SizedBox(height: 6.h),
-            Text(
-              'Upcoming and live sessions are shown here. Ended sessions move to your class recordings automatically.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: textColor.withOpacityFloat(0.65),
-                    height: 1.35,
-                  ),
+        ),
+        child: RefreshIndicator(
+          color: SumAcademyTheme.brandBlue,
+          onRefresh: controller.refresh,
+          child: ListView(
+            padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 28.h),
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
             ),
-            SizedBox(height: 12.h),
-            const _FilterRow(),
-            SizedBox(height: 14.h),
-            if (controller.isLoading.value)
-              const _Skeleton()
-            else if (controller.errorMessage.value.isNotEmpty)
-              _ErrorState(
-                message: controller.errorMessage.value,
-                onRetry: controller.fetchSessions,
-              )
-            else if (controller.filteredSessions.isEmpty)
-              const _EmptyState()
-            else
-              ...controller.filteredSessions.map(
-                (session) => Padding(
-                  padding: EdgeInsets.only(bottom: 12.h),
-                  child: _LiveSessionCard(session: session),
-                ),
+            children: [
+              StudentDashboardHeader(
+                subtitle: 'Live Sessions',
+                actions: [
+                  _LiveIndicator(isAnyLive: controller.sessions.any((s) => s.isLive)),
+                ],
               ),
-          ],
+              SizedBox(height: 10.h),
+              Text(
+                'Join live interactive workshops and view your recent class recordings.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: textColor.withOpacityFloat(0.6),
+                      height: 1.4,
+                    ),
+              ),
+              SizedBox(height: 20.h),
+              const _FilterRow(),
+              SizedBox(height: 20.h),
+              if (controller.isLoading.value)
+                const _Skeleton()
+              else if (controller.errorMessage.value.isNotEmpty)
+                _ErrorState(
+                  message: controller.errorMessage.value,
+                  onRetry: controller.fetchSessions,
+                )
+              else if (controller.filteredSessions.isEmpty)
+                const _EmptyState()
+              else
+                ...controller.filteredSessions.map(
+                  (session) => Padding(
+                    padding: EdgeInsets.only(bottom: 14.h),
+                    child: _LiveSessionCard(session: session),
+                  ),
+                ),
+            ],
+          ),
         ),
       );
     });
@@ -73,58 +91,120 @@ class _FilterRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<StudentLiveSessionsController>();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final base =
-        isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
-
-    Widget chip({
-      required String id,
-      required String label,
-    }) {
-      return Obx(() {
-        final selected = controller.selectedFilter.value == id;
-        final bg = selected
-            ? SumAcademyTheme.brandBlue
-            : (isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white);
-        final fg = selected ? SumAcademyTheme.white : base.withOpacityFloat(0.85);
-        final bd = selected
-            ? SumAcademyTheme.brandBlue
-            : (isDark
-                ? SumAcademyTheme.white.withOpacityFloat(0.08)
-                : SumAcademyTheme.brandBluePale);
-        return InkWell(
-          borderRadius: BorderRadius.circular(999),
-          onTap: () => controller.setFilter(id),
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 7.h),
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: bd),
-            ),
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: fg,
-                    fontWeight: FontWeight.w800,
-                  ),
-            ),
-          ),
-        );
-      });
-    }
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
       child: Row(
         children: [
-          chip(id: 'all', label: 'All'),
-          SizedBox(width: 8.w),
-          chip(id: 'live', label: 'Live'),
-          SizedBox(width: 8.w),
-          chip(id: 'upcoming', label: 'Upcoming'),
+          _FilterChip(
+            id: 'all',
+            label: 'All Sessions',
+            isSelected: controller.selectedFilter.value == 'all',
+            onTap: () => controller.setFilter('all'),
+          ),
+          SizedBox(width: 10.w),
+          _FilterChip(
+            id: 'live',
+            label: 'Live Now',
+            isSelected: controller.selectedFilter.value == 'live',
+            onTap: () => controller.setFilter('live'),
+            isLive: true,
+          ),
+          SizedBox(width: 10.w),
+          _FilterChip(
+            id: 'upcoming',
+            label: 'Upcoming',
+            isSelected: controller.selectedFilter.value == 'upcoming',
+            onTap: () => controller.setFilter('upcoming'),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  final String id;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final bool isLive;
+
+  const _FilterChip({
+    required this.id,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+    this.isLive = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = isLive ? SumAcademyTheme.success : SumAcademyTheme.brandBlue;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14.r),
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? color
+                  : (isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white),
+              borderRadius: BorderRadius.circular(14.r),
+              border: Border.all(
+                color: isSelected
+                    ? color
+                    : (isDark
+                        ? SumAcademyTheme.darkBorder
+                        : SumAcademyTheme.brandBluePale),
+                width: 1.5,
+              ),
+              boxShadow: [
+                if (isSelected && !isDark)
+                  BoxShadow(
+                    color: color.withOpacityFloat(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isLive) ...[
+                  Container(
+                    width: 8.r,
+                    height: 8.r,
+                    decoration: BoxDecoration(
+                      color: isSelected ? SumAcademyTheme.white : color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                ],
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: isSelected
+                            ? SumAcademyTheme.white
+                            : (isDark
+                                ? SumAcademyTheme.white
+                                : SumAcademyTheme.darkBase),
+                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -139,108 +219,104 @@ class _LiveSessionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white;
-    final border = isDark
-        ? SumAcademyTheme.white.withOpacityFloat(0.08)
-        : SumAcademyTheme.brandBluePale;
+    final border = isDark ? SumAcademyTheme.darkBorder : SumAcademyTheme.brandBluePale;
 
     final badge = _badgeFor(session);
-    final accent = badge == _SessionBadge.live
-        ? SumAcademyTheme.success
-        : SumAcademyTheme.brandBlue;
-    final badgeText = badge.name;
+    final isLive = badge == _SessionBadge.live;
+    final accent = isLive ? SumAcademyTheme.success : SumAcademyTheme.brandBlue;
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
-      onTap: () => Get.to(() => StudentLiveSessionDetailView(session: session)),
-      child: Container(
-        padding: EdgeInsets.all(16.r),
-        decoration: BoxDecoration(
-          color: surface,
-          borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
-          border: Border.all(color: border),
-          boxShadow: [
-            if (!isDark)
-              BoxShadow(
-                color: SumAcademyTheme.darkBase.withOpacityFloat(0.06),
-                blurRadius: 16,
-                offset: const Offset(0, 10),
-              ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    session.topic.trim().isEmpty ? 'Live Session' : session.topic,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: isDark
-                              ? SumAcademyTheme.white
-                              : SumAcademyTheme.darkBase,
-                          fontWeight: FontWeight.w700,
-                        ),
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
+        border: Border.all(color: border),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: SumAcademyTheme.darkBase.withOpacityFloat(0.06),
+              blurRadius: 20.r,
+              offset: Offset(0, 8.h),
+            ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => Get.to(() => StudentLiveSessionDetailView(session: session)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Standard 6px accent banner
+              Container(
+                height: 6.h,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [accent, accent.withOpacityFloat(0.7)],
                   ),
                 ),
-                SizedBox(width: 10.w),
-                Container(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                  decoration: BoxDecoration(
-                    color: accent.withOpacityFloat(0.14),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: accent.withOpacityFloat(0.25)),
-                  ),
-                  child: Row(
-                    children: [
-                      if (badge == _SessionBadge.live)
-                        Container(
-                          width: 7.r,
-                          height: 7.r,
-                          decoration: BoxDecoration(
-                            color: accent,
-                            shape: BoxShape.circle,
+              ),
+              Padding(
+                padding: EdgeInsets.all(18.r),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                session.topic.trim().isEmpty
+                                    ? 'Studio Live Session'
+                                    : session.topic,
+                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                      color: isDark
+                                          ? SumAcademyTheme.white
+                                          : SumAcademyTheme.darkBase,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 16.sp,
+                                    ),
+                              ),
+                              SizedBox(height: 6.h),
+                              Text(
+                                _classLine(session),
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: (isDark
+                                              ? SumAcademyTheme.white
+                                              : SumAcademyTheme.darkBase)
+                                          .withOpacityFloat(0.55),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
+                            ],
                           ),
                         ),
-                      if (badge == _SessionBadge.live) SizedBox(width: 6.w),
-                      Text(
-                        badgeText,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: accent,
-                              fontWeight: FontWeight.w700,
-                            ),
-                      ),
-                    ],
-                  ),
+                        SizedBox(width: 12.w),
+                        _StatusBadge(badge: badge, accent: accent),
+                      ],
+                    ),
+                    SizedBox(height: 18.h),
+                    Row(
+                      children: [
+                        _SessionInfo(
+                          icon: Icons.calendar_today_rounded,
+                          label: _formatDate(session.startAt ?? DateTime.now()),
+                        ),
+                        SizedBox(width: 16.w),
+                        _SessionInfo(
+                          icon: Icons.access_time_rounded,
+                          label: _formatTime(session.startAt ?? DateTime.now()),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            SizedBox(height: 8.h),
-            Text(
-              _classLine(session),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: (isDark
-                            ? SumAcademyTheme.white
-                            : SumAcademyTheme.darkBase)
-                        .withOpacityFloat(0.65),
-                  ),
-            ),
-            SizedBox(height: 10.h),
-            _TimeRow(
-              icon: Icons.calendar_today_rounded,
-              label: _dateLabel(session.startAt),
-            ),
-            SizedBox(height: 6.h),
-            _TimeRow(
-              icon: Icons.access_time_rounded,
-              label: _timeRangeLabel(session.startAt, session.endAt),
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -249,22 +325,159 @@ class _LiveSessionCard extends StatelessWidget {
   String _classLine(StudentSession session) {
     final name = session.className.trim();
     final code = session.batchCode.trim();
-    if (name.isEmpty && code.isEmpty) return 'Class session';
+    if (name.isEmpty && code.isEmpty) return 'General Session';
     if (name.isEmpty) return code;
     if (code.isEmpty) return name;
-    return '$name ($code)';
-  }
-
-  String _dateLabel(DateTime? date) {
-    if (date == null) return 'Date: TBA';
-    return 'Date: ${_formatDate(date)}';
-  }
-
-  String _timeRangeLabel(DateTime? start, DateTime? end) {
-    if (start == null || end == null) return 'Time: TBA';
-    return 'Time: ${_formatTime(start)} - ${_formatTime(end)}';
+    return '$name • $code';
   }
 }
+
+class _StatusBadge extends StatelessWidget {
+  final _SessionBadge badge;
+  final Color accent;
+
+  const _StatusBadge({required this.badge, required this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+      decoration: BoxDecoration(
+        color: accent.withOpacityFloat(0.12),
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: accent.withOpacityFloat(0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (badge == _SessionBadge.live) ...[
+            _LivePulse(color: accent),
+            SizedBox(width: 6.w),
+          ],
+          Text(
+            badge == _SessionBadge.live ? 'LIVE' : badge.name.toUpperCase(),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: accent,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.5,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SessionInfo extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _SessionInfo({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = (isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase)
+        .withOpacityFloat(0.6);
+    return Row(
+      children: [
+        Icon(icon, size: 14.sp, color: color),
+        SizedBox(width: 6.w),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LivePulse extends StatefulWidget {
+  final Color color;
+  const _LivePulse({required this.color});
+
+  @override
+  State<_LivePulse> createState() => _LivePulseState();
+}
+
+class _LivePulseState extends State<_LivePulse> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Container(
+          width: 8.r,
+          height: 8.r,
+          decoration: BoxDecoration(
+            color: widget.color.withOpacityFloat(0.5 + (_controller.value * 0.5)),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: widget.color.withOpacityFloat(0.3 * _controller.value),
+                blurRadius: 6 * _controller.value,
+                spreadRadius: 2 * _controller.value,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _LiveIndicator extends StatelessWidget {
+  final bool isAnyLive;
+  const _LiveIndicator({required this.isAnyLive});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isAnyLive) return const SizedBox.shrink();
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        color: SumAcademyTheme.success.withOpacityFloat(0.1),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: SumAcademyTheme.success.withOpacityFloat(0.2)),
+      ),
+      child: Row(
+        children: [
+          const _LivePulse(color: SumAcademyTheme.success),
+          SizedBox(width: 6.w),
+          Text(
+            'ACTIVE',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: SumAcademyTheme.success,
+                  fontWeight: FontWeight.w800,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
 
 enum _SessionBadge { upcoming, live, ended }
 
@@ -284,188 +497,236 @@ class StudentLiveSessionDetailView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor =
-        isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
+    final textColor = isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
     final surface = isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white;
-    final border = isDark
-        ? SumAcademyTheme.white.withOpacityFloat(0.08)
-        : SumAcademyTheme.brandBluePale;
+    final border = isDark ? SumAcademyTheme.darkBorder : SumAcademyTheme.brandBluePale;
+    
     final badge = _badgeFor(session);
-    final accent =
-        badge == _SessionBadge.live ? SumAcademyTheme.success : SumAcademyTheme.brandBlue;
+    final accent = badge == _SessionBadge.live ? SumAcademyTheme.success : SumAcademyTheme.brandBlue;
 
     return Scaffold(
-      body: SafeArea(
-        child: ListView(
-          padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 28.h),
-          children: [
-            Row(
-              children: [
-                IconButton(
-                  onPressed: () => Get.back(),
-                  icon: Icon(Icons.arrow_back_rounded, color: textColor),
-                ),
-                Expanded(
-                  child: Text(
-                    session.topic.trim().isEmpty ? 'Live Session' : session.topic,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: textColor,
-                          fontWeight: FontWeight.w800,
-                        ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDark
+                ? [SumAcademyTheme.darkBase, SumAcademyTheme.darkSurface]
+                : [SumAcademyTheme.surfaceSecondary, SumAcademyTheme.white],
+          ),
+        ),
+        child: SafeArea(
+          child: ListView(
+            padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 100.h),
+            physics: const BouncingScrollPhysics(),
+            children: [
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Get.back(),
+                    icon: Icon(Icons.arrow_back_rounded, color: textColor),
+                    style: IconButton.styleFrom(
+                      backgroundColor: isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white,
+                      padding: EdgeInsets.all(12.r),
+                    ),
                   ),
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    child: Text(
+                      'Session Details',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: textColor,
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 24.h),
+              
+              // Detail Card with Banner
+              Container(
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: surface,
+                  borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
+                  border: Border.all(color: border),
+                  boxShadow: [
+                    if (!isDark)
+                      BoxShadow(
+                        color: SumAcademyTheme.darkBase.withOpacityFloat(0.06),
+                        blurRadius: 20.r,
+                        offset: Offset(0, 10.h),
+                      ),
+                  ],
                 ),
-                Container(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                  decoration: BoxDecoration(
-                    color: accent.withOpacityFloat(0.14),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: accent.withOpacityFloat(0.25)),
+                child: Column(
+                  children: [
+                    Container(
+                      height: 6.h,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(colors: [accent, accent.withOpacityFloat(0.7)]),
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.all(20.r),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _StatusBadge(badge: badge, accent: accent),
+                          SizedBox(height: 16.h),
+                          Text(
+                            session.topic.trim().isEmpty ? 'Live Interactive Session' : session.topic,
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  color: textColor,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 22.sp,
+                                  height: 1.2,
+                                ),
+                          ),
+                          SizedBox(height: 8.h),
+                          Text(
+                            _classLine(session),
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: textColor.withOpacityFloat(0.5),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                          SizedBox(height: 24.h),
+                          Divider(color: border, height: 1),
+                          SizedBox(height: 16.h),
+                          _DetailLine(
+                            icon: Icons.person_outline_rounded,
+                            label: 'INSTRUCTOR',
+                            value: session.teacherName.trim().isEmpty ? 'Pending' : session.teacherName,
+                          ),
+                          SizedBox(height: 14.h),
+                          _DetailLine(
+                            icon: Icons.calendar_today_rounded,
+                            label: 'DATE',
+                            value: session.startAt == null ? 'TBA' : _formatDate(session.startAt!),
+                          ),
+                          SizedBox(height: 14.h),
+                          _DetailLine(
+                            icon: Icons.access_time_rounded,
+                            label: 'SCHEDULE',
+                            value: (session.startAt == null || session.endAt == null)
+                                ? 'TBA'
+                                : '${_formatTime(session.startAt!)} - ${_formatTime(session.endAt!)}',
+                          ),
+                          if (session.totalStudents > 0) ...[
+                             SizedBox(height: 14.h),
+                             _DetailLine(
+                               icon: Icons.group_outlined,
+                               label: 'ATTENDANCE',
+                               value: '${session.joinedCount} Joined / ${session.totalStudents} Expected',
+                             ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              SizedBox(height: 20.h),
+              
+              // Rules Card
+              Container(
+                padding: EdgeInsets.all(18.r),
+                decoration: BoxDecoration(
+                  color: SumAcademyTheme.warningLight.withOpacityFloat(0.5),
+                  borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
+                  border: Border.all(color: SumAcademyTheme.warning.withOpacityFloat(0.15)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.info_outline_rounded, color: SumAcademyTheme.warning, size: 20.sp),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Session Guidelines',
+                            style: TextStyle(
+                              color: SumAcademyTheme.warning,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14.sp,
+                            ),
+                          ),
+                          SizedBox(height: 4.h),
+                          Text(
+                            'Controls like seeking and pausing are disabled during the live broadcast. Please ensure a stable internet connection.',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: SumAcademyTheme.darkBase.withOpacityFloat(0.6),
+                                  height: 1.4,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              SizedBox(height: 32.h),
+              
+              // Action Button
+              SizedBox(
+                width: double.infinity,
+                height: 56.h,
+                child: ElevatedButton(
+                  onPressed: _isPrimaryEnabled(session) ? () => _handlePrimaryAction() : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: SumAcademyTheme.brandBlue,
+                    foregroundColor: SumAcademyTheme.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(SumAcademyTheme.radiusButton.r),
+                    ),
                   ),
                   child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      if (badge == _SessionBadge.live)
-                        Container(
-                          width: 7.r,
-                          height: 7.r,
-                          decoration: BoxDecoration(
-                            color: accent,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      if (badge == _SessionBadge.live) SizedBox(width: 6.w),
+                      Icon(_actionIcon(session)),
+                      SizedBox(width: 10.w),
                       Text(
-                        badge.name,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: accent,
-                              fontWeight: FontWeight.w700,
-                            ),
+                        _primaryLabel(session),
+                        style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w800),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
-            SizedBox(height: 14.h),
-            Container(
-              padding: EdgeInsets.all(16.r),
-              decoration: BoxDecoration(
-                color: surface,
-                borderRadius:
-                    BorderRadius.circular(SumAcademyTheme.radiusCard.r),
-                border: Border.all(color: border),
-                boxShadow: [
-                  if (!isDark)
-                    BoxShadow(
-                      color: SumAcademyTheme.darkBase.withOpacityFloat(0.06),
-                      blurRadius: 18,
-                      offset: const Offset(0, 12),
-                    ),
-                ],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _classLine(session),
+              
+              if (!_isPrimaryEnabled(session)) ...[
+                SizedBox(height: 12.h),
+                Center(
+                  child: Text(
+                    _disabledReason(session),
+                    textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: textColor.withOpacityFloat(0.7),
-                          fontWeight: FontWeight.w700,
+                          color: textColor.withOpacityFloat(0.5),
+                          fontWeight: FontWeight.w600,
                         ),
                   ),
-                  SizedBox(height: 12.h),
-                  _DetailLine(
-                    label: 'TEACHER',
-                    value: session.teacherName.trim().isEmpty
-                        ? '—'
-                        : session.teacherName.trim(),
-                  ),
-                  SizedBox(height: 10.h),
-                  _DetailLine(
-                    label: 'DATE',
-                    value: session.startAt == null
-                        ? 'TBA'
-                        : _formatDate(session.startAt!),
-                  ),
-                  SizedBox(height: 10.h),
-                  _DetailLine(
-                    label: 'TIME',
-                    value: (session.startAt == null || session.endAt == null)
-                        ? 'TBA'
-                        : '${_formatTime(session.startAt!)} - ${_formatTime(session.endAt!)}',
-                  ),
-                  SizedBox(height: 10.h),
-                  _DetailLine(
-                    label: 'JOIN',
-                    value: session.joinOpensAt == null
-                        ? '—'
-                        : '${_formatDate(session.joinOpensAt!)}, ${_formatTime(session.joinOpensAt!)}',
-                  ),
-                  if (session.totalStudents > 0) ...[
-                    SizedBox(height: 10.h),
-                    _DetailLine(
-                      label: 'JOINED',
-                      value: '${session.joinedCount}/${session.totalStudents}',
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            SizedBox(height: 14.h),
-            Container(
-              padding: EdgeInsets.all(14.r),
-              decoration: BoxDecoration(
-                color: SumAcademyTheme.warningLight,
-                borderRadius: BorderRadius.circular(18.r),
-                border: Border.all(
-                  color: SumAcademyTheme.warning.withOpacityFloat(0.25),
                 ),
-              ),
-              child: Text(
-                'Live session rules: Pause, seek and leaving this page are blocked while session is live. Keep this page open until session ends.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: SumAcademyTheme.darkBase.withOpacityFloat(0.75),
-                      height: 1.35,
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-            ),
-            SizedBox(height: 16.h),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _isPrimaryEnabled(session)
-                    ? () => _handlePrimaryAction()
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: SumAcademyTheme.brandBlue,
-                  foregroundColor: SumAcademyTheme.white,
-                  padding: EdgeInsets.symmetric(vertical: 12.h),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18.r),
-                  ),
-                ),
-                child: Text(_primaryLabel(session)),
-              ),
-            ),
-            if (!_isPrimaryEnabled(session)) ...[
-              SizedBox(height: 10.h),
-              Text(
-                _disabledReason(session),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: textColor.withOpacityFloat(0.65),
-                      height: 1.35,
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
   }
+
+  IconData _actionIcon(StudentSession session) {
+    if (session.hasEnded) return Icons.play_circle_fill_rounded;
+    return Icons.bolt_rounded;
+  }
+
 
   String _classLine(StudentSession session) {
     final name = session.className.trim();
@@ -607,41 +868,59 @@ class StudentLiveSessionDetailView extends StatelessWidget {
         title: 'Live Session',
         message: e.toString().replaceFirst('Exception: ', ''),
       );
-    }
+  }
   }
 }
 
 class _DetailLine extends StatelessWidget {
+  final IconData icon;
   final String label;
   final String value;
 
-  const _DetailLine({required this.label, required this.value});
+  const _DetailLine({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor =
-        isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
+    final textColor = isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
+
     return Row(
       children: [
-        SizedBox(
-          width: 90.w,
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: textColor.withOpacityFloat(0.55),
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.2,
-                ),
+        Container(
+          padding: EdgeInsets.all(8.r),
+          decoration: BoxDecoration(
+            color: SumAcademyTheme.brandBlue.withOpacityFloat(0.08),
+            borderRadius: BorderRadius.circular(10.r),
           ),
+          child: Icon(icon, size: 16.sp, color: SumAcademyTheme.brandBlue),
         ),
+        SizedBox(width: 14.w),
         Expanded(
-          child: Text(
-            value,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: textColor.withOpacityFloat(0.8),
-                  fontWeight: FontWeight.w600,
-                ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: textColor.withOpacityFloat(0.4),
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.1,
+                      fontSize: 10.sp,
+                    ),
+              ),
+              SizedBox(height: 2.h),
+              Text(
+                value,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: textColor.withOpacityFloat(0.85),
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+            ],
           ),
         ),
       ],
@@ -649,34 +928,7 @@ class _DetailLine extends StatelessWidget {
   }
 }
 
-class _TimeRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
 
-  const _TimeRow({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = (isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase)
-        .withOpacityFloat(0.65);
-    return Row(
-      children: [
-        Icon(icon, size: 16.sp, color: color),
-        SizedBox(width: 8.w),
-        Expanded(
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class _EmptyState extends StatelessWidget {
   const _EmptyState();
@@ -684,25 +936,41 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white;
-    final border = isDark
-        ? SumAcademyTheme.white.withOpacityFloat(0.08)
-        : SumAcademyTheme.brandBluePale;
-    return Container(
-      padding: EdgeInsets.all(16.r),
-      decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
-        border: Border.all(color: border),
-      ),
-      child: Text(
-        'No live sessions right now.',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: (isDark
-                      ? SumAcademyTheme.white
-                      : SumAcademyTheme.darkBase)
-                  .withOpacityFloat(0.7),
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.only(top: 60.h),
+        child: Column(
+          children: [
+            Container(
+              padding: EdgeInsets.all(24.r),
+              decoration: BoxDecoration(
+                color: SumAcademyTheme.brandBlue.withOpacityFloat(0.05),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.videocam_off_rounded,
+                size: 48.sp,
+                color: SumAcademyTheme.brandBlue.withOpacityFloat(0.4),
+              ),
             ),
+            SizedBox(height: 16.h),
+            Text(
+              'No live sessions scheduled',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            SizedBox(height: 6.h),
+            Text(
+              'Check back later for new workshops.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: (isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase)
+                        .withOpacityFloat(0.5),
+                  ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -717,37 +985,47 @@ class _ErrorState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(16.r),
+      padding: EdgeInsets.all(20.r),
       decoration: BoxDecoration(
-        color: SumAcademyTheme.errorLight,
-        borderRadius: BorderRadius.circular(18.r),
-        border: Border.all(color: SumAcademyTheme.error.withOpacityFloat(0.3)),
+        color: SumAcademyTheme.errorLight.withOpacityFloat(0.4),
+        borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
+        border: Border.all(color: SumAcademyTheme.error.withOpacityFloat(0.2)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Icon(Icons.error_outline_rounded, color: SumAcademyTheme.error, size: 32.sp),
+          SizedBox(height: 12.h),
           Text(
-            'Unable to load live sessions',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: SumAcademyTheme.error,
-                  fontWeight: FontWeight.w600,
-                ),
+            'Sync Error',
+            style: TextStyle(
+              color: SumAcademyTheme.error,
+              fontWeight: FontWeight.w800,
+              fontSize: 16.sp,
+            ),
           ),
           SizedBox(height: 6.h),
           Text(
             message,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: SumAcademyTheme.darkBase.withOpacityFloat(0.7),
-                ),
-          ),
-          SizedBox(height: 10.h),
-          OutlinedButton(
-            onPressed: onRetry,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: SumAcademyTheme.brandBlue,
-              side: const BorderSide(color: SumAcademyTheme.brandBluePale),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: SumAcademyTheme.darkBase.withOpacityFloat(0.6),
+              fontSize: 13.sp,
             ),
-            child: const Text('Retry'),
+          ),
+          SizedBox(height: 20.h),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: onRetry,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: SumAcademyTheme.error,
+                foregroundColor: SumAcademyTheme.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+              ),
+              child: const Text('Try Refreshing'),
+            ),
           ),
         ],
       ),
@@ -760,17 +1038,21 @@ class _Skeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       children: List.generate(
-        2,
+        3,
         (index) => Padding(
-          padding: EdgeInsets.only(bottom: 12.h),
+          padding: EdgeInsets.only(bottom: 14.h),
           child: Container(
-            height: 112.h,
+            height: 140.h,
+            width: double.infinity,
             decoration: BoxDecoration(
-              color: SumAcademyTheme.white,
+              color: isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white,
               borderRadius: BorderRadius.circular(SumAcademyTheme.radiusCard.r),
-              border: Border.all(color: SumAcademyTheme.brandBluePale),
+              border: Border.all(
+                color: isDark ? SumAcademyTheme.darkBorder : SumAcademyTheme.brandBluePale,
+              ),
             ),
           ),
         ),

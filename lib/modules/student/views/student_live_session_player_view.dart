@@ -115,12 +115,14 @@ class _StudentLiveSessionPlayerViewState extends State<StudentLiveSessionPlayerV
   int _totalStudents = 0;
   int _elapsedSeconds = 0;
   int _remainingSeconds = 0;
+
   String _status = '';
   DateTime? _openedAt;
   int _maxPositionMs = 0;
   int _durationMs = 0;
   bool _startupErrorShown = false;
   String _lastPlayerError = '';
+
 
   @override
   void initState() {
@@ -351,9 +353,7 @@ class _StudentLiveSessionPlayerViewState extends State<StudentLiveSessionPlayerV
       if (value != null && value.initialized) {
         final duration = value.duration;
         final position = value.position;
-        if (duration != null) {
-          _durationMs = duration.inMilliseconds;
-        }
+        if (duration != null) _durationMs = duration.inMilliseconds;
         if (position != null) {
           final posMs = position.inMilliseconds;
           if (posMs > _maxPositionMs) _maxPositionMs = posMs;
@@ -435,159 +435,329 @@ class _StudentLiveSessionPlayerViewState extends State<StudentLiveSessionPlayerV
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg =
-        isDark ? SumAcademyTheme.darkBase : SumAcademyTheme.surfaceSecondary;
-    final textColor =
-        isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
+    final textColor = isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
 
     return Scaffold(
-      backgroundColor: bg,
-      body: SafeArea(
-        child: ListView(
-          padding: EdgeInsets.fromLTRB(20.w, 10.h, 20.w, 26.h),
-          children: [
-            Row(
-              children: [
-                IconButton(
-                  onPressed: () async {
-                    await _leaveSession();
-                    if (mounted) Get.back();
-                  },
-                  icon: Icon(Icons.arrow_back_rounded, color: textColor),
-                ),
-                Expanded(
-                  child: Text(
-                    widget.session.topic.trim().isEmpty
-                        ? 'Live Session'
-                        : widget.session.topic.trim(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: textColor,
-                          fontWeight: FontWeight.w800,
-                        ),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 10.h),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(18.r),
-              child: Stack(
-                children: [
-                  AspectRatio(
-                    aspectRatio: 16 / 9,
-                    child: _playerController == null
-                        ? Container(
-                            color: Colors.black,
-                            alignment: Alignment.center,
-                            child: SizedBox(
-                              width: 22.r,
-                              height: 22.r,
-                              child: const CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            ),
-                          )
-                        : BetterPlayer(controller: _playerController!),
-                  ),
-                  Positioned(
-                    left: 10.w,
-                    top: 10.h,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacityFloat(0.45),
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                          color: Colors.white.withOpacityFloat(0.10),
-                        ),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDark
+                ? [SumAcademyTheme.darkBase, SumAcademyTheme.darkSurface]
+                : [SumAcademyTheme.surfaceSecondary, SumAcademyTheme.white],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Premium Header
+              Padding(
+                padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 10.h),
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: () async {
+                        await _leaveSession();
+                        if (mounted) Get.back();
+                      },
+                      icon: Icon(Icons.arrow_back_rounded, color: textColor),
+                      style: IconButton.styleFrom(
+                        backgroundColor: isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white,
+                        padding: EdgeInsets.all(12.r),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            width: 7.r,
-                            height: 7.r,
-                            decoration: BoxDecoration(
-                              color: _status.toLowerCase() == 'active'
-                                  ? SumAcademyTheme.error
-                                  : SumAcademyTheme.brandBlue,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          SizedBox(width: 6.w),
                           Text(
-                            'LIVE LECTURE',
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  color: SumAcademyTheme.white,
+                            widget.session.topic.trim().isEmpty ? 'Live Interactive Session' : widget.session.topic.trim(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  color: textColor,
                                   fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.2,
+                                  fontSize: 18.sp,
+                                ),
+                          ),
+                          Text(
+                            widget.session.batchCode,
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  color: textColor.withOpacityFloat(0.5),
+                                  fontWeight: FontWeight.w700,
                                 ),
                           ),
                         ],
                       ),
                     ),
-                  ),
-                  if (_totalStudents > 0)
-                    Positioned(
-                      right: 10.w,
-                      top: 10.h,
-                      child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacityFloat(0.45),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(
-                            color: Colors.white.withOpacityFloat(0.10),
+                  ],
+                ),
+              ),
+
+              Expanded(
+                child: ListView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+                  children: [
+                    // Video Arena
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: BorderRadius.circular(24.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacityFloat(0.2),
+                            blurRadius: 30,
+                            offset: const Offset(0, 15),
                           ),
-                        ),
-                        child: Text(
-                          'Joined $_joinedCount/$_totalStudents',
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: SumAcademyTheme.white.withOpacityFloat(0.92),
-                                fontWeight: FontWeight.w800,
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24.r),
+                        child: Stack(
+                          children: [
+                            AspectRatio(
+                              aspectRatio: 16 / 9,
+                              child: _playerController == null
+                                  ? Container(
+                                      color: Colors.black,
+                                      alignment: Alignment.center,
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          SizedBox(
+                                            width: 28.r,
+                                            height: 28.r,
+                                            child: const CircularProgressIndicator(
+                                              strokeWidth: 3,
+                                              color: SumAcademyTheme.brandBlue,
+                                            ),
+                                          ),
+                                          SizedBox(height: 12.h),
+                                          Text(
+                                            'Connecting to Studio...',
+                                            style: TextStyle(
+                                              color: Colors.white.withOpacityFloat(0.7),
+                                              fontSize: 12.sp,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  : BetterPlayer(controller: _playerController!),
+                            ),
+                            
+                            // Live Badge Overlay
+                            Positioned(
+                              left: 12.w,
+                              top: 12.h,
+                              child: _LivePulseBadge(status: _status),
+                            ),
+                            
+                            // Participant Count
+                            if (_totalStudents > 0)
+                              Positioned(
+                                right: 12.w,
+                                top: 12.h,
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacityFloat(0.5),
+                                    borderRadius: BorderRadius.circular(10.r),
+                                    border: Border.all(color: Colors.white.withOpacityFloat(0.1)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.visibility_rounded, color: Colors.white, size: 14.sp),
+                                      SizedBox(width: 6.w),
+                                      Text(
+                                        '$_joinedCount',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12.sp,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
+                          ],
                         ),
                       ),
                     ),
-                ],
-              ),
-            ),
-            SizedBox(height: 14.h),
-            Container(
-              padding: EdgeInsets.all(14.r),
-              decoration: BoxDecoration(
-                color: SumAcademyTheme.warningLight,
-                borderRadius: BorderRadius.circular(18.r),
-                border: Border.all(
-                  color: SumAcademyTheme.warning.withOpacityFloat(0.25),
+                    
+                    SizedBox(height: 24.h),
+                    
+                    // Rules Container (Modern Informational Banner)
+                    Container(
+                      padding: EdgeInsets.all(20.r),
+                      decoration: BoxDecoration(
+                        color: SumAcademyTheme.brandBlue.withOpacityFloat(0.05),
+                        borderRadius: BorderRadius.circular(24.r),
+                        border: Border.all(
+                          color: SumAcademyTheme.brandBlue.withOpacityFloat(0.1),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(8.r),
+                                decoration: BoxDecoration(
+                                  color: SumAcademyTheme.brandBlue.withOpacityFloat(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(Icons.info_outline_rounded, size: 18.sp, color: SumAcademyTheme.brandBlue),
+                              ),
+                              SizedBox(width: 12.w),
+                              Text(
+                                'SESSION PROTOCOL',
+                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                      color: SumAcademyTheme.brandBlue,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 1.5,
+                                    ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 16.h),
+                          _ProtocolItem(
+                            icon: Icons.lock_clock_rounded,
+                            text: 'Controls are locked during the live broadcast.',
+                          ),
+                          SizedBox(height: 12.h),
+                          _ProtocolItem(
+                            icon: Icons.exit_to_app_rounded,
+                            text: 'Leaving this screen may disrupt your attendance.',
+                          ),
+                          SizedBox(height: 12.h),
+                          _ProtocolItem(
+                            icon: Icons.verified_user_rounded,
+                            text: 'Keep this page open until the session concludes.',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: Text(
-                'Live session rules: Pause, seek and leaving this page are blocked while session is live. Keep this page open until session ends.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: SumAcademyTheme.darkBase.withOpacityFloat(0.75),
-                      height: 1.35,
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
+}
 
-  String _formatClock(int totalSeconds) {
-    final seconds = totalSeconds.clamp(0, 24 * 60 * 60);
-    final h = seconds ~/ 3600;
-    final m = (seconds % 3600) ~/ 60;
-    final s = seconds % 60;
-    if (h > 0) {
-      return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-    }
-    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+class _LivePulseBadge extends StatefulWidget {
+  final String status;
+  const _LivePulseBadge({required this.status});
+
+  @override
+  State<_LivePulseBadge> createState() => _LivePulseBadgeState();
+}
+
+class _LivePulseBadgeState extends State<_LivePulseBadge> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isActive = widget.status.toLowerCase() == 'active';
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacityFloat(0.5),
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: Colors.white.withOpacityFloat(0.1)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              return Container(
+                width: 8.r,
+                height: 8.r,
+                decoration: BoxDecoration(
+                  color: isActive ? SumAcademyTheme.error : SumAcademyTheme.brandBlue,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: (isActive ? SumAcademyTheme.error : SumAcademyTheme.brandBlue).withOpacityFloat(0.5 * _controller.value),
+                      blurRadius: 6 * _controller.value,
+                      spreadRadius: 2 * _controller.value,
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          SizedBox(width: 8.w),
+          Text(
+            'LIVE LECTURE',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 10.sp,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProtocolItem extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _ProtocolItem({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 14.sp, color: SumAcademyTheme.brandBlue.withOpacityFloat(0.6)),
+        SizedBox(width: 10.w),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              color: SumAcademyTheme.darkBase.withOpacityFloat(0.7),
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w600,
+              height: 1.4,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

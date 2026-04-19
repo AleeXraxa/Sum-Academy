@@ -221,166 +221,264 @@ class _StudentLiveSessionWaitingViewState
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor =
-        isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
+    final textColor = isDark ? SumAcademyTheme.white : SumAcademyTheme.darkBase;
 
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 22.h),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  IconButton(
-                    onPressed: _isJoining ? null : () => Get.back(),
-                    icon: Icon(
-                      Icons.arrow_back_rounded,
-                      color: textColor,
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDark
+                ? [SumAcademyTheme.darkBase, SumAcademyTheme.darkSurface]
+                : [SumAcademyTheme.surfaceSecondary, SumAcademyTheme.white],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 22.h),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: _isJoining ? null : () => Get.back(),
+                      icon: Icon(Icons.arrow_back_rounded, color: textColor),
+                      style: IconButton.styleFrom(
+                        backgroundColor: isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white,
+                        padding: EdgeInsets.all(12.r),
+                      ),
                     ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      'Waiting Room',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: textColor,
-                            fontWeight: FontWeight.w800,
-                          ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 10.h),
-              Text(
-                widget.session.topic,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: textColor,
-                      fontWeight: FontWeight.w700,
-                    ),
-              ),
-              SizedBox(height: 6.h),
-              Text(
-                widget.session.className.trim().isEmpty
-                    ? widget.session.batchCode
-                    : '${widget.session.className} (${widget.session.batchCode})',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: textColor.withOpacityFloat(0.65),
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-              SizedBox(height: 22.h),
-              Center(
-                child: Container(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 22.w, vertical: 18.h),
-                  decoration: BoxDecoration(
-                    color: (isDark
-                            ? SumAcademyTheme.darkSurface
-                            : SumAcademyTheme.white)
-                        .withOpacityFloat(0.95),
-                    borderRadius: BorderRadius.circular(22.r),
-                    border: Border.all(
-                      color: SumAcademyTheme.brandBlue.withOpacityFloat(0.15),
-                    ),
-                    boxShadow: [
-                      if (!isDark)
-                        BoxShadow(
-                          color: SumAcademyTheme.darkBase.withOpacityFloat(0.06),
-                          blurRadius: 20,
-                          offset: const Offset(0, 12),
-                        ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        _startAt == null
-                            ? 'Starting soon'
-                            : (_waitingForJoinWindow ? 'Join opens in' : 'Starts in'),
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                              color: SumAcademyTheme.brandBlue,
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: Text(
+                        'Waiting Room',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: textColor,
                               fontWeight: FontWeight.w800,
                             ),
                       ),
-                      SizedBox(height: 10.h),
-                      Text(
-                        _startAt == null
-                            ? '--:--'
-                            : _formatDuration(_remaining),
-                        style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                              color: textColor,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.6,
-                            ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 32.h),
+                
+                // Session Info
+                Text(
+                  widget.session.topic.trim().isEmpty ? 'Live Interactive Session' : widget.session.topic,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: textColor,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 24.sp,
                       ),
-                      if (_totalStudents > 0) ...[
-                        SizedBox(height: 10.h),
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 10.w,
-                            vertical: 6.h,
+                ),
+                SizedBox(height: 8.h),
+                Row(
+                  children: [
+                    Icon(Icons.school_outlined, size: 16.sp, color: SumAcademyTheme.brandBlue),
+                    SizedBox(width: 8.w),
+                    Text(
+                      widget.session.className.trim().isEmpty
+                          ? widget.session.batchCode
+                          : '${widget.session.className} • ${widget.session.batchCode}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: textColor.withOpacityFloat(0.55),
+                            fontWeight: FontWeight.w700,
                           ),
-                          decoration: BoxDecoration(
-                            color: SumAcademyTheme.brandBlue.withOpacityFloat(0.10),
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(
-                              color: SumAcademyTheme.brandBlue.withOpacityFloat(0.18),
+                    ),
+                  ],
+                ),
+                
+                const Spacer(),
+                
+                // Central Countdown Arena
+                Center(
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Animated Pulse Effect
+                      const _CountdownPulse(),
+                      
+                      // The Card
+                      Container(
+                        width: 0.85.sw,
+                        padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 32.h),
+                        decoration: BoxDecoration(
+                          color: isDark ? SumAcademyTheme.darkSurface : SumAcademyTheme.white,
+                          borderRadius: BorderRadius.circular(32.r),
+                          border: Border.all(
+                            color: SumAcademyTheme.brandBlue.withOpacityFloat(0.1),
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            if (!isDark)
+                              BoxShadow(
+                                color: SumAcademyTheme.brandBlue.withOpacityFloat(0.08),
+                                blurRadius: 40,
+                                offset: const Offset(0, 20),
+                              ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _startAt == null
+                                  ? 'PREPARING STUDIO'
+                                  : (_waitingForJoinWindow ? 'DOORS OPEN IN' : 'BROADCAST STARTS IN'),
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: SumAcademyTheme.brandBlue,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 2,
+                                  ),
                             ),
-                          ),
-                          child: Text(
-                            'Joined: $_joinedCount/$_totalStudents',
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  color: SumAcademyTheme.brandBlue,
-                                  fontWeight: FontWeight.w800,
+                            SizedBox(height: 16.h),
+                            Text(
+                              _startAt == null ? '--:--' : _formatDuration(_remaining),
+                              style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                                    color: textColor,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 48.sp,
+                                    letterSpacing: -1,
+                                  ),
+                            ),
+                            SizedBox(height: 24.h),
+                            if (_totalStudents > 0) ...[
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                                decoration: BoxDecoration(
+                                  color: SumAcademyTheme.brandBlue.withOpacityFloat(0.08),
+                                  borderRadius: BorderRadius.circular(16.r),
                                 ),
-                          ),
-                        ),
-                      ],
-                      SizedBox(height: 10.h),
-                      Text(
-                        'Keep this page open. Video will start automatically.',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: textColor.withOpacityFloat(0.65),
-                              height: 1.35,
-                              fontWeight: FontWeight.w600,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.people_alt_rounded, size: 14.sp, color: SumAcademyTheme.brandBlue),
+                                    SizedBox(width: 8.w),
+                                    Text(
+                                      '$_joinedCount Students Waiting',
+                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                            color: SumAcademyTheme.brandBlue,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(height: 20.h),
+                            ],
+                            Text(
+                              'Please stay on this screen.\nThe session will launch automatically.',
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: textColor.withOpacityFloat(0.5),
+                                    height: 1.5,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                             ),
-                      ),
-                      if (_isJoining) ...[
-                        SizedBox(height: 14.h),
-                        SizedBox(
-                          height: 18.r,
-                          width: 18.r,
-                          child: const CircularProgressIndicator(strokeWidth: 2),
+                            if (_isJoining) ...[
+                              SizedBox(height: 20.h),
+                              LinearProgressIndicator(
+                                backgroundColor: SumAcademyTheme.brandBlue.withOpacityFloat(0.1),
+                                valueColor: const AlwaysStoppedAnimation(SumAcademyTheme.brandBlue),
+                                borderRadius: BorderRadius.circular(10.r),
+                                minHeight: 4.h,
+                              ),
+                              SizedBox(height: 8.h),
+                              Text(
+                                'Syncing with studio...',
+                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                      color: SumAcademyTheme.brandBlue,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                            ],
+                          ],
                         ),
-                      ],
+                      ),
                     ],
                   ),
                 ),
-              ),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: _isJoining ? null : () => Get.back(),
-                  style: OutlinedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(vertical: 12.h),
-                    foregroundColor: textColor.withOpacityFloat(0.8),
-                    side: BorderSide(
-                      color: SumAcademyTheme.brandBlue.withOpacityFloat(0.22),
+                
+                const Spacer(),
+                
+                // Footer
+                SizedBox(
+                  width: double.infinity,
+                  height: 54.h,
+                  child: OutlinedButton(
+                    onPressed: _isJoining ? null : () => Get.back(),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: textColor.withOpacityFloat(0.6),
+                      side: BorderSide(color: isDark ? SumAcademyTheme.darkBorder : SumAcademyTheme.brandBluePale),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(SumAcademyTheme.radiusButton.r),
+                      ),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18.r),
-                    ),
+                    child: const Text('Exit Waiting Room', style: TextStyle(fontWeight: FontWeight.w700)),
                   ),
-                  child: const Text('Back'),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _CountdownPulse extends StatefulWidget {
+  const _CountdownPulse();
+
+  @override
+  State<_CountdownPulse> createState() => _CountdownPulseState();
+}
+
+class _CountdownPulseState extends State<_CountdownPulse> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Stack(
+          alignment: Alignment.center,
+          children: List.generate(2, (index) {
+            final delay = index * 0.5;
+            final progress = (_controller.value + delay) % 1.0;
+            return Container(
+              width: 0.85.sw + (progress * 100.w),
+              height: 280.h + (progress * 100.h),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: SumAcademyTheme.brandBlue.withOpacityFloat(0.15 * (1 - progress)),
+                  width: 2,
+                ),
+                borderRadius: BorderRadius.circular(40.r),
+              ),
+            );
+          }),
+        );
+      },
     );
   }
 }
