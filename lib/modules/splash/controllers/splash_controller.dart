@@ -107,7 +107,8 @@ class SplashController extends GetxController
       Future.delayed(const Duration(milliseconds: 300), () {
         showAppErrorDialog(
           title: 'Access Restricted',
-          message: 'This platform is only for Student, for your role use Web Portal',
+          message:
+              'This platform is only for Student, for your role use Web Portal',
         );
       });
       return;
@@ -120,10 +121,7 @@ class SplashController extends GetxController
         );
         return;
       }
-      Get.offAll(
-        () => const StudentShellView(),
-        binding: StudentBinding(),
-      );
+      Get.offAll(() => const StudentShellView(), binding: StudentBinding());
     }
   }
 

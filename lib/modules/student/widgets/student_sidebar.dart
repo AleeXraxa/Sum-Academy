@@ -17,46 +17,85 @@ class StudentSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sections = _buildSections();
-    const background = Colors.black;
+    const background = Color(0xFF080A14);
     final textColor = SumAcademyTheme.white.withOpacityFloat(0.92);
-    final muted = SumAcademyTheme.white.withOpacityFloat(0.6);
+    final muted = SumAcademyTheme.white.withOpacityFloat(0.45);
 
     return Drawer(
       backgroundColor: background,
       child: SafeArea(
         child: Column(
           children: [
+            // ── Logo & Brand Header ─────────────────────────────────────────
             Padding(
-              padding: EdgeInsets.fromLTRB(20.w, 12.h, 16.w, 12.h),
+              padding: EdgeInsets.fromLTRB(20.w, 16.h, 16.w, 16.h),
               child: Row(
                 children: [
+                  Container(
+                    width: 38.r,
+                    height: 38.r,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: SumAcademyTheme.white.withOpacityFloat(0.12),
+                        width: 1.5,
+                      ),
+                      image: const DecorationImage(
+                        image: AssetImage('assets/logo.jpeg'),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 10.w),
                   Expanded(
-                    child: Text(
-                      'Sum Academy',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: textColor,
-                            fontWeight: FontWeight.w600,
-                          ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Sum Academy',
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    color: textColor,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                        ),
+                        Text(
+                          'Student Portal',
+                          style: Theme.of(context)
+                              .textTheme
+                              .labelSmall
+                              ?.copyWith(
+                                color: SumAcademyTheme.brandBlueLight
+                                    .withOpacityFloat(0.8),
+                                letterSpacing: 0.3,
+                              ),
+                        ),
+                      ],
                     ),
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).maybePop(),
                     icon: Icon(
-                      Icons.tune_rounded,
-                      color: textColor,
+                      Icons.close_rounded,
+                      color: SumAcademyTheme.white.withOpacityFloat(0.5),
+                      size: 20.sp,
                     ),
                   ),
                 ],
               ),
             ),
-            Divider(color: SumAcademyTheme.white.withOpacityFloat(0.08)),
+            Container(
+              height: 1,
+              color: SumAcademyTheme.white.withOpacityFloat(0.06),
+            ),
+            // ── Navigation Items ────────────────────────────────────────────
             Expanded(
               child: ListView(
-                padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 16.h),
+                padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 16.h),
                 children: [
                   for (final section in sections) ...[
                     _SectionHeader(title: section.title, color: muted),
-                    SizedBox(height: 6.h),
+                    SizedBox(height: 4.h),
                     ...section.items.map((item) {
                       final isActive = item.label == activeItem;
                       final isHighlighted = item.label == 'Live Session';
@@ -68,13 +107,18 @@ class StudentSidebar extends StatelessWidget {
                         onTap: () => onItemSelected?.call(item.label),
                       );
                     }),
-                    SizedBox(height: 12.h),
+                    SizedBox(height: 16.h),
                   ],
                 ],
               ),
             ),
+            // ── User Card ───────────────────────────────────────────────────
+            Container(
+              height: 1,
+              color: SumAcademyTheme.white.withOpacityFloat(0.06),
+            ),
             Padding(
-              padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 20.h),
+              padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 16.h),
               child: _SidebarUserCard(
                 name: userName,
                 onLogout: () => onItemSelected?.call('Logout'),
@@ -132,7 +176,8 @@ List<_SidebarSection> _buildSections() {
     title: 'Engagement',
     items: [
       _SidebarItem(label: 'Announcements', icon: Icons.campaign_rounded),
-      _SidebarItem(label: 'Help and Support', icon: Icons.support_agent_rounded),
+      _SidebarItem(
+          label: 'Help and Support', icon: Icons.support_agent_rounded),
     ],
   );
 
@@ -146,6 +191,8 @@ List<_SidebarSection> _buildSections() {
   return [overview, learning, payments, engagement, settings];
 }
 
+// ── Section Header ────────────────────────────────────────────────────────────
+
 class _SectionHeader extends StatelessWidget {
   final String title;
   final Color color;
@@ -154,16 +201,21 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      title.toUpperCase(),
-      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: color,
-            letterSpacing: 1.8,
-            fontWeight: FontWeight.w600,
-          ),
+    return Padding(
+      padding: EdgeInsets.fromLTRB(8.w, 0, 0, 0),
+      child: Text(
+        title.toUpperCase(),
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: color,
+              letterSpacing: 1.6,
+              fontWeight: FontWeight.w600,
+            ),
+      ),
     );
   }
 }
+
+// ── Sidebar Item Tile ─────────────────────────────────────────────────────────
 
 class _SidebarItemTile extends StatelessWidget {
   final _SidebarItem item;
@@ -182,60 +234,138 @@ class _SidebarItemTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeBg = SumAcademyTheme.white.withOpacityFloat(0.08);
-    final activeBorder = SumAcademyTheme.brandBlueLight.withOpacityFloat(0.35);
-    final activeText = SumAcademyTheme.white;
-    final activeIcon = SumAcademyTheme.brandBlueLight;
+    // Active: blue filled pill
+    final activeBg =
+        SumAcademyTheme.brandBlue.withOpacityFloat(isHighlighted ? 0 : 1);
+    // Highlighted (Live Session): blue tinted
     final highlightBg =
-        SumAcademyTheme.brandBlue.withOpacityFloat(isActive ? 0.26 : 0.18);
-    final highlightBorder =
-        SumAcademyTheme.brandBlueLight.withOpacityFloat(0.6);
-    final highlightIcon =
-        isActive ? SumAcademyTheme.white : SumAcademyTheme.brandBlueLight;
-    final highlightText =
-        isActive ? SumAcademyTheme.white : SumAcademyTheme.white;
+        SumAcademyTheme.brandBlue.withOpacityFloat(isActive ? 0.28 : 0.15);
+    const highlightBorder = SumAcademyTheme.brandBlueLight;
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(14.r),
-      onTap: onTap,
-      child: Container(
+    Widget tile;
+    if (isHighlighted) {
+      tile = Container(
         padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
         decoration: BoxDecoration(
-          color: isHighlighted
-              ? highlightBg
-              : (isActive ? activeBg : Colors.transparent),
-          borderRadius: BorderRadius.circular(14.r),
-          border: isHighlighted
-              ? Border.all(color: highlightBorder)
-              : (isActive ? Border.all(color: activeBorder) : null),
+          color: highlightBg,
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(
+            color: highlightBorder.withOpacityFloat(isActive ? 0.7 : 0.35),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 8.r,
+              height: 8.r,
+              decoration: const BoxDecoration(
+                color: Color(0xFF22CC77),
+                shape: BoxShape.circle,
+              ),
+            ),
+            SizedBox(width: 8.w),
+            Icon(
+              item.icon,
+              color: isActive
+                  ? SumAcademyTheme.white
+                  : SumAcademyTheme.brandBlueLight,
+              size: 18.sp,
+            ),
+            SizedBox(width: 10.w),
+            Expanded(
+              child: Text(
+                item.label,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: SumAcademyTheme.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ),
+            Container(
+              padding:
+                  EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+              decoration: BoxDecoration(
+                color: const Color(0xFF22CC77).withOpacityFloat(0.15),
+                borderRadius: BorderRadius.circular(6.r),
+              ),
+              child: Text(
+                'LIVE',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: const Color(0xFF22CC77),
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
+              ),
+            ),
+          ],
+        ),
+      );
+    } else if (isActive) {
+      tile = Container(
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+        decoration: BoxDecoration(
+          color: SumAcademyTheme.brandBlue,
+          borderRadius: BorderRadius.circular(12.r),
         ),
         child: Row(
           children: [
             Icon(
               item.icon,
-              color: isHighlighted
-                  ? highlightIcon
-                  : (isActive ? activeIcon : color),
-              size: 20.sp,
+              color: SumAcademyTheme.white,
+              size: 18.sp,
             ),
-            SizedBox(width: 12.w),
-            Text(
-              item.label,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: isHighlighted
-                        ? highlightText
-                        : (isActive ? activeText : color),
-                    fontWeight: (isActive || isHighlighted)
-                        ? FontWeight.w600
-                        : FontWeight.w500,
-                  ),
+            SizedBox(width: 10.w),
+            Expanded(
+              child: Text(
+                item.label,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: SumAcademyTheme.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
             ),
           ],
         ),
+      );
+    } else {
+      tile = Container(
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+        child: Row(
+          children: [
+            Icon(
+              item.icon,
+              color: color.withOpacityFloat(0.6),
+              size: 18.sp,
+            ),
+            SizedBox(width: 10.w),
+            Expanded(
+              child: Text(
+                item.label,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: color.withOpacityFloat(0.8),
+                      fontWeight: FontWeight.w500,
+                    ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 2.h),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12.r),
+        onTap: onTap,
+        splashColor: SumAcademyTheme.brandBlue.withOpacityFloat(0.1),
+        highlightColor: SumAcademyTheme.brandBlue.withOpacityFloat(0.05),
+        child: tile,
       ),
     );
   }
 }
+
+// ── User Card ─────────────────────────────────────────────────────────────────
 
 class _SidebarUserCard extends StatelessWidget {
   final String name;
@@ -249,11 +379,13 @@ class _SidebarUserCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final initials = name.isNotEmpty ? name.trim()[0].toUpperCase() : 'S';
+    final displayName =
+        name.length > 18 ? '${name.substring(0, 16)}…' : name;
 
     return Container(
       padding: EdgeInsets.all(12.r),
       decoration: BoxDecoration(
-        color: SumAcademyTheme.white.withOpacityFloat(0.06),
+        color: SumAcademyTheme.white.withOpacityFloat(0.05),
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
           color: SumAcademyTheme.white.withOpacityFloat(0.08),
@@ -262,16 +394,23 @@ class _SidebarUserCard extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 40.r,
-            height: 40.r,
+            width: 42.r,
+            height: 42.r,
             decoration: BoxDecoration(
-              color: SumAcademyTheme.white.withOpacityFloat(0.1),
-              borderRadius: BorderRadius.circular(20.r),
+              gradient: const LinearGradient(
+                colors: [
+                  SumAcademyTheme.brandBlue,
+                  SumAcademyTheme.brandBlueDark,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(13.r),
             ),
             alignment: Alignment.center,
             child: Text(
               initials,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     color: SumAcademyTheme.white,
                     fontWeight: FontWeight.w700,
                   ),
@@ -281,26 +420,33 @@ class _SidebarUserCard extends StatelessWidget {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  name,
+                  displayName,
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
                         color: SumAcademyTheme.white,
                         fontWeight: FontWeight.w600,
                       ),
                 ),
-                SizedBox(height: 4.h),
-                GestureDetector(
-                  onTap: onLogout,
-                  child: Text(
-                    'Logout',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: SumAcademyTheme.white.withOpacityFloat(0.7),
-                        ),
-                  ),
+                Text(
+                  'Student',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color:
+                            SumAcademyTheme.white.withOpacityFloat(0.45),
+                      ),
                 ),
               ],
             ),
+          ),
+          IconButton(
+            onPressed: onLogout,
+            icon: Icon(
+              Icons.logout_rounded,
+              size: 18.sp,
+              color: SumAcademyTheme.white.withOpacityFloat(0.45),
+            ),
+            tooltip: 'Logout',
           ),
         ],
       ),
